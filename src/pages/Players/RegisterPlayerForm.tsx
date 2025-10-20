@@ -68,6 +68,7 @@ interface PlayerFormData {
   equipoId?: number;
   numeroCamiseta?: string;
   rolId?: number;
+  rolName?: string;
 }
 
 interface RegisterPlayerFormProps {
@@ -189,7 +190,13 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       if (selectedSubcategoria) {
         try {
           const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(selectedSubcategoria, token);
-          setRoles(rolesData);
+          // Filter out roles that are already assigned to other players
+          const assignedRoleIds = players
+            .map(p => p.rolId)
+            .filter((id): id is number => id !== undefined);
+          
+          const availableRoles = rolesData.filter(role => !assignedRoleIds.includes(role.id));
+          setRoles(availableRoles);
         } catch (error) {
           console.error('Error fetching roles:', error);
           setSnackbar({
@@ -206,12 +213,36 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     }
   }, [selectedSubcategoria]);
 
-  const handleSubcategoriaChange = (event: SelectChangeEvent<number>) => {
+  const handleSubcategoriaChange = async (event: SelectChangeEvent<number>) => {
     const value = event.target.value as number;
     setSelectedSubcategoria(value);
     setSelectedSerie(undefined);
     setTeams([]);
-    setRoles([]);
+    setPlayers([{ 
+      nombre: '', 
+      apellido: '', 
+      fechaNacimiento: '', 
+      documentoIdentidad: '',
+      equipoId: undefined,
+      numeroCamiseta: '',
+      rolId: undefined,
+      rolName: ''
+    }]);
+    
+    // Load roles for the selected subcategory
+    if (value) {
+      try {
+        const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(value, token);
+        setRoles(rolesData);
+      } catch (error) {
+        console.error('Error fetching roles:', error);
+        setSnackbar({
+          open: true,
+          message: 'Error al cargar los roles',
+          severity: 'error'
+        });
+      }
+    }
   };
 
   const handleSerieChange = (event: SelectChangeEvent<number>) => {
@@ -227,14 +258,20 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       documentoIdentidad: '',
       equipoId: undefined,
       numeroCamiseta: '',
-      rolId: undefined
+      rolId: undefined,
+      rolName: ''
     }]);
   };
 
-  const handleRemovePlayer = (index: number) => {
+  const handleRemovePlayer = async (index: number) => {
     const newPlayers = [...players];
     newPlayers.splice(index, 1);
     setPlayers(newPlayers);
+    
+    // Update available roles when a player is removed
+    if (selectedSubcategoria) {
+      await updateAvailableRoles(selectedSubcategoria, newPlayers);
+    }
   };
 
   const handlePlayerChange = (index: number, field: keyof PlayerFormData, value: any) => {
@@ -256,6 +293,37 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     }
     
     setPlayers(newPlayers);
+  };
+
+  const handleRoleChange = (index: number, event: SelectChangeEvent<number>) => {
+    const newPlayers = [...players];
+    const selectedRoleId = Number(event.target.value);
+    const selectedRole = roles.find(role => role.id === selectedRoleId);
+    
+    if (selectedRole) {
+      newPlayers[index].rolId = selectedRole.id;
+      newPlayers[index].rolName = selectedRole.name;
+      setPlayers(newPlayers);
+      
+      // Update available roles by refetching them
+      if (selectedSubcategoria) {
+        updateAvailableRoles(selectedSubcategoria, newPlayers);
+      }
+    }
+  };
+
+  const updateAvailableRoles = async (subcategoriaId: number, currentPlayers: PlayerFormData[]) => {
+    try {
+      const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(subcategoriaId, token);
+      const assignedRoleIds = currentPlayers
+        .map(p => p.rolId)
+        .filter((id): id is number => id !== undefined);
+      
+      const availableRoles = rolesData.filter(role => !assignedRoleIds.includes(role.id));
+      setRoles(availableRoles);
+    } catch (error) {
+      console.error('Error updating available roles:', error);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -336,7 +404,8 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
           documentoIdentidad: '',
           equipoId: undefined,
           numeroCamiseta: '',
-          rolId: undefined
+          rolId: undefined,
+          rolName: ''
         }]);
         setSelectedSubcategoria(undefined);
         setSelectedSerie(undefined);
@@ -726,45 +795,39 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                     </Box>
                     
                     <Box>
-                      <FormControl fullWidth size="small" required>
-                        <InputLabel id={`rol-label-${index}`}>Rol en el Equipo</InputLabel>
+                      <FormControl fullWidth margin="normal">
+                        <InputLabel id={`rol-label-${index}`}>Rol</InputLabel>
                         <Select
                           labelId={`rol-label-${index}`}
+                          id={`rol-${index}`}
                           value={player.rolId || ''}
-                          onChange={(e) => handlePlayerChange(index, 'rolId', e.target.value as number)}
-                          label="Rol en el Equipo"
-                          disabled={!selectedSubcategoria || isSubmitting}
-                          variant="outlined"
-                          sx={{
-                            '& .MuiSelect-select': {
-                              py: 1.5,
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1
-                            }
-                          }}
+                          onChange={(e) => handleRoleChange(index, e)}
+                          label="Rol"
+                          disabled={!selectedSubcategoria}
                         >
-                          {roles.length > 0 ? (
+                          <MenuItem value="">
+                            <em>Seleccione un rol</em>
+                          </MenuItem>
+                          {!selectedSubcategoria ? (
+                            <MenuItem disabled>
+                              <Typography variant="body2" color="text.secondary">
+                                Seleccione una subcategoría primero
+                              </Typography>
+                            </MenuItem>
+                          ) : roles.length > 0 ? (
                             roles.map((rol) => (
-                              <MenuItem 
-                                key={rol.id} 
-                                value={rol.id}
-                                sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
-                              >
-                                <SportsSoccerIcon fontSize="small" />
-                                <Box>
-                                  <Typography variant="body2">{rol.name}</Typography>
-                                  <Typography variant="caption" color="text.secondary">
-                                    {rol.detail}
+                              <MenuItem key={rol.id} value={rol.id}>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                  <SportsSoccerIcon fontSize="small" />
+                                  <Typography variant="body2">
+                                    {rol.detail || rol.name}
                                   </Typography>
                                 </Box>
                               </MenuItem>
                             ))
                           ) : (
                             <MenuItem disabled>
-                              <Typography variant="body2" color="text.secondary">
-                                {selectedSubcategoria ? 'No hay roles disponibles' : 'Seleccione una subcategoría'}
-                              </Typography>
+                              No hay roles disponibles para esta subcategoría
                             </MenuItem>
                           )}
                         </Select>

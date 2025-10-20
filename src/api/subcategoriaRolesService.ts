@@ -1,19 +1,29 @@
 import axios from 'axios';
+import { Rol, SubcategoriaRol } from '../types/roles.types';
 
 const API_URL = 'http://localhost:8080/api/subcategoria-roles';
 
-const getSubcategoriaRoles = async (subcategoriaId: number, token: string) => {
+const subcategoriaRolesService = {
+    /**
+     * Fetches roles by subcategory ID
+     * @param token Authentication token
+     * @param subcategoriaId The ID of the subcategory to fetch roles for
+     * @returns Promise with the list of roles
+     */
+    async getSubcategoriaRoles(subcategoriaId: number, token: string): Promise<Rol[]> {
     try {
-        const response = await axios.get(`${API_URL}/subcategoria/${subcategoriaId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
+        const response = await axios.get<{ data: SubcategoriaRol[] }>(
+            `${API_URL}/subcategoria/${subcategoriaId}`,
+            {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             }
-        });
+        );
 
-        // Map the response to only return the roles array
         if (response.data && response.data.data) {
-            return response.data.data.map((item: any) => ({
+            return response.data.data.map((item) => ({
                 id: item.rol.id,
                 name: item.rol.name,
                 detail: item.rol.detail
@@ -21,11 +31,80 @@ const getSubcategoriaRoles = async (subcategoriaId: number, token: string) => {
         }
         return [];
     } catch (error) {
-        console.error('Error fetching subcategoria roles:', error);
-        throw error;
+            console.error(`Error fetching roles for subcategory ${subcategoriaId}:`, error);
+            throw error;
+        }
+    },
+
+    /**
+     * Fetches all subcategoria-roles relationships
+     * @param token Authentication token
+     * @returns Promise with the list of all subcategoria-roles relationships
+     */
+    async getAllSubcategoriaRoles(token: string): Promise<SubcategoriaRol[]> {
+        try {
+            const response = await axios.get<{ data: SubcategoriaRol[] }>(API_URL, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            return response.data.data;
+        } catch (error) {
+            console.error('Error fetching all subcategoria-roles:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Creates a new subcategoria-rol relationship
+     * @param token Authentication token
+     * @param subcategoriaId The ID of the subcategory
+     * @param rolId The ID of the role
+     * @returns Promise with the created relationship
+     */
+    async createSubcategoriaRol(
+        token: string,
+        subcategoriaId: number,
+        rolId: number
+    ): Promise<SubcategoriaRol> {
+        try {
+            const response = await axios.post<{ data: SubcategoriaRol }>(
+                API_URL,
+                { subcategoriaId, rolId },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return response.data.data;
+        } catch (error) {
+            console.error('Error creating subcategoria-rol relationship:', error);
+            throw error;
+        }
+    },
+
+    /**
+     * Deletes a subcategoria-rol relationship
+     * @param token Authentication token
+     * @param id The ID of the relationship to delete
+     * @returns Promise that resolves when the relationship is deleted
+     */
+    async deleteSubcategoriaRol(token: string, id: number): Promise<void> {
+        try {
+            await axios.delete(`${API_URL}/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        } catch (error) {
+            console.error(`Error deleting subcategoria-rol relationship ${id}:`, error);
+            throw error;
+    }
     }
 };
 
-export default {
-    getSubcategoriaRoles
-};
+export default subcategoriaRolesService;
