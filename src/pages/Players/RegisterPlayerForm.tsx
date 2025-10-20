@@ -20,7 +20,6 @@ import {
   CircularProgress,
   Divider
 } from '@mui/material';
-import axios from 'axios';
 import serieService from '../../api/serieService';
 import { 
   Add as AddIcon, 
@@ -361,38 +360,19 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     
     try {
       // First, register the players
-      const playerResponse = await playerService.registerPlayers(
+      const response = await playerService.registerPlayers(
         validPlayers.map(({ equipoId, numeroCamiseta, rolId, ...player }) => player), 
         token
       );
 
-      if (playerResponse && (playerResponse.success || Array.isArray(playerResponse))) {
-        // If player registration is successful, assign them to teams with roles
-        const playerAssignments = validPlayers.map(player => ({
-          equipoId: player.equipoId,
-          jugadorId: playerResponse.find((p: any) => p.documentoIdentidad === player.documentoIdentidad)?.id,
-          numeroCamiseta: player.numeroCamiseta,
-          rolId: player.rolId
-        }));
-
-        // Assign players to teams with roles
-        await axios.post(
-          'http://localhost:8080/api/equipo-jugadores/asignar',
-          playerAssignments,
-          {
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-
+      if (response && response.success) {
+        // Show success message
         setSnackbar({
           open: true,
-          message: 'Jugadores registrados y asignados exitosamente',
+          message: 'Jugadores registrados exitosamente',
           severity: 'success'
         });
-        
+
         // Reset form
         setPlayers([{ 
           nombre: '', 
@@ -414,7 +394,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       } else {
         setSnackbar({
           open: true,
-          message: playerResponse?.message || 'Error al registrar jugadores',
+          message: response?.message || 'Error al registrar jugadores',
           severity: 'error'
         });
       }
