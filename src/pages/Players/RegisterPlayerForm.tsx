@@ -50,8 +50,14 @@ interface Serie {
 }
 
 interface Team {
-  id: number;
+  equipoId: number;
   nombre: string;
+  subcategoriaId: number;
+  subcategoriaNombre: string;
+  serieId: number;
+  serieNombre: string;
+  fundacion: string;
+  jugadoresCount: number;
 }
 
 interface Rol {
@@ -102,7 +108,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   const [selectedSubcategoria, setSelectedSubcategoria] = useState<number>();
   const [series, setSeries] = useState<Serie[]>([]);
   const [selectedSerie, setSelectedSerie] = useState<number>();
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<Array<{equipoId: number, nombre: string}>>([]);
   const [roles, setRoles] = useState<Rol[]>([]);
   
   const [snackbar, setSnackbar] = useState<{
@@ -730,7 +736,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                         <Select
                           labelId={`equipo-label-${index}`}
                           value={player.equipoId || ''}
-                          onChange={(e) => handlePlayerChange(index, 'equipoId', e.target.value as number)}
+                          onChange={(e) => {
+                            const value = e.target.value as string | number;
+                            handlePlayerChange(index, 'equipoId', value === '' ? undefined : Number(value));
+                          }}
                           label="Equipo"
                           disabled={!selectedSubcategoria || !selectedSerie || isSubmitting}
                           variant="outlined"
@@ -746,8 +755,8 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                           {teams.length > 0 ? (
                             teams.map((team) => (
                               <MenuItem 
-                                key={team.id} 
-                                value={team.id}
+                                key={team.equipoId} 
+                                value={team.equipoId}
                                 sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
                               >
                                 <GroupIcon fontSize="small" />

@@ -87,6 +87,49 @@ const subcategoriaRolesService = {
     },
 
     /**
+     * Bulk assigns multiple roles to a subcategory
+     * @param token Authentication token
+     * @param subcategoriaId The ID of the subcategory
+     * @param roleIds Array of role IDs to assign
+     * @returns Promise with the bulk assignment result
+     */
+    async bulkAssignRoles(
+        token: string,
+        subcategoriaId: number,
+        roleIds: number[]
+    ): Promise<{
+        success: boolean;
+        message: string;
+        data: {
+            totalRolesAsignados: number;
+            asignacionesExistentes: number;
+            subcategoriaId: number;
+            rolesAsignados: number[];
+            nuevasAsignaciones: number;
+        };
+    }> {
+        try {
+            const response = await axios.post(
+                `${API_URL}/bulk`,
+                {
+                    subcategoriaId,
+                    roles: roleIds
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            return response.data;
+        } catch (error) {
+            console.error('Error in bulk role assignment:', error);
+            throw error;
+        }
+    },
+
+    /**
      * Deletes a subcategoria-rol relationship
      * @param token Authentication token
      * @param id The ID of the relationship to delete
