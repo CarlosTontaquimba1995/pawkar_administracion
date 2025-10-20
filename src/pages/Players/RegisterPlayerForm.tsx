@@ -3,7 +3,6 @@ import {
   Box, 
   Button, 
   TextField, 
-  Typography, 
   Paper, 
   IconButton, 
   Alert, 
@@ -15,7 +14,7 @@ import {
   useTheme
 } from '@mui/material';
 import { Add as AddIcon, Close as CloseIcon, CalendarToday as CalendarTodayIcon } from '@mui/icons-material';
-import { registerPlayers, BulkCreateResponse } from '../../api/playerService';
+import playerService from '../../api/playerService';
 
 interface PlayerFormData {
   nombre: string;
@@ -59,6 +58,11 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   };
 
   const handlePlayerChange = (index: number, field: keyof PlayerFormData, value: string) => {
+    // If the field is documentoIdentidad, only allow numbers
+    if (field === 'documentoIdentidad' && value !== '' && !/^\d*$/.test(value)) {
+      return; // Don't update if the value contains non-numeric characters
+    }
+    
     const newPlayers = [...players];
     newPlayers[index] = { ...newPlayers[index], [field]: value };
     setPlayers(newPlayers);
@@ -87,13 +91,13 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         return;
       }
 
-      const response = await registerPlayers(validPlayers, token);
+      const response = await playerService.registerPlayers(validPlayers, token);
       
-      if (response.success) {
+      if (response && (response.success || Array.isArray(response))) {
         setSnackbar({
           open: true,
-          message: response.message || 'Jugadores registrados exitosamente',
-          severity: 'success'
+          message: (response as any).message || 'Jugadores registrados exitosamente',
+            severity: 'success'
         });
         setPlayers([{ nombre: '', apellido: '', fechaNacimiento: '', documentoIdentidad: '' }]);
         onSuccess();
@@ -205,7 +209,11 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                     fullWidth
                     required
                     size="small"
-                    inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }}
+                    inputProps={{ 
+                      inputMode: 'numeric', 
+                      pattern: '[0-9]*',
+                      title: 'Solo se permiten números'
+                    }}
                   />
                   <TextField
                     label="Fecha de Nacimiento"

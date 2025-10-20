@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 import {
   Box,
   Typography,
@@ -32,7 +33,8 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import RegisterPlayerForm from './RegisterPlayerForm';
-import { Player } from '../../api/playerService';
+import playerService, { Player } from '../../api/playerService';
+import EditPlayer from './EditPlayer';
 
 const Players: React.FC = () => {
   // Get auth token
@@ -44,8 +46,13 @@ const Players: React.FC = () => {
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalElements, setTotalElements] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   // Error state for handling API errors
   const [apiError, setApiError] = useState<string | null>(null);
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [playerToDelete, setPlayerToDelete] = useState<Player | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
@@ -56,36 +63,25 @@ const Players: React.FC = () => {
     severity: 'success',
   });
 
-  const fetchPlayers = useCallback(async () => {
+  const fetchPlayers = useCallback(async (page: number = 0, size: number = rowsPerPage, search: string = searchTerm) => {
+    if (!token) return;
+    
+    setIsLoading(true);
+    setApiError(null);
+    
     try {
-      setIsLoading(true);
-      // Replace with your actual API call
-      // const data = await getPlayers();
-      // setPlayers(data);
+      const response = await playerService.getPlayers(token, page, size, search);
       
-      // Mock data for now
-      setTimeout(() => {
-        setPlayers([
-          {
-            id: 1,
-            nombre: 'Carlos',
-            apellido: 'Pérez',
-            fechaNacimiento: '1990-01-15',
-            documentoIdentidad: '12345678',
-            estado: 'ACTIVO'
-          },
-          {
-            id: 2,
-            nombre: 'María',
-            apellido: 'González',
-            fechaNacimiento: '1992-05-20',
-            documentoIdentidad: '87654321',
-            estado: 'ACTIVO'
-          }
-        ]);
-        setIsLoading(false);
-      }, 500);
+      setPlayers(response.content);
+      setTotalElements(response.totalElements);
+      setTotalPages(response.totalPages);
+      
+      // If the current page is greater than the total pages, reset to first page
+      if (page >= response.totalPages) {
+        setPage(0);
+      }
     } catch (error) {
+      console.error('Error fetching players:', error);
       const errorMessage = error instanceof Error ? error.message : 'Error al cargar los jugadores';
       setApiError(errorMessage);
       setSnackbar({
@@ -93,13 +89,34 @@ const Players: React.FC = () => {
         message: errorMessage,
         severity: 'error'
       });
+    } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token, rowsPerPage, searchTerm]);
+  
+  // Handle search
+  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    setSearchTerm(value);
+    // Reset to first page when searching
+    setPage(0);
+  };
+  
+  // Handle page change
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
 
+  // Handle rows per page change
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0); // Reset to first page when changing rows per page
+  };
+  
+  // Fetch players when page, rowsPerPage, or searchTerm changes
   useEffect(() => {
-    fetchPlayers();
-  }, [fetchPlayers]);
+    fetchPlayers(page, rowsPerPage, searchTerm);
+  }, [fetchPlayers, page, rowsPerPage, searchTerm]);
 
   const handleRegisterSuccess = () => {
     setIsRegisterDialogOpen(false);
@@ -116,41 +133,39 @@ const Players: React.FC = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
   };
 
-  const handleDeletePlayer = async (playerId: number) => {
+  const handleDeleteClick = (player: Player) => {
+    setPlayerToDelete(player);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!playerToDelete || !token) return;
+    
+    setIsDeleting(true);
     try {
-      // In a real app, you would call your API here
-      // await deletePlayer(playerId);
-      
-      // For now, we'll just update the local state
-      setPlayers(prevPlayers => prevPlayers.filter(player => player.id !== playerId));
-      
+      await playerService.deletePlayer(token, playerToDelete.id);
+      fetchPlayers();
       setSnackbar({
         open: true,
-        message: 'Jugador eliminado exitosamente',
-        severity: 'success'
+        message: 'Jugador eliminado correctamente',
+        severity: 'success',
       });
     } catch (error) {
-      console.error('Error deleting player:', error);
+      console.error('Error al eliminar el jugador:', error);
       setSnackbar({
         open: true,
-        message: 'Error al eliminar el jugador',
-        severity: 'error'
+        message: 'Error al eliminar el jugador. Por favor, inténtalo de nuevo.',
+        severity: 'error',
       });
+    } finally {
+      setIsDeleting(false);
+      setPlayerToDelete(null);
     }
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setPage(0);
+  const handleDeleteCancel = () => {
+    if (!isDeleting) {
+      setPlayerToDelete(null);
+    }
   };
 
   // Filter players based on search term
@@ -163,30 +178,45 @@ const Players: React.FC = () => {
     );
   });
 
-  // Pagination
-  const paginatedPlayers = filteredPlayers.slice(
-    page * rowsPerPage,
-    page * rowsPerPage + rowsPerPage
-  );
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Typography variant="h5" component="h1">
-          Jugadores
-        </Typography>
+      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 300 }}>
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Buscar jugadores..."
+            value={searchTerm}
+            onChange={handleSearch}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              minWidth: 300,
+              '& .MuiOutlinedInput-root': {
+                backgroundColor: theme.palette.background.paper,
+              },
+            }}
+          />
+        </Box>
         <Button
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
           onClick={() => setIsRegisterDialogOpen(true)}
           sx={{
-            boxShadow: theme.custom.colors.shadows.primary,
+            boxShadow: theme.shadows[3],
             '&:hover': {
-              boxShadow: theme.custom.colors.shadows.medium,
+              boxShadow: theme.shadows[6],
               transform: 'translateY(-2px)',
             },
             transition: 'all 0.3s ease',
+            whiteSpace: 'nowrap',
           }}
         >
           Inscribir Jugadores
@@ -207,23 +237,6 @@ const Players: React.FC = () => {
       >
         <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
           <Box display="flex" gap={2} flexWrap="wrap">
-            <TextField
-              variant="outlined"
-              size="small"
-              placeholder="Buscar jugadores..."
-              value={searchTerm}
-              onChange={handleSearch}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-                sx: {
-                  minWidth: 250,
-                },
-              }}
-            />
           </Box>
         </Box>
 
@@ -252,7 +265,7 @@ const Players: React.FC = () => {
                     <CircularProgress />
                   </TableCell>
                 </TableRow>
-              ) : paginatedPlayers.length === 0 ? (
+              ) : players.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
                     <PersonIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
@@ -265,7 +278,7 @@ const Players: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedPlayers.map((player, index) => (
+                players.map((player, index) => (
                   <TableRow 
                     key={player.id} 
                     hover
@@ -288,37 +301,38 @@ const Players: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={player.estado}
+                        label="Activo"
                         size="small"
+                        color="success"
                         sx={{
-                          backgroundColor: player.estado === 'ACTIVO' 
-                            ? theme.custom.colorWithOpacity.accent2[20]
-                            : theme.custom.colorWithOpacity.accent1[20],
-                          color: player.estado === 'ACTIVO' 
-                            ? theme.custom.colors.accent2
-                            : theme.custom.colors.accent1,
-                          fontWeight: 600,
-                          borderRadius: 1.5,
-                          border: `1px solid ${player.estado === 'ACTIVO' 
-                            ? theme.custom.colorWithOpacity.accent2[30]
-                            : theme.custom.colorWithOpacity.accent1[30]}`,
+                          fontWeight: 500,
+                          '&.MuiChip-colorSuccess': {
+                            bgcolor: 'accent2.light',
+                            color: 'accent2.dark',
+                            '&:hover': {
+                              bgcolor: 'accent2.main',
+                              color: 'white'
+                            }
+                          }
                         }}
                       />
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="Editar jugador">
-                        <IconButton 
-                          size="small" 
-                          sx={{ 
-                            color: 'primary.main',
-                            '&:hover': { 
-                              backgroundColor: theme.custom.colorWithOpacity.primary[10],
-                            }
-                          }}
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                      <IconButton 
+                        size="small" 
+                        onClick={() => setEditingPlayer(player)}
+                        sx={{ 
+                          color: 'primary.main',
+                          '&:hover': {
+                            backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                          },
+                          mr: 1
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                       <Tooltip title="Eliminar jugador">
                         <IconButton 
                           size="small" 
@@ -331,7 +345,7 @@ const Players: React.FC = () => {
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDeletePlayer(player.id);
+                            handleDeleteClick(player);
                           }}
                           aria-label={`Eliminar a ${player.nombre} ${player.apellido}`}
                         >
@@ -347,7 +361,7 @@ const Players: React.FC = () => {
           <TablePagination
             rowsPerPageOptions={[5, 10, 25]}
             component="div"
-            count={filteredPlayers.length}
+            count={totalElements}
             rowsPerPage={rowsPerPage}
             page={page}
             onPageChange={handleChangePage}
@@ -356,12 +370,6 @@ const Players: React.FC = () => {
             labelDisplayedRows={({ from, to, count }) =>
               `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
             }
-            sx={{
-              borderTop: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-              '& .MuiTablePagination-toolbar': {
-                padding: 2,
-              },
-            }}
           />
         </TableContainer>
       </Paper>
@@ -383,6 +391,55 @@ const Players: React.FC = () => {
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Edit Player Dialog */}
+      {editingPlayer && (
+        <EditPlayer
+          open={!!editingPlayer}
+          onClose={() => setEditingPlayer(null)}
+          playerId={editingPlayer.id}
+          onSuccess={() => {
+            setSnackbar({
+              open: true,
+              message: 'Jugador actualizado correctamente',
+              severity: 'success',
+            });
+            fetchPlayers();
+            setEditingPlayer(null);
+          }}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!playerToDelete}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Confirmar eliminación
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            ¿Estás seguro de que deseas eliminar al jugador {playerToDelete?.nombre} {playerToDelete?.apellido}? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            disabled={isDeleting}
+            color="error"
+            autoFocus
+            startIcon={isDeleting ? <CircularProgress size={20} /> : null}
+          >
+            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
