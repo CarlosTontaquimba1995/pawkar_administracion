@@ -359,11 +359,19 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     setIsSubmitting(true);
     
     try {
-      // First, register the players
-      const response = await playerService.registerPlayers(
-        validPlayers.map(({ equipoId, numeroCamiseta, rolId, ...player }) => player), 
-        token
-      );
+      // Prepare player data with all required fields
+      const playersToRegister = validPlayers.map(player => ({
+        nombre: player.nombre,
+        apellido: player.apellido,
+        fechaNacimiento: player.fechaNacimiento,
+        documentoIdentidad: player.documentoIdentidad,
+        equipoId: player.equipoId,
+        numeroCamiseta: player.numeroCamiseta,
+        rolId: player.rolId
+      }));
+
+      // Register the players with all required fields
+      const response = await playerService.registerPlayers(playersToRegister, token);
 
       if (response && response.success) {
         // Show success message

@@ -16,6 +16,10 @@ export interface PlayerData {
   apellido: string;
   fechaNacimiento: string;
   documentoIdentidad: string;
+  equipoId?: number;
+  jugadorId?: number;
+  numeroCamiseta?: string | number;
+  rolId?: number;
 }
 
 interface PlayersResponse {
@@ -96,11 +100,19 @@ const playerService = {
     }
   },
 
-  async registerPlayers(players: PlayerData[], token: string) {
+  async registerPlayers(players: Omit<PlayerData, 'jugadorId'>[], token: string) {
     try {
+      // Format the players data to match the expected API format
+      const formattedPlayers = players.map(player => ({
+        ...player,
+        numeroCamiseta: Number(player.numeroCamiseta) || 0,
+        equipoId: player.equipoId || 0,
+        rolId: player.rolId || 0
+      }));
+
       const response = await axios.post(
         `${API_URL}/bulk`,
-        { jugadores: players },
+        { jugadores: formattedPlayers },
         {
           headers: {
             'Content-Type': 'application/json',
