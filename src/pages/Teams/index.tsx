@@ -27,6 +27,11 @@ import {
   Alert,
   Fade,
   useTheme,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -42,6 +47,7 @@ import teamService from '../../api/teamService';
 import subcategoriaService from '../../api/subcategoriaService';
 import serieService from '../../api/serieService';
 import RegisterTeam from './RegisterTeam';
+import EditTeam from './EditTeam';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
@@ -111,6 +117,9 @@ const Teams = () => {
     severity: 'success' as 'success' | 'error' | 'info',
   });
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
+  const [editingTeam, setEditingTeam] = useState<Equipo | null>(null);
+  const [teamToDelete, setTeamToDelete] = useState<Equipo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
@@ -346,6 +355,45 @@ const Teams = () => {
 
   const handleCloseSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }));
+  };
+
+  // Handle team deletion
+  const handleDeleteClick = (team: Equipo) => {
+    setTeamToDelete(team);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!teamToDelete || !token) return;
+    
+    setIsDeleting(true);
+    try {
+      await teamService.deleteTeam(token, teamToDelete.equipoId);
+      
+      setSnackbar({
+        open: true,
+        message: 'Equipo eliminado correctamente',
+        severity: 'success',
+      });
+      
+      // Refresh the team list
+      if (categoriaSeleccionada) {
+        const subcategoriaId = parseInt(categoriaSeleccionada, 10);
+        const serieId = serieSeleccionada ? parseInt(serieSeleccionada, 10) : undefined;
+        fetchEquiposBySubcategoria(subcategoriaId, serieId);
+      } else {
+        fetchEquipos();
+      }
+    } catch (error) {
+      console.error('Error al eliminar el equipo:', error);
+      setSnackbar({
+        open: true,
+        message: 'Error al eliminar el equipo',
+        severity: 'error',
+      });
+    } finally {
+      setIsDeleting(false);
+      setTeamToDelete(null);
+    }
   };
 
   // Handle search
@@ -624,6 +672,7 @@ const Teams = () => {
                           <Tooltip title="Editar">
                             <IconButton 
                               size="small" 
+                              onClick={() => setEditingTeam(team)}
                               sx={{
                                 color: 'primary.main',
                                 '&:hover': {
@@ -638,15 +687,20 @@ const Teams = () => {
                           <Tooltip title="Eliminar">
                             <IconButton 
                               size="small" 
+                              onClick={() => handleDeleteClick(team)}
+                              disabled={isDeleting}
                               sx={{
                                 color: 'accent1.main',
                                 '&:hover': {
                                   bgcolor: 'accent1.light',
                                   color: 'white'
+                                },
+                                '&:disabled': {
+                                  opacity: 0.5,
                                 }
                               }}
                             >
-                              <DeleteIcon fontSize="small" />
+                              {isDeleting ? <CircularProgress size={20} /> : <DeleteIcon fontSize="small" />}
                             </IconButton>
                           </Tooltip>
                         </TableCell>
@@ -676,6 +730,60 @@ const Teams = () => {
           }
         />
       </Paper>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!teamToDelete}
+        onClose={() => !isDeleting && setTeamToDelete(null)}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">
+          Confirmar eliminación
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            ¿Estás seguro de que deseas eliminar el equipo "{teamToDelete?.nombre || teamToDelete?.name || 'este equipo'}"?
+            Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setTeamToDelete(null)} 
+            disabled={isDeleting}
+            color="primary"
+          >
+            Cancelar
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            disabled={isDeleting}
+            color="error"
+            autoFocus
+            startIcon={isDeleting ? <CircularProgress size={20} color="inherit" /> : null}
+          >
+            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Edit Team Dialog */}
+      {editingTeam && (
+        <EditTeam
+          open={!!editingTeam}
+          onClose={() => setEditingTeam(null)}
+          onSuccess={() => {
+            setSnackbar({
+              open: true,
+              message: 'Equipo actualizado correctamente',
+              severity: 'success',
+            });
+            setEditingTeam(null);
+            fetchEquipos(); // Refresh the team list
+          }}
+          teamId={editingTeam.equipoId}
+        />
+      )}
     </React.Fragment>
   );
 };
