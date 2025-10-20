@@ -126,11 +126,18 @@ const teamService = {
     }
   },
 
-  async getTeamsBySubcategoria(token: string, subcategoriaId: number) {
+  async getTeamsBySubcategoria(token: string, subcategoriaId: number, serieId?: number) {
+    const params: any = {};
+    if (serieId) {
+      params.serieId = serieId;
+    }
+    
     const response = await axios.get(`${API_URL}/subcategoria/${subcategoriaId}`, {
       headers: {
-        'Authorization': `Bearer ${token}`
-      }
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      params
     });
     return response.data;
   },

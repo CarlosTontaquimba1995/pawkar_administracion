@@ -40,6 +40,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import teamService from '../../api/teamService';
 import subcategoriaService from '../../api/subcategoriaService';
+import serieService from '../../api/serieService';
 import RegisterTeam from './RegisterTeam';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -94,6 +95,9 @@ const Teams = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [categorias, setCategorias] = useState<Subcategoria[]>([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] = useState<string>('');
+  const [series, setSeries] = useState<Array<{ serieId: number; nombre: string }>>([]);
+  const [serieSeleccionada, setSerieSeleccionada] = useState<string>('');
+  const [isLoadingSeries, setIsLoadingSeries] = useState(false);
   const [teams, setTeams] = useState<Equipo[]>([]);
   const [filteredTeams, setFilteredTeams] = useState<Equipo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -117,6 +121,28 @@ const Teams = () => {
     setPage(0);
   };
 
+  // Fetch series when a subcategory is selected
+  const fetchSeries = useCallback(async (subcategoriaId: number) => {
+    if (!token) return;
+    
+    setIsLoadingSeries(true);
+    setSerieSeleccionada('');
+    
+    try {
+      const seriesData = await serieService.getSeriesBySubcategoria(token, subcategoriaId);
+      const formattedSeries = seriesData.map((serie: any) => ({
+        serieId: serie.serieId,
+        nombre: serie.nombreSerie || serie.nombre || ''
+      }));
+      setSeries(formattedSeries);
+    } catch (error) {
+      console.error('Error al cargar las series:', error);
+      setSeries([]);
+    } finally {
+      setIsLoadingSeries(false);
+    }
+  }, [token]);
+
   // Fetch categories on component mount
   useEffect(() => {
     if (!token) {
@@ -129,7 +155,6 @@ const Teams = () => {
       try {
         const response = await subcategoriaService.getCategories(token);
         if (response.success) {
-          // The API returns the subcategories in response.data
           setCategorias(response.data || []);
         }
       } catch (error) {
@@ -218,14 +243,14 @@ const Teams = () => {
     }
   }, [token, page, rowsPerPage]);
 
-  // Fetch teams by subcategory
-  const fetchEquiposBySubcategoria = useCallback(async (subcategoriaId: number) => {
+  // Fetch teams by subcategory and optional serie
+  const fetchEquiposBySubcategoria = useCallback(async (subcategoriaId: number, serieId?: number) => {
     if (!token) return;
     
     setIsLoading(true);
     setError(null);
     try {
-      const response = await teamService.getTeamsBySubcategoria(token, subcategoriaId);
+      const response = await teamService.getTeamsBySubcategoria(token, subcategoriaId, serieId);
       
       if (response.success) {
         const teamsData = Array.isArray(response.data) ? response.data : [];
@@ -281,20 +306,42 @@ const Teams = () => {
   // Handle subcategory filter change
   useEffect(() => {
     if (categoriaSeleccionada) {
-      fetchEquiposBySubcategoria(parseInt(categoriaSeleccionada, 10));
+      const subcategoriaId = parseInt(categoriaSeleccionada, 10);
+      const serieId = serieSeleccionada ? parseInt(serieSeleccionada, 10) : undefined;
+      fetchEquiposBySubcategoria(subcategoriaId, serieId);
     } else {
       // If no category is selected, show all teams
       fetchEquipos();
     }
     // Reset search term when changing categories
     setSearchTerm('');
-  }, [categoriaSeleccionada, fetchEquipos, fetchEquiposBySubcategoria]);
+  }, [categoriaSeleccionada, serieSeleccionada, fetchEquipos, fetchEquiposBySubcategoria]);
 
   // Handle category change
   const handleCategoriaChange = (event: SelectChangeEvent<string>) => {
-    setCategoriaSeleccionada(event.target.value);
-    setPage(0); // Reset to first page
-    // The fetchEquipos will be triggered by the useEffect due to categoriaSeleccionada change
+    const value = event.target.value;
+    setCategoriaSeleccionada(value);
+    setSerieSeleccionada('');
+    setPage(0);
+    
+    if (value) {
+      const subcategoriaId = parseInt(value, 10);
+      fetchSeries(subcategoriaId);
+    } else {
+      setSeries([]);
+    }
+  };
+  
+  // Handle series change
+  const handleSerieChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
+    setSerieSeleccionada(value);
+    
+    if (categoriaSeleccionada) {
+      const subcategoriaId = parseInt(categoriaSeleccionada, 10);
+      const serieId = value ? parseInt(value, 10) : undefined;
+      fetchEquiposBySubcategoria(subcategoriaId, serieId);
+    }
   };
 
   const handleCloseSnackbar = () => {
@@ -407,7 +454,7 @@ const Teams = () => {
                 },
               }}
             />
-            <FormControl size="small" sx={{ minWidth: 250 }} variant="outlined">
+            <FormControl size="small" sx={{ minWidth: 200 }} variant="outlined">
               <InputLabel id="categoria-label">Categoría</InputLabel>
               <Select
                 labelId="categoria-label"
@@ -420,22 +467,63 @@ const Teams = () => {
                     padding: '8.5px 14px',
                   },
                 }}
-                renderValue={(selected) => {
-                  if (!selected) return <span>Seleccionar categoría</span>;
-                  const selectedCat = categorias.find(cat => cat.subcategoriaId.toString() === selected);
-                  return selectedCat?.nombre || 'Seleccionar categoría';
-                }}
               >
+                <MenuItem value="">
+                  <em>Todas las categorías</em>
+                </MenuItem>
                 {categorias.map((categoria) => (
                   <MenuItem 
-                    key={`cat-${categoria.subcategoriaId}-${categoria.nombre.replace(/\s+/g, '-').toLowerCase()}`} 
+                    key={`cat-${categoria.subcategoriaId}`} 
                     value={categoria.subcategoriaId.toString()}
                   >
                     {categoria.nombre}
                   </MenuItem>
                 ))}
               </Select>
-              </FormControl>
+            </FormControl>
+
+            <FormControl 
+              size="small" 
+              sx={{ minWidth: 200 }} 
+              disabled={!categoriaSeleccionada || isLoadingSeries}
+            >
+              <InputLabel id="serie-label">Serie</InputLabel>
+              <Select
+                labelId="serie-label"
+                id="serie-select"
+                value={serieSeleccionada}
+                label="Serie"
+                onChange={handleSerieChange}
+                sx={{
+                  '& .MuiSelect-select': {
+                    padding: '8.5px 14px',
+                  },
+                }}
+              >
+                <MenuItem value="">
+                  <em>Todas las series</em>
+                </MenuItem>
+                {series.map((serie) => (
+                  <MenuItem 
+                    key={`serie-${serie.serieId}`}
+                    value={serie.serieId.toString()}
+                  >
+                    {serie.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+              {isLoadingSeries && (
+                <CircularProgress 
+                  size={24} 
+                  sx={{
+                    position: 'absolute',
+                    right: '30px',
+                    top: '50%',
+                    marginTop: '-12px',
+                  }} 
+                />
+              )}
+            </FormControl>
             </Box>
           </Box>
 
