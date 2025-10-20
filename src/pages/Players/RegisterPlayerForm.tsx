@@ -97,7 +97,8 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   const [series, setSeries] = useState<Serie[]>([]);
   const [selectedSerie, setSelectedSerie] = useState<number>();
   const [teams, setTeams] = useState<Array<{equipoId: number, nombre: string}>>([]);
-  const [roles, setRoles] = useState<Rol[]>([]);
+  const [allRoles, setAllRoles] = useState<Rol[]>([]); // Store all available roles
+  const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]); // Track selected role IDs
   
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -136,7 +137,9 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       if (selectedSubcategoria) {
         try {
           const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(selectedSubcategoria, token);
-          setRoles(rolesData);
+          setAllRoles(rolesData);
+          // Reset selected roles when subcategoria changes
+          setSelectedRoleIds(players.map(p => p.rolId).filter(Boolean) as number[]);
         } catch (error) {
           console.error('Error fetching roles:', error);
           setSnackbar({
@@ -146,28 +149,13 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
           });
         }
       } else {
-        setRoles([]);
+        setAllRoles([]);
       }
     };
 
     fetchRoles();
   }, [selectedSubcategoria, token]);
 
-  // Update available roles when a player is removed
-  const updateAvailableRoles = async (subcategoriaId: number, currentPlayers: PlayerFormData[]) => {
-    try {
-      const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(subcategoriaId, token);
-      const assignedRoleIds = currentPlayers
-        .map(p => p.rolId)
-        .filter((id): id is number => id !== undefined);
-      
-      // Filter out already assigned roles
-      const availableRoles = rolesData.filter(role => !assignedRoleIds.includes(role.id));
-      setRoles(availableRoles);
-    } catch (error) {
-      console.error('Error updating available roles:', error);
-    }
-  };
 
   // Fetch series when subcategoria is selected
   useEffect(() => {
@@ -237,7 +225,8 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     if (value) {
       try {
         const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(value, token);
-        setRoles(rolesData);
+        setAllRoles(rolesData);
+        setSelectedRoleIds([]); // Reset selected roles when subcategoria changes
       } catch (error) {
         console.error('Error fetching roles:', error);
         setSnackbar({
@@ -267,15 +256,17 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     }]);
   };
 
-  const handleRemovePlayer = async (index: number) => {
+  const handleRemovePlayer = (index: number) => {
+    const removedPlayer = players[index];
     const newPlayers = [...players];
     newPlayers.splice(index, 1);
-    setPlayers(newPlayers);
     
-    // Update available roles when a player is removed
-    if (selectedSubcategoria) {
-      await updateAvailableRoles(selectedSubcategoria, newPlayers);
+    // Remove the role from selected roles if it exists
+    if (removedPlayer.rolId) {
+      setSelectedRoleIds(prev => prev.filter(id => id !== removedPlayer.rolId));
     }
+    
+    setPlayers(newPlayers);
   };
 
   const handlePlayerChange = (index: number, field: keyof PlayerFormData, value: any) => {
@@ -301,12 +292,32 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
 
   const handleRoleChange = (index: number, event: SelectChangeEvent<number>) => {
     const value = event.target.value as number;
-    const selectedRole = roles.find(role => role.id === value);
+    const selectedRole = allRoles.find(role => role.id === value);
     
+    // Update selected roles
+    const newSelectedRoleIds = [...selectedRoleIds];
+    const previousRoleId = players[index].rolId;
+    
+    // Remove previous role from selected if it exists
+    if (previousRoleId) {
+      const prevIndex = newSelectedRoleIds.indexOf(previousRoleId);
+      if (prevIndex > -1) {
+        newSelectedRoleIds.splice(prevIndex, 1);
+      }
+    }
+    
+    // Add new role to selected if it's not the empty value
+    if (value) {
+      newSelectedRoleIds.push(value);
+    }
+    
+    setSelectedRoleIds(newSelectedRoleIds);
+    
+    // Update players
     const newPlayers = [...players];
     newPlayers[index] = {
       ...newPlayers[index],
-      rolId: value,
+      rolId: value || undefined,
       rolName: selectedRole?.detail || ''
     };
     setPlayers(newPlayers);
@@ -396,7 +407,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         setSelectedSubcategoria(undefined);
         setSelectedSerie(undefined);
         setTeams([]);
-        setRoles([]);
+        setAllRoles([]);
         
         onSuccess();
         setTimeout(() => onClose(), 1000);
@@ -803,17 +814,19 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                           <MenuItem value="">
                             <em>Seleccione un rol</em>
                           </MenuItem>
-                          {roles.length > 0 ? (
-                            roles.map((role) => (
-                              <MenuItem 
-                                key={role.id} 
-                                value={role.id}
-                              >
-                                <Typography variant="body1">
-                                  {role.detail}
-                                </Typography>
-                              </MenuItem>
-                            ))
+                          {allRoles.length > 0 ? (
+                            allRoles
+                              .filter(role => !selectedRoleIds.includes(role.id) || players[index]?.rolId === role.id)
+                              .map((role) => (
+                                <MenuItem 
+                                  key={role.id} 
+                                  value={role.id}
+                                >
+                                  <Typography variant="body1">
+                                    {role.detail}
+                                  </Typography>
+                                </MenuItem>
+                              ))
                           ) : (
                             <MenuItem disabled>
                               <em>No hay roles disponibles para esta subcategoría</em>
