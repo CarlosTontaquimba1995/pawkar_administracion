@@ -28,7 +28,6 @@ import {
   CalendarToday as CalendarTodayIcon,
   Group as GroupIcon,
   FilterList as FilterListIcon,
-  SportsSoccer as SportsSoccerIcon,
   EmojiEvents as EmojiEventsIcon,
   Person as PersonIcon
 } from '@mui/icons-material';
@@ -47,17 +46,6 @@ interface Serie {
   subcategoriaId: number;
   subcategoriaNombre: string;
   nombreSerie: string;
-}
-
-interface Team {
-  equipoId: number;
-  nombre: string;
-  subcategoriaId: number;
-  subcategoriaNombre: string;
-  serieId: number;
-  serieNombre: string;
-  fundacion: string;
-  jugadoresCount: number;
 }
 
 interface Rol {
@@ -142,6 +130,45 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     }
   }, [open, token]);
 
+  // Fetch roles when subcategoria is selected
+  useEffect(() => {
+    const fetchRoles = async () => {
+      if (selectedSubcategoria) {
+        try {
+          const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(selectedSubcategoria, token);
+          setRoles(rolesData);
+        } catch (error) {
+          console.error('Error fetching roles:', error);
+          setSnackbar({
+            open: true,
+            message: 'Error al cargar los roles',
+            severity: 'error'
+          });
+        }
+      } else {
+        setRoles([]);
+      }
+    };
+
+    fetchRoles();
+  }, [selectedSubcategoria, token]);
+
+  // Update available roles when a player is removed
+  const updateAvailableRoles = async (subcategoriaId: number, currentPlayers: PlayerFormData[]) => {
+    try {
+      const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(subcategoriaId, token);
+      const assignedRoleIds = currentPlayers
+        .map(p => p.rolId)
+        .filter((id): id is number => id !== undefined);
+      
+      // Filter out already assigned roles
+      const availableRoles = rolesData.filter(role => !assignedRoleIds.includes(role.id));
+      setRoles(availableRoles);
+    } catch (error) {
+      console.error('Error updating available roles:', error);
+    }
+  };
+
   // Fetch series when subcategoria is selected
   useEffect(() => {
     const fetchSeries = async () => {
@@ -189,35 +216,6 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       fetchTeams();
     }
   }, [selectedSubcategoria, selectedSerie, token]);
-
-  // Fetch roles when subcategoria is selected
-  useEffect(() => {
-    const fetchRoles = async () => {
-      if (selectedSubcategoria) {
-        try {
-          const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(selectedSubcategoria, token);
-          // Filter out roles that are already assigned to other players
-          const assignedRoleIds = players
-            .map(p => p.rolId)
-            .filter((id): id is number => id !== undefined);
-          
-          const availableRoles = rolesData.filter(role => !assignedRoleIds.includes(role.id));
-          setRoles(availableRoles);
-        } catch (error) {
-          console.error('Error fetching roles:', error);
-          setSnackbar({
-            open: true,
-            message: 'Error al cargar los roles',
-            severity: 'error'
-          });
-        }
-      }
-    };
-
-    if (selectedSubcategoria) {
-      fetchRoles();
-    }
-  }, [selectedSubcategoria]);
 
   const handleSubcategoriaChange = async (event: SelectChangeEvent<number>) => {
     const value = event.target.value as number;
@@ -302,34 +300,16 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   };
 
   const handleRoleChange = (index: number, event: SelectChangeEvent<number>) => {
-    const newPlayers = [...players];
-    const selectedRoleId = Number(event.target.value);
-    const selectedRole = roles.find(role => role.id === selectedRoleId);
+    const value = event.target.value as number;
+    const selectedRole = roles.find(role => role.id === value);
     
-    if (selectedRole) {
-      newPlayers[index].rolId = selectedRole.id;
-      newPlayers[index].rolName = selectedRole.name;
-      setPlayers(newPlayers);
-      
-      // Update available roles by refetching them
-      if (selectedSubcategoria) {
-        updateAvailableRoles(selectedSubcategoria, newPlayers);
-      }
-    }
-  };
-
-  const updateAvailableRoles = async (subcategoriaId: number, currentPlayers: PlayerFormData[]) => {
-    try {
-      const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(subcategoriaId, token);
-      const assignedRoleIds = currentPlayers
-        .map(p => p.rolId)
-        .filter((id): id is number => id !== undefined);
-      
-      const availableRoles = rolesData.filter(role => !assignedRoleIds.includes(role.id));
-      setRoles(availableRoles);
-    } catch (error) {
-      console.error('Error updating available roles:', error);
-    }
+    const newPlayers = [...players];
+    newPlayers[index] = {
+      ...newPlayers[index],
+      rolId: value,
+      rolName: selectedRole?.detail || ''
+    };
+    setPlayers(newPlayers);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -812,31 +792,31 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                           value={player.rolId || ''}
                           onChange={(e) => handleRoleChange(index, e)}
                           label="Rol"
-                          disabled={!selectedSubcategoria}
+                          disabled={!selectedSubcategoria || isSubmitting}
+                          sx={{
+                            '& .MuiSelect-select': {
+                              py: 1.5,
+                              whiteSpace: 'normal'
+                            }
+                          }}
                         >
                           <MenuItem value="">
                             <em>Seleccione un rol</em>
                           </MenuItem>
-                          {!selectedSubcategoria ? (
-                            <MenuItem disabled>
-                              <Typography variant="body2" color="text.secondary">
-                                Seleccione una subcategoría primero
-                              </Typography>
-                            </MenuItem>
-                          ) : roles.length > 0 ? (
-                            roles.map((rol) => (
-                              <MenuItem key={rol.id} value={rol.id}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                  <SportsSoccerIcon fontSize="small" />
-                                  <Typography variant="body2">
-                                    {rol.detail || rol.name}
-                                  </Typography>
-                                </Box>
+                          {roles.length > 0 ? (
+                            roles.map((role) => (
+                              <MenuItem 
+                                key={role.id} 
+                                value={role.id}
+                              >
+                                <Typography variant="body1">
+                                  {role.detail}
+                                </Typography>
                               </MenuItem>
                             ))
                           ) : (
                             <MenuItem disabled>
-                              No hay roles disponibles para esta subcategoría
+                              <em>No hay roles disponibles para esta subcategoría</em>
                             </MenuItem>
                           )}
                         </Select>
