@@ -9,6 +9,12 @@ export interface Player {
   fechaNacimiento: string;
   documentoIdentidad: string;
   estado: string;
+  nombreEquipo?: string;
+  nombreRol?: string;
+  rolDetail?: string;
+  rolId?: number;
+  subcategoriaId?: number;
+  numeroCamiseta?: number;
 }
 
 export interface PlayerData {

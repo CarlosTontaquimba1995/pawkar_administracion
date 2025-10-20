@@ -32,7 +32,13 @@ const EditPlayer: React.FC<EditPlayerProps> = ({ open, onClose, onSuccess, playe
     apellido: '',
     fechaNacimiento: '',
     documentoIdentidad: '',
-    estado: 'ACTIVO'
+    estado: 'ACTIVO',
+    nombreEquipo: '',
+    nombreRol: '',
+    rolDetail: '',
+    rolId: undefined,
+    subcategoriaId: undefined,
+    numeroCamiseta: undefined
   });
   
   const [loading, setLoading] = useState(false);
@@ -70,16 +76,19 @@ const EditPlayer: React.FC<EditPlayerProps> = ({ open, onClose, onSuccess, playe
     }
   }, [token, playerId, open]);
 
-  const handlePlayerChange = (field: string, value: string) => {
+  const handlePlayerChange = <K extends keyof Player>(
+    field: K,
+    value: Player[K] | string | number | undefined
+  ) => {
     // If the field is documentoIdentidad, only allow numbers
-    if (field === 'documentoIdentidad' && value !== '' && !/^\d*$/.test(value)) {
+    if (field === 'documentoIdentidad' && typeof value === 'string' && value !== '' && !/^\d*$/.test(value)) {
       return; // Don't update if the value contains non-numeric characters
     }
     
     setPlayer(prev => ({
       ...prev,
       [field]: value
-    }));
+    } as Player));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -111,7 +120,11 @@ const EditPlayer: React.FC<EditPlayerProps> = ({ open, onClose, onSuccess, playe
         nombre: player.nombre,
         apellido: player.apellido,
         fechaNacimiento: player.fechaNacimiento,
-        documentoIdentidad: player.documentoIdentidad
+        documentoIdentidad: player.documentoIdentidad,
+        equipoId: player.nombreEquipo ? parseInt(player.nombreEquipo) : undefined,
+        numeroCamiseta: player.numeroCamiseta,
+        rolId: player.rolId,
+        jugadorId: player.id
       };
       
       await playerService.updatePlayer(token, playerId, playerData);
@@ -186,46 +199,61 @@ const EditPlayer: React.FC<EditPlayerProps> = ({ open, onClose, onSuccess, playe
         <DialogContent>
           <form onSubmit={handleSubmit}>
             <Box display="grid" gap={2} mb={2}>
-              <TextField
-                fullWidth
-                label="Nombres"
-                value={player.nombre}
-                onChange={(e) => handlePlayerChange('nombre', e.target.value)}
-                required
-                margin="normal"
-                size="small"
-                disabled={loading}
-                sx={{ mt: 0 }}
-              />
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
+                <TextField
+                  fullWidth
+                  label="Nombres"
+                  value={player.nombre}
+                  onChange={(e) => handlePlayerChange('nombre', e.target.value)}
+                  required
+                  margin="normal"
+                  size="small"
+                  disabled={loading}
+                  sx={{ mt: 0 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Apellidos"
+                  value={player.apellido}
+                  onChange={(e) => handlePlayerChange('apellido', e.target.value)}
+                  required
+                  margin="normal"
+                  size="small"
+                  disabled={loading}
+                  sx={{ mt: 0 }}
+                />
+              </Box>
               
-              <TextField
-                fullWidth
-                label="Apellidos"
-                value={player.apellido}
-                onChange={(e) => handlePlayerChange('apellido', e.target.value)}
-                required
-                margin="normal"
-                size="small"
-                disabled={loading}
-                sx={{ mt: 0 }}
-              />
-              
-              <TextField
-                fullWidth
-                label="Documento de Identidad"
-                value={player.documentoIdentidad}
-                onChange={(e) => handlePlayerChange('documentoIdentidad', e.target.value)}
-                required
-                margin="normal"
-                size="small"
-                disabled={loading}
-                inputProps={{ 
-                  inputMode: 'numeric', 
-                  pattern: '[0-9]*',
-                  title: 'Solo se permiten números'
-                }}
-                sx={{ mt: 0 }}
-              />
+              <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2}>
+                <TextField
+                  fullWidth
+                  label="Documento de Identidad"
+                  value={player.documentoIdentidad}
+                  onChange={(e) => handlePlayerChange('documentoIdentidad', e.target.value)}
+                  required
+                  margin="normal"
+                  size="small"
+                  disabled={loading}
+                  inputProps={{ 
+                    inputMode: 'numeric', 
+                    pattern: '[0-9]*',
+                    title: 'Solo se permiten números'
+                  }}
+                  sx={{ mt: 0 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Número de Camiseta"
+                  type="number"
+                  value={player.numeroCamiseta || ''}
+                  onChange={(e) => handlePlayerChange('numeroCamiseta', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                  margin="normal"
+                  size="small"
+                  inputProps={{ min: 1, max: 99 }}
+                  disabled={loading}
+                  sx={{ mt: 0 }}
+                />
+              </Box>
               
               <TextField
                 fullWidth
@@ -248,6 +276,58 @@ const EditPlayer: React.FC<EditPlayerProps> = ({ open, onClose, onSuccess, playe
                   ),
                 }}
                 sx={{ mt: 0 }}
+              />
+
+              <TextField
+                fullWidth
+                label="Equipo"
+                value={player.nombreEquipo || 'No asignado'}
+                margin="normal"
+                size="small"
+                disabled={true}
+                sx={{
+                  mt: 0,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.23)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                      borderWidth: '1px'
+                    }
+                  },
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                    cursor: 'not-allowed'
+                  }
+                }}
+              />
+              
+              <TextField
+                fullWidth
+                label="Detalle del Rol"
+                value={player.rolDetail}
+                margin="normal"
+                size="small"
+                disabled={true}
+                sx={{
+                  mt: 0,
+                  '& .MuiOutlinedInput-root': {
+                    backgroundColor: 'rgba(0, 0, 0, 0.04)',
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.23)'
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: 'rgba(0, 0, 0, 0.23)',
+                      borderWidth: '1px'
+                    }
+                  },
+                  '& .MuiInputBase-input.Mui-disabled': {
+                    WebkitTextFillColor: 'rgba(0, 0, 0, 0.87)',
+                    cursor: 'not-allowed'
+                  }
+                }}
               />
             </Box>
 
