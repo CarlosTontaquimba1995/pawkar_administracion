@@ -12,10 +12,21 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider
+  Divider,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper
 } from '@mui/material';
-import { Close as CloseIcon, CalendarToday as CalendarTodayIcon } from '@mui/icons-material';
-import { Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { 
+  Close as CloseIcon, 
+  CalendarToday as CalendarTodayIcon,
+  Add as AddIcon,
+  EmojiEvents as EmojiEventsIcon,
+  FilterList as FilterListIcon,
+  Group as GroupIcon
+} from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import teamService from '../../api/teamService';
 import serieService, { Serie } from '../../api/serieService';
@@ -227,11 +238,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({ open, onClose, onSuccess })
     <>
       <Dialog 
         open={open} 
-        onClose={() => {
-          onClose();
-          // Reset form when dialog is closed
-          setTeams([{ subcategoriaId: subcategorias[0]?.subcategoriaId || 0, serieId: 3, nombre: '', fundacion: '' }]);
-        }}
+        onClose={onClose}
         maxWidth="md"
         fullWidth
         PaperProps={{
@@ -242,7 +249,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({ open, onClose, onSuccess })
       >
         <DialogTitle>
           <Box display="flex" justifyContent="space-between" alignItems="center">
-            <Typography variant="h6">Inscribir Equipos</Typography>
+            <Typography variant="h6">Inscripción de Equipos</Typography>
             <IconButton onClick={onClose} size="small">
               <CloseIcon />
             </IconButton>
@@ -250,75 +257,39 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({ open, onClose, onSuccess })
         </DialogTitle>
         <Divider />
         <DialogContent>
-        
-        <form onSubmit={handleSubmit}>
-          {teams.map((team, index) => (
-            <Box key={index} sx={{ mb: 3, p: 2, border: '1px solid #ddd', borderRadius: 1, position: 'relative' }}>
-              {teams.length > 1 && (
-                <IconButton
-                  className="delete-button"
-                  size="small"
-                  onClick={() => handleRemoveTeam(index)}
-                  sx={{ 
-                    position: 'absolute', 
-                    right: 0, 
-                    top: 0,
-                    color: 'error.main',
-                    backgroundColor: 'background.paper',
-                    border: `1px solid #ddd`,
-                    borderBottomLeftRadius: 4,
-                    opacity: 0.7,
-                    transition: 'all 0.2s ease',
-                    zIndex: 1,
-                    '&:hover': {
-                      backgroundColor: 'error.light',
-                      color: 'error.contrastText',
-                      opacity: 1
-                    }
-                  }}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              )}
+          <form onSubmit={handleSubmit}>
+            {/* Team Information */}
+            <Box sx={{ mb: 3, p: 2, border: '1px solid #ddd', borderRadius: 2, position: 'relative' }}>
+              <Box 
+                display="flex" 
+                alignItems="center" 
+                color="primary.main"
+                mb={2}
+              >
+                <EmojiEventsIcon sx={{ mr: 1 }} />
+                <Typography variant="subtitle1" fontWeight="medium">
+                  Información del Torneo
+                </Typography>
+              </Box>
               
               <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2} mb={2}>
-                <TextField
-                  fullWidth
-                  label="Nombre del Equipo"
-                  value={team.nombre}
-                  onChange={(e) => handleTeamChange(index, 'nombre', e.target.value)}
-                  required
-                  margin="normal"
-                  size="small"
-                />
-                <TextField
-                  fullWidth
-                  label="Fecha de Fundación"
-                  type="date"
-                  value={team.fundacion}
-                  onChange={(e) => handleTeamChange(index, 'fundacion', e.target.value)}
-                  required
-                  margin="normal"
-                  size="small"
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    endAdornment: (
-                      <IconButton size="small" edge="end" disabled>
-                        <CalendarTodayIcon fontSize="small" />
-                      </IconButton>
-                    ),
-                  }}
-                />
-                <FormControl fullWidth margin="normal" size="small" required>
-                  <InputLabel id={`subcategoria-label-${index}`}>Subcategoría</InputLabel>
+                <FormControl fullWidth size="small" required>
+                  <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
                   <Select
-                    labelId={`subcategoria-label-${index}`}
-                    value={team.subcategoriaId || ''}
-                    onChange={(e) => handleTeamChange(index, 'subcategoriaId', Number(e.target.value))}
+                    labelId="subcategoria-label"
+                    value={teams[0]?.subcategoriaId || ''}
+                    onChange={(e) => handleTeamChange(0, 'subcategoriaId', Number(e.target.value))}
                     label="Subcategoría"
                     disabled={loadingSubcategorias}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiSelect-select': {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        py: 1.5
+                      }
+                    }}
                   >
                     {loadingSubcategorias ? (
                       <MenuItem value="">
@@ -326,7 +297,12 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({ open, onClose, onSuccess })
                       </MenuItem>
                     ) : subcategorias.length > 0 ? (
                       subcategorias.map((sub) => (
-                        <MenuItem key={sub.subcategoriaId} value={sub.subcategoriaId}>
+                        <MenuItem 
+                          key={sub.subcategoriaId} 
+                          value={sub.subcategoriaId}
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <FilterListIcon fontSize="small" />
                           {sub.nombre}
                         </MenuItem>
                       ))
@@ -342,71 +318,223 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({ open, onClose, onSuccess })
                     </Typography>
                   )}
                 </FormControl>
-                <FormControl fullWidth margin="normal" size="small" required>
-                  <InputLabel id={`serie-label-${index}`}>Serie</InputLabel>
+                
+                <FormControl fullWidth size="small" required>
+                  <InputLabel id="serie-label">Serie</InputLabel>
                   <Select
-                    labelId={`serie-label-${index}`}
-                    value={team.serieId || ''}
-                    onChange={(e) => handleTeamChange(index, 'serieId', Number(e.target.value))}
+                    labelId="serie-label"
+                    value={teams[0]?.serieId || ''}
+                    onChange={(e) => handleTeamChange(0, 'serieId', Number(e.target.value))}
                     label="Serie"
-                    disabled={loadingSeries[team.subcategoriaId] || !team.subcategoriaId}
+                    disabled={loadingSeries[teams[0]?.subcategoriaId] || !teams[0]?.subcategoriaId}
+                    variant="outlined"
+                    sx={{
+                      '& .MuiSelect-select': {
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 1,
+                        py: 1.5
+                      }
+                    }}
                   >
-                    {loadingSeries[team.subcategoriaId] ? (
+                    {loadingSeries[teams[0]?.subcategoriaId] ? (
                       <MenuItem value="">
                         <CircularProgress size={24} />
                       </MenuItem>
-                    ) : series[team.subcategoriaId]?.length > 0 ? (
-                      series[team.subcategoriaId].map((serie) => (
-                        <MenuItem key={serie.serieId} value={serie.serieId}>
+                    ) : series[teams[0]?.subcategoriaId]?.length > 0 ? (
+                      series[teams[0]?.subcategoriaId].map((serie) => (
+                        <MenuItem 
+                          key={serie.serieId} 
+                          value={serie.serieId}
+                          sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                        >
+                          <FilterListIcon fontSize="small" />
                           {serie.nombreSerie}
                         </MenuItem>
                       ))
                     ) : (
                       <MenuItem value="" disabled>
-                        {team.subcategoriaId ? 'No hay series disponibles' : 'Seleccione una subcategoría'}
+                        {teams[0]?.subcategoriaId ? 'No hay series disponibles' : 'Seleccione una subcategoría'}
                       </MenuItem>
                     )}
                   </Select>
                 </FormControl>
               </Box>
             </Box>
-          ))}
+            
+            <Box sx={{ mt: 3, mb: 2 }}>
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={handleAddTeam}
+                disabled={loading || !teams[0]?.subcategoriaId || !teams[0]?.serieId}
+                size="small"
+                sx={{ 
+                  textTransform: 'none',
+                  borderRadius: 2,
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: 1
+                  }
+                }}
+              >
+                Agregar Equipo
+              </Button>
+            </Box>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 2, mb: 3 }}>
-            <Button
-              variant="outlined"
-              onClick={handleAddTeam}
-              disabled={loading}
-            >
-              Agregar Otro Equipo
-            </Button>
-          </Box>
-        </form>
-      </DialogContent>
-      <Divider />
-      <DialogActions sx={{ px: 3, pb: 3 }}>
-        <Button onClick={onClose} disabled={loading}>
-          Cancelar
-        </Button>
-        <Button 
-          variant="contained" 
-          color="primary"
-          onClick={handleSubmit}
-          disabled={loading}
-          startIcon={loading ? <CircularProgress size={20} /> : null}
-        >
-          {loading ? 'Registrando...' : 'Registrar Equipos'}
-        </Button>
-      </DialogActions>
-    </Dialog>
-
+            {teams.map((team, index) => (
+              <Box 
+                key={index}
+                sx={{
+                  position: 'relative',
+                  mb: 3,
+                  '&:hover .delete-button': {
+                    opacity: 1,
+                    visibility: 'visible',
+                    transform: 'translate(4px, -4px)'
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <Paper 
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    position: 'relative',
+                    overflow: 'visible',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+                    }
+                  }}
+                >
+                  {teams.length > 1 && (
+                    <IconButton
+                      className="delete-button"
+                      size="small"
+                      onClick={() => handleRemoveTeam(index)}
+                      sx={{
+                        position: 'absolute',
+                        right: -12,
+                        top: -12,
+                        color: 'white',
+                        backgroundColor: 'error.main',
+                        opacity: 0,
+                        visibility: 'hidden',
+                        transition: 'all 0.2s ease',
+                        zIndex: 1,
+                        '&:hover': {
+                          backgroundColor: 'error.dark',
+                          transform: 'scale(1.1)'
+                        }
+                      }}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  )}
+                  
+                  <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2} mb={2}>
+                    <TextField
+                      label="Nombre del Equipo"
+                      value={team.nombre}
+                      onChange={(e) => handleTeamChange(index, 'nombre', e.target.value)}
+                      fullWidth
+                      required
+                      size="small"
+                      variant="outlined"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          '&:hover fieldset': {
+                            borderColor: 'primary.light',
+                          },
+                        },
+                      }}
+                    />
+                    <TextField
+                      label="Fecha de Fundación"
+                      type="date"
+                      value={team.fundacion}
+                      onChange={(e) => handleTeamChange(index, 'fundacion', e.target.value)}
+                      fullWidth
+                      required
+                      size="small"
+                      variant="outlined"
+                      InputLabelProps={{
+                        shrink: true,
+                      }}
+                      InputProps={{
+                        endAdornment: <CalendarTodayIcon fontSize="small" color="action" />,
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          borderRadius: 2,
+                          '&:hover fieldset': {
+                            borderColor: 'primary.light',
+                          },
+                        },
+                      }}
+                    />
+                  </Box>
+                </Paper>
+              </Box>
+            ))}
+            
+            <DialogActions sx={{ px: 0, py: 2, mt: 2 }}>
+              <Button 
+                onClick={onClose} 
+                disabled={loading}
+                variant="outlined"
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: 1
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                variant="contained" 
+                color="primary"
+                type="submit"
+                disabled={loading || teams.length === 0}
+                startIcon={loading ? <CircularProgress size={20} /> : <GroupIcon />}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: 2
+                  },
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {loading ? 'Registrando...' : 'Registrar Equipos'}
+              </Button>
+            </DialogActions>
+          </form>
+        </DialogContent>
+      </Dialog>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert 
+          onClose={handleCloseSnackbar} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
