@@ -11,6 +11,17 @@ interface Team {
   // Add other team properties as needed
 }
 
+interface TeamCountResponse {
+  success: boolean;
+  message: string;
+  data: {
+    totalEquipos: number;
+    equiposActivos: number;
+    equiposInactivos: number;
+  };
+  timestamp: string;
+}
+
 interface PlayerCountResponse {
   success: boolean;
   message: string;
@@ -178,6 +189,25 @@ const teamService = {
     }
     
     throw new Error('Error al obtener el total de jugadores');
+  },
+
+  async getTeamsCount(token: string): Promise<{ total: number; active: number; inactive: number }> {
+    const response = await axios.get<TeamCountResponse>('http://localhost:8080/api/equipos/count', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data?.success) {
+      return {
+        total: response.data.data.totalEquipos,
+        active: response.data.data.equiposActivos,
+        inactive: response.data.data.equiposInactivos
+      };
+    }
+    
+    throw new Error('Error al obtener el total de equipos');
   }
 };
 

@@ -65,31 +65,51 @@ const Dashboard = () => {
   const theme = useTheme();
   const { token } = useAuth();
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [teamsCount, setTeamsCount] = useState<{ total: number; active: number; inactive: number } | null>(null);
+  const [loading, setLoading] = useState({
+    players: true,
+    teams: true
+  });
+  const [error, setError] = useState({
+    players: null as string | null,
+    teams: null as string | null
+  });
 
   useEffect(() => {
-    const fetchPlayerCount = async () => {
+    const fetchData = async () => {
       if (!token) return;
       
+      // Fetch player count
       try {
-        setLoading(true);
+        setLoading(prev => ({ ...prev, players: true }));
         const count = await teamService.getTotalPlayers(token);
         setTotalPlayers(count);
       } catch (err) {
         console.error('Error fetching player count:', err);
-        setError('Error al cargar el total de jugadores');
+        setError(prev => ({ ...prev, players: 'Error al cargar el total de jugadores' }));
       } finally {
-        setLoading(false);
+        setLoading(prev => ({ ...prev, players: false }));
+      }
+
+      // Fetch teams count
+      try {
+        setLoading(prev => ({ ...prev, teams: true }));
+        const teamsData = await teamService.getTeamsCount(token);
+        setTeamsCount(teamsData);
+      } catch (err) {
+        console.error('Error fetching teams count:', err);
+        setError(prev => ({ ...prev, teams: 'Error al cargar el total de equipos' }));
+      } finally {
+        setLoading(prev => ({ ...prev, teams: false }));
       }
     };
 
-    fetchPlayerCount();
+    fetchData();
   }, [token]);
 
   // Format number with thousands separator
-  const formatNumber = (num: number | null) => {
-    if (num === null) return '0';
+  const formatNumber = (num: number | null | undefined) => {
+    if (num === null || num === undefined) return '0';
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
@@ -108,9 +128,9 @@ const Dashboard = () => {
           <StatCard
             title="Jugadores Totales"
             value={
-              loading ? (
+              loading.players ? (
                 <CircularProgress size={24} color="inherit" />
-              ) : error ? (
+              ) : error.players ? (
                 <Typography variant="body2" color="error">
                   Error
                 </Typography>
@@ -124,8 +144,18 @@ const Dashboard = () => {
         </Box>
         <Box>
           <StatCard
-            title="Equipos"
-            value="48"
+            title="Equipos Activos"
+            value={
+              loading.teams ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : error.teams ? (
+                <Typography variant="body2" color="error">
+                  Error
+                </Typography>
+              ) : (
+                formatNumber(teamsCount?.active)
+              )
+            }
             icon={<GroupIcon />}
             color={theme.palette.secondary.main}
           />
