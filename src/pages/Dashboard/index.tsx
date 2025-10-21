@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Paper, Typography, useTheme } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, Paper, Typography, useTheme, CircularProgress } from '@mui/material';
 import {
   People as PeopleIcon,
   Group as GroupIcon,
@@ -8,6 +8,8 @@ import {
 } from '@mui/icons-material';
 import RecentActivities from './components/RecentActivities';
 import PerformanceChart from './components/PerformanceChart';
+import teamService from '../../api/teamService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const StatCard = ({
   title,
@@ -16,7 +18,7 @@ const StatCard = ({
   color,
 }: {
   title: string;
-  value: string | number;
+  value: React.ReactNode; // Allow React nodes for loading/error states
   icon: React.ReactNode;
   color: string;
 }) => {
@@ -61,6 +63,35 @@ const StatCard = ({
 
 const Dashboard = () => {
   const theme = useTheme();
+  const { token } = useAuth();
+  const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPlayerCount = async () => {
+      if (!token) return;
+      
+      try {
+        setLoading(true);
+        const count = await teamService.getTotalPlayers(token);
+        setTotalPlayers(count);
+      } catch (err) {
+        console.error('Error fetching player count:', err);
+        setError('Error al cargar el total de jugadores');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlayerCount();
+  }, [token]);
+
+  // Format number with thousands separator
+  const formatNumber = (num: number | null) => {
+    if (num === null) return '0';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
 
   return (
     <Box>
@@ -76,7 +107,17 @@ const Dashboard = () => {
         <Box>
           <StatCard
             title="Jugadores Totales"
-            value="1,245"
+            value={
+              loading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : error ? (
+                <Typography variant="body2" color="error">
+                  Error
+                </Typography>
+              ) : (
+                formatNumber(totalPlayers)
+              )
+            }
             icon={<PeopleIcon />}
             color={theme.palette.primary.main}
           />

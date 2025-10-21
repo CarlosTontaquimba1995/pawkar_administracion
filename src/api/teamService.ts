@@ -11,6 +11,15 @@ interface Team {
   // Add other team properties as needed
 }
 
+interface PlayerCountResponse {
+  success: boolean;
+  message: string;
+  data: {
+    totalJugadores: number;
+  };
+  timestamp: string;
+}
+
 const teamService = {
   async checkTeamsExist(token: string): Promise<boolean> {
     try {
@@ -148,15 +157,27 @@ const teamService = {
     nombre: string;
     fundacion: string;
   }>) {
-    return axios.post(`${API_URL}/bulk`, 
-      { equipos: teams },
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+    return axios.post(`${API_URL}/bulk`, teams, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
-    );
+    });
+  },
+
+  async getTotalPlayers(token: string): Promise<number> {
+    const response = await axios.get<PlayerCountResponse>('http://localhost:8080/api/jugadores/count', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (response.data?.success) {
+      return response.data.data.totalJugadores;
+    }
+    
+    throw new Error('Error al obtener el total de jugadores');
   }
 };
 
