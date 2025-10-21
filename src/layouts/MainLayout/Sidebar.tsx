@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'react-toastify';
+import { checkRequiredRegistrations } from '../../api/verificationService';
 import {
   Drawer,
   List,
@@ -23,7 +26,6 @@ import {
   ErrorOutline as ErrorIcon,
 } from '@mui/icons-material';
 import teamService from '../../api/teamService';
-import { useAuth } from '../../contexts/AuthContext';
 import { SnackbarState } from '../../types/snackbar';
 
 const drawerWidth = 260;
@@ -70,7 +72,8 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { token, logout } = useAuth();
-  const [teamsExist, setTeamsExist] = useState<boolean | null>(null);
+  const [hasRequiredData, setHasRequiredData] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
   const [snackbar, setSnackbar] = useState<SnackbarState>({
     open: false,
     message: '',
@@ -78,29 +81,44 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   });
 
   useEffect(() => {
-    const checkTeams = async () => {
+    const checkRequiredData = async () => {
       if (!token) return;
       
       try {
-        const exists = await teamService.checkTeamsExist(token);
-        setTeamsExist(exists);
+        const hasData = await checkRequiredRegistrations();
+        setHasRequiredData(hasData);
       } catch (error) {
-        console.error('Error checking teams:', error);
-        setTeamsExist(false);
+        console.error('Error verificando datos requeridos:', error);
+        setHasRequiredData(false);
+      } finally {
+        setLoading(false);
       }
     };
 
-    if (token) {
-      checkTeams();
-    }
+    checkRequiredData();
   }, [token]);
+
+  const handleNavigation = async (path: string) => {
+    if (path === '/logout') {
+      logout();
+      navigate('/login');
+      return;
+    }
+
+    // Check if trying to access Teams module
+    if (path === '/teams' && hasRequiredData === false) {
+      toast.error('Para acceder al módulo de Equipos, debe existir al menos una subcategoría y una serie registradas');
+      return;
+    }
+    
+    navigate(path);
+  };
 
   const handleNavigate = async (path: string) => {
     console.log('🚀 Navegando a:', path);
     
     // Manejar logout
     if (path === '/logout') {
-      console.log('👋 Cerrando sesión...');
       logout();
       navigate('/login');
       return;
@@ -167,48 +185,57 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       </LogoContainer>
       
       <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton
-              selected={location.pathname === item.path}
-              onClick={() => handleNavigate(item.path)}
-              sx={{
-                borderRadius: 2,
-                mx: 1,
-                '&.Mui-selected': {
-                  backgroundColor: 'primary.light',
-                  '&:hover': {
-                    backgroundColor: 'primary.light',
-                  },
-                },
-                '&:hover': {
-                  backgroundColor: 'action.hover',
-                },
+        {menuItems.map((item) => {
+          // Disable Teams menu item if no required data exists
+          const isTeamsItem = item.path === '/teams';
+          const isDisabled = isTeamsItem && hasRequiredData === false;
+          
+          return (
+            <ListItem
+              key={item.text}
+              disablePadding
+              sx={{ 
+                display: 'block',
+                opacity: isDisabled ? 0.5 : 1,
+                pointerEvents: isDisabled ? 'none' : 'auto',
+                cursor: isDisabled ? 'not-allowed' : 'pointer'
               }}
+              onClick={() => !isDisabled && handleNavigation(item.path)}
             >
-              <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
-                {item.icon}
-              </ListItemIcon>
-              <ListItemText 
-                primary={
-                  <Box display="flex" alignItems="center">
-                    {item.text}
-                    {item.text === 'Jugadores' && teamsExist === false && (
-                      <Tooltip title="Se requiere al menos un equipo registrado">
-                        <ErrorIcon color="warning" fontSize="small" sx={{ ml: 1 }} />
-                      </Tooltip>
-                    )}
-                  </Box>
-                }
-                primaryTypographyProps={{
-                  variant: 'body2',
-                  fontWeight: 'medium',
-                  component: 'div',
+              <ListItemButton
+                selected={location.pathname === item.path}
+                sx={{
+                  borderRadius: 2,
+                  mx: 1,
+                  '&:hover': {
+                    backgroundColor: 'action.hover',
+                  },
                 }}
-              />
-            </ListItemButton>
-          </ListItem>
-        ))}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: 'inherit' }}>
+                  {item.icon}
+                </ListItemIcon>
+                <ListItemText 
+                  primary={
+                    <Box display="flex" alignItems="center">
+                      {item.text}
+                      {item.text === 'Jugadores' && hasRequiredData === false && (
+                        <Tooltip title="Se requiere al menos un equipo registrado">
+                          <ErrorIcon color="warning" fontSize="small" sx={{ ml: 1 }} />
+                        </Tooltip>
+                      )}
+                    </Box>
+                  }
+                  primaryTypographyProps={{
+                    variant: 'body2',
+                    fontWeight: 'medium',
+                    component: 'div',
+                  }}
+                />
+              </ListItemButton>
+            </ListItem>
+          );
+        })}
       </List>
       
       <Box sx={{ mt: 'auto' }}>
@@ -217,7 +244,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
           {bottomMenuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
-                onClick={() => handleNavigate(item.path)}
+                onClick={() => handleNavigation(item.path)}
                 sx={{
                   borderRadius: 2,
                   mx: 1,
