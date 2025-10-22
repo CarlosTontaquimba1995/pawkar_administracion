@@ -1,213 +1,132 @@
 import axios from 'axios';
+import {
+  TeamResponse,
+  TeamListResponse,
+  TeamCountResponse,
+  TeamExistsResponse,
+  CreateTeamRequest,
+  UpdateTeamRequest,
+  CreateMultipleTeamsRequest,
+  TeamQueryParams,
+  TeamBySubcategoryParams
+} from '../types/team.types';
 
 const API_URL = 'http://localhost:8080/api/equipos';
 
-interface Team {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-  categoriaId?: number;
-  jugadoresCount?: number;
-  // Add other team properties as needed
-}
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-interface TeamCountResponse {
-  success: boolean;
-  message: string;
-  data: {
-    totalEquipos: number;
-    equiposActivos: number;
-    equiposInactivos: number;
-  };
-  timestamp: string;
-}
-
-interface PlayerCountResponse {
-  success: boolean;
-  message: string;
-  data: {
-    totalJugadores: number;
-  };
-  timestamp: string;
-}
+// Add request interceptor to include auth token in headers
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const teamService = {
-  async checkTeamsExist(token: string): Promise<boolean> {
-    try {
-      console.log('🔍 Verificando existencia de equipos...');
-      console.log('Token:', token ? `${token.substring(0, 20)}...` : 'NO TOKEN');
-
-      const response = await axios.get(`${API_URL}/existen`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      console.log('✅ Respuesta de la API:', response.data);
-      console.log('Tipo de respuesta:', typeof response.data);
-
-      return response.data;
-    } catch (error: any) {
-      console.error('❌ Error al verificar equipos:', error);
-      console.error('Detalles del error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      return false;
-    }
-  },
-
-  async getTeams(
-    token: string, 
-    categoriaId?: number, 
-    page: number = 0, 
-    size: number = 10, 
-    search?: string
-  ) {
-    try {
-      let url = API_URL;
-      const params = new URLSearchParams();
-
-      if (categoriaId) {
-        url = `${API_URL}/categoria/${categoriaId}`;
-      }
-
-      // Add pagination parameters
-      params.append('page', page.toString());
-      params.append('size', size.toString());
-
-      const response = await axios.get(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        params
-      });
-
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching teams:', error);
-      throw error;
-    }
-  },
-
-  async getTeamById(token: string, id: number) {
-    try {
-      const response = await axios.get(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error fetching team with id ${id}:`, error);
-      throw error;
-    }
-  },
-
-  async createTeam(token: string, teamData: Omit<Team, 'id'>) {
-    try {
-      const response = await axios.post(API_URL, teamData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error creating team:', error);
-      throw error;
-    }
-  },
-
-  async updateTeam(token: string, id: number, teamData: Partial<Team>) {
-    try {
-      const response = await axios.put(`${API_URL}/${id}`, teamData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error updating team with id ${id}:`, error);
-      throw error;
-    }
-  },
-
-  async deleteTeam(token: string, id: number) {
-    try {
-      const response = await axios.delete(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return response.data;
-    } catch (error) {
-      console.error(`Error deleting team with id ${id}:`, error);
-      throw error;
-    }
-  },
-
-  async getTeamsBySubcategoria(token: string, subcategoriaId: number, serieId?: number) {
-    const params: any = {};
-    if (serieId) {
-      params.serieId = serieId;
-    }
-    
-    const response = await axios.get(`${API_URL}/subcategoria/${subcategoriaId}`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      params
-    });
+  /**
+   * Obtiene una lista paginada de equipos con opciones de búsqueda y ordenamiento
+   * @param params Parámetros de consulta (paginación, ordenamiento, búsqueda)
+   */
+  async getTeams(params?: TeamQueryParams): Promise<TeamListResponse> {
+    const response = await api.get<TeamListResponse>('', { params });
     return response.data;
   },
-  
-  createTeamsBulk(token: string, teams: Array<{
-    subcategoriaId: number;
-    serieId: number;
-    nombre: string;
-    fundacion: string;
-  }>) {
-    return axios.post(`${API_URL}/bulk`, teams, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      }
-    });
+
+  /**
+   * Obtiene todos los equipos asociados a una serie específica
+   * @param serieId ID de la serie
+   */
+  async getTeamsBySerie(serieId: number): Promise<TeamListResponse> {
+    const response = await api.get<TeamListResponse>(`/serie/${serieId}`);
+    return response.data;
   },
 
-  async getTotalPlayers(token: string): Promise<number> {
-    const response = await axios.get<PlayerCountResponse>('http://localhost:8080/api/jugadores/count', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.data?.success) {
-      return response.data.data.totalJugadores;
-    }
-    
-    throw new Error('Error al obtener el total de jugadores');
+  /**
+   * Obtiene todos los equipos asociados a una subcategoría específica
+   * @param subcategoriaId ID de la subcategoría
+   * @param params Parámetros adicionales (opcional: serieId para filtrar por serie)
+   */
+  async getTeamsBySubcategoria(
+    subcategoriaId: number,
+    params?: TeamBySubcategoryParams
+  ): Promise<TeamListResponse> {
+    const response = await api.get<TeamListResponse>(`/subcategoria/${subcategoriaId}`, { params });
+    return response.data;
   },
 
-  async getTeamsCount(token: string): Promise<{ total: number; active: number; inactive: number }> {
-    const response = await axios.get<TeamCountResponse>('http://localhost:8080/api/equipos/count', {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    
-    if (response.data?.success) {
-      return {
-        total: response.data.data.totalEquipos,
-        active: response.data.data.equiposActivos,
-        inactive: response.data.data.equiposInactivos
-      };
-    }
-    
-    throw new Error('Error al obtener el total de equipos');
+  /**
+   * Obtiene los detalles de un equipo por su ID
+   * @param id ID del equipo
+   */
+  async getTeamById(id: number): Promise<TeamResponse> {
+    const response = await api.get<TeamResponse>(`/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Crea un nuevo equipo
+   * @param teamData Datos del equipo a crear
+   */
+  async createTeam(teamData: CreateTeamRequest): Promise<TeamResponse> {
+    const response = await api.post<TeamResponse>('', teamData);
+    return response.data;
+  },
+
+  /**
+   * Crea múltiples equipos en una sola petición
+   * @param teamsData Datos de los equipos a crear
+   */
+  async createTeamsBulk(teamsData: CreateMultipleTeamsRequest): Promise<TeamListResponse> {
+    const response = await api.post<TeamListResponse>('/bulk', teamsData);
+    return response.data;
+  },
+
+  /**
+   * Actualiza un equipo existente
+   * @param id ID del equipo a actualizar
+   * @param teamData Datos actualizados del equipo
+   */
+  async updateTeam(id: number, teamData: UpdateTeamRequest): Promise<TeamResponse> {
+    const response = await api.put<TeamResponse>(`/${id}`, teamData);
+    return response.data;
+  },
+
+  /**
+   * Elimina un equipo existente
+   * @param id ID del equipo a eliminar
+   */
+  async deleteTeam(id: number): Promise<{ success: boolean; message: string }> {
+    const response = await api.delete(`/${id}`);
+    return response.data;
+  },
+
+  /**
+   * Verifica si existen equipos registrados en el sistema
+   */
+  async checkTeamsExist(): Promise<boolean> {
+    const response = await api.get<TeamExistsResponse>('/existen');
+    return response.data.data;
+  },
+
+  /**
+   * Obtiene el conteo total de equipos registrados, con desglose por subcategoría
+   */
+  async getTeamsCount(): Promise<TeamCountResponse> {
+    const response = await api.get<TeamCountResponse>('/count');
+    return response.data;
   }
 };
 
