@@ -1,43 +1,159 @@
 import axios from 'axios';
+import {
+  CreateSubcategoriaRequest,
+  CreateMultipleSubcategoriasRequest,
+  UpdateSubcategoriaRequest,
+  SubcategoriaResponse,
+  SubcategoriaListResponse,
+  DeleteSubcategoriaResponse
+} from '../types/subcategoria.types';
 
 const API_URL = 'http://localhost:8080/api/subcategorias';
 
-const subcategoriaService = {
-  async getCategories(token: string) {
-    try {
-      const response = await axios.get(API_URL, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
+// Add request interceptor to include auth token in headers
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+const subcategoriaService = {
+  /**
+   * Obtiene todas las subcategorías disponibles
+   */
+  async getSubcategorias(): Promise<SubcategoriaListResponse> {
+    try {
+      const response = await api.get<SubcategoriaListResponse>('/');
       return response.data;
     } catch (error) {
-      console.error('Error fetching categories:', error);
+      console.error('Error fetching subcategories:', error);
       throw error;
     }
   },
 
-  async getCategoryById(token: string, id: number) {
+  /**
+   * Obtiene una subcategoría por su ID
+   * @param id ID de la subcategoría
+   */
+  async getSubcategoriaById(id: number): Promise<SubcategoriaResponse> {
     try {
-      const response = await axios.get(`${API_URL}/${id}`, {
+      const response = await api.get<SubcategoriaResponse>(`/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching subcategory with id ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtiene todas las subcategorías de una categoría específica
+   * @param categoriaId ID de la categoría
+   */
+  async getSubcategoriasByCategoria(categoriaId: number): Promise<SubcategoriaListResponse> {
+    try {
+      const response = await api.get<SubcategoriaListResponse>(`/categoria/${categoriaId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching subcategories for category ${categoriaId}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Crea una nueva subcategoría
+   * @param subcategoriaData Datos de la subcategoría a crear
+   */
+  async createSubcategoria(subcategoriaData: CreateSubcategoriaRequest): Promise<SubcategoriaResponse> {
+    try {
+      const response = await api.post<SubcategoriaResponse>('/', subcategoriaData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating subcategory:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Crea múltiples subcategorías en una sola petición
+   * @param data Objeto con el array de subcategorías a crear
+   */
+  async createMultipleSubcategorias(
+    data: CreateMultipleSubcategoriasRequest
+  ): Promise<SubcategoriaListResponse> {
+    try {
+      const response = await api.post<SubcategoriaListResponse>('/bulk', data);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating multiple subcategories:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Actualiza una subcategoría existente
+   * @param id ID de la subcategoría a actualizar
+   * @param subcategoriaData Datos actualizados de la subcategoría
+   */
+  async updateSubcategoria(
+    id: number,
+    subcategoriaData: UpdateSubcategoriaRequest
+  ): Promise<SubcategoriaResponse> {
+    try {
+      const response = await api.put<SubcategoriaResponse>(`/${id}`, subcategoriaData);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating subcategory with id ${id}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Elimina una subcategoría
+   * @param id ID de la subcategoría a eliminar
+   */
+  async deleteSubcategoria(id: number): Promise<DeleteSubcategoriaResponse> {
+    try {
+      const response = await api.delete<DeleteSubcategoriaResponse>(`/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error deleting subcategory with id ${id}:`, error);
+      throw error;
+    }
+  },
+
+  // Métodos legacy para mantener compatibilidad
+  async getCategories(token: string) {
+    try {
+      const response = await api.get(API_URL, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       return response.data;
     } catch (error) {
-      console.error(`Error fetching category with id ${id}:`, error);
+      console.error('Error fetching subcategories:', error);
       throw error;
     }
   },
 
-  async createCategory(token: string, categoryData: any) {
+  // Alias para mantener compatibilidad
+  createCategory: async (token: string, categoryData: any) => {
     try {
-      const response = await axios.post(API_URL, categoryData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await api.post(API_URL, categoryData, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       return response.data;
     } catch (error) {
@@ -46,13 +162,11 @@ const subcategoriaService = {
     }
   },
 
-  async updateCategory(token: string, id: number, categoryData: any) {
+  // Alias para mantener compatibilidad
+  updateCategory: async (token: string, id: number, categoryData: any) => {
     try {
-      const response = await axios.put(`${API_URL}/${id}`, categoryData, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await api.put(`${API_URL}/${id}`, categoryData, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       return response.data;
     } catch (error) {
@@ -61,9 +175,10 @@ const subcategoriaService = {
     }
   },
 
-  async deleteCategory(token: string, id: number) {
+  // Alias para mantener compatibilidad
+  deleteCategory: async (token: string, id: number) => {
     try {
-      const response = await axios.delete(`${API_URL}/${id}`, {
+      const response = await api.delete(`${API_URL}/${id}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       return response.data;
@@ -73,43 +188,18 @@ const subcategoriaService = {
     }
   },
 
-  async createSubcategoriasBulk(token: string, subcategorias: Array<{
-    categoriaId: number;
-    nombre: string;
-    descripcion?: string;
-  }>) {
+  // Alias para mantener compatibilidad
+  getCategoryById: async (token: string, id: number) => {
     try {
-      const response = await axios.post(
-        `${API_URL}/subcategorias/bulk`,
-        { subcategorias },
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error('Error creating subcategories in bulk:', error);
-      throw error;
-    }
-  },
-
-  async getAllSubcategorias(token: string) {
-    try {
-      const response = await axios.get(API_URL, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
+      const response = await api.get(`${API_URL}/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching all subcategories:', error);
+      console.error(`Error fetching category with id ${id}:`, error);
       throw error;
     }
-  }
+  },
 };
 
 export default subcategoriaService;

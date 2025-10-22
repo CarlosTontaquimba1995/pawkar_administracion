@@ -49,6 +49,7 @@ import serieService from '../../api/serieService';
 import RegisterTeam from './RegisterTeam';
 import EditTeam from './EditTeam';
 import { Team } from "@/types/team.types";
+import { Subcategoria } from "@/types/subcategoria.types";
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "&:nth-of-type(odd)": {
@@ -64,14 +65,6 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
     border: 0,
   },
 }));
-
-interface Subcategoria {
-  subcategoriaId: number;
-  categoriaId: number;
-  categoriaNombre: string;
-  nombre: string;
-  descripcion: string;
-}
 
 const Teams = () => {
   const { token } = useAuth();
@@ -308,13 +301,6 @@ const Teams = () => {
     [token]
   );
 
-  // Initial load of teams
-  useEffect(() => {
-    if (!categoriaSeleccionada) {
-      fetchEquipos();
-    }
-  }, [categoriaSeleccionada, fetchEquipos]);
-
   // Handle subcategory filter change
   useEffect(() => {
     if (categoriaSeleccionada) {
@@ -476,9 +462,11 @@ const Teams = () => {
           <Typography variant="h5" component="h1">
             Equipos
           </Typography>
-          <Chip 
-            label={`${totalElements} ${totalElements === 1 ? 'equipo' : 'equipos'}`} 
-            color="primary" 
+          <Chip
+            label={`${totalElements} ${
+              totalElements === 1 ? "equipo" : "equipos"
+            }`}
+            color="primary"
             variant="outlined"
             size="small"
           />
