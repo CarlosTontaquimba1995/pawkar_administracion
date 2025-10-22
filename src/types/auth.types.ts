@@ -3,20 +3,34 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface LoginResponse {
+export interface SignupRequest {
+  username: string;
+  email: string;
+  password: string;
+  role: string[];
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface AuthResponse {
   success: boolean;
   message: string;
   data?: {
-    accessToken: string;
+    token: string;
     id: number;
     username: string;
     email: string;
     roles: string[];
     refreshToken: string;
-    tokenType: string;
   };
   timestamp: string;
   path?: string;
   error?: string;
   status?: number;
 }
+
+export interface LoginResponse extends AuthResponse {}
+export interface SignupResponse extends Omit<AuthResponse, 'data'> {}
+export interface RefreshTokenResponse extends AuthResponse {}
