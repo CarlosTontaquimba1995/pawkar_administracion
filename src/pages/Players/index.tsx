@@ -34,7 +34,7 @@ import {
 } from '@mui/icons-material';
 import RegisterPlayerForm from './RegisterPlayerForm';
 import playerService from "../../api/playerService";
-import EditPlayer from "./EditPlayer";
+import EditPlayer from "./EditPlayerForm";
 import { Player } from "@/types/player.types";
 
 const Players: React.FC = () => {
@@ -48,7 +48,6 @@ const Players: React.FC = () => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [totalElements, setTotalElements] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
   // Error state for handling API errors
   const [apiError, setApiError] = useState<string | null>(null);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
@@ -80,7 +79,6 @@ const Players: React.FC = () => {
 
         setPlayers(response.data.content);
         setTotalElements(response.data.totalElements);
-        setTotalPages(response.data.totalPages);
 
         // If the current page is greater than the total pages, reset to first page
         if (page >= response.data.totalPages) {
@@ -180,16 +178,6 @@ const Players: React.FC = () => {
       setPlayerToDelete(null);
     }
   };
-
-  // Filter players based on search term
-  const filteredPlayers = players.filter((player) => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      player.nombre.toLowerCase().includes(searchLower) ||
-      player.apellido.toLowerCase().includes(searchLower) ||
-      player.documentoIdentidad.includes(searchTerm)
-    );
-  });
 
   return (
     <Box sx={{ width: "100%" }}>

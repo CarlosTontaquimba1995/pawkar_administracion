@@ -46,8 +46,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import teamService from '../../api/teamService';
 import subcategoriaService from '../../api/subcategoriaService';
 import serieService from '../../api/serieService';
-import RegisterTeam from './RegisterTeam';
-import EditTeam from './EditTeam';
+import RegisterTeam from './RegisterTeamForm';
+import EditTeam from './EditTeamForm';
 import { Team } from "@/types/team.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 
