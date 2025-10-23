@@ -168,10 +168,9 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       if (selectedSubcategoria) {
         try {
           const seriesData = await serieService.getSeriesBySubcategoria(
-            token,
             selectedSubcategoria
           );
-          setSeries(seriesData);
+          setSeries(seriesData.data);
         } catch (error) {
           console.error("Error fetching series:", error);
           setSnackbar({

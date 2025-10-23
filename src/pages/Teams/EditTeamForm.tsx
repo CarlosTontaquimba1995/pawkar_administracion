@@ -20,7 +20,8 @@ import {
 import { Close as CloseIcon, CalendarToday as CalendarTodayIcon } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import teamService from '../../api/teamService';
-import serieService, { Serie } from '../../api/serieService';
+import { Serie } from "@/types/serie.types";
+import serieService from "@/api/serieService";
 
 interface Subcategoria {
   subcategoriaId: number;
@@ -48,31 +49,38 @@ interface TeamData {
   jugadoresCount: number | null;
 }
 
-const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId }) => {
+const EditTeam: React.FC<EditTeamProps> = ({
+  open,
+  onClose,
+  onSuccess,
+  teamId,
+}) => {
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
-  const [subcategoriaError, setSubcategoriaError] = useState('');
+  const [subcategoriaError, setSubcategoriaError] = useState("");
   const [series, setSeries] = useState<Record<number, Serie[]>>({});
-  const [loadingSeries, setLoadingSeries] = useState<Record<number, boolean>>({});
-  
+  const [loadingSeries, setLoadingSeries] = useState<Record<number, boolean>>(
+    {}
+  );
+
   const [team, setTeam] = useState<TeamData>({
     equipoId: 0,
     subcategoriaId: 0,
-    subcategoriaNombre: '',
+    subcategoriaNombre: "",
     serieId: 0,
-    serieNombre: '',
-    nombre: '',
-    fundacion: new Date().toISOString().split('T')[0],
-    jugadoresCount: null
+    serieNombre: "",
+    nombre: "",
+    fundacion: new Date().toISOString().split("T")[0],
+    jugadoresCount: null,
   });
-  
+
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error' | 'warning'
+    message: "",
+    severity: "success" as "success" | "error" | "warning",
   });
-  
+
   const { token } = useAuth();
 
   // Fetch team data when component mounts or teamId changes
@@ -181,13 +189,12 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
 
     try {
       const seriesData = await serieService.getSeriesBySubcategoria(
-        token,
         subcategoriaId
       );
 
       setSeries((prev) => ({
         ...prev,
-        [subcategoriaId]: seriesData,
+        [subcategoriaId]: seriesData.data,
       }));
     } catch (error) {
       console.error("Error fetching series:", error);
@@ -270,35 +277,39 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   return (
     <>
-      <Dialog 
-        open={open} 
+      <Dialog
+        open={open}
         onClose={!loading ? onClose : undefined}
         maxWidth="md"
         fullWidth
         PaperProps={{
           sx: {
             borderRadius: 3,
-          }
+          },
         }}
       >
         <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Typography variant="h6">Editar Equipo</Typography>
-            <IconButton 
-              onClick={onClose} 
-              size="small" 
+            <IconButton
+              onClick={onClose}
+              size="small"
               disabled={loading}
               sx={{
-                '&.Mui-disabled': {
-                  pointerEvents: 'auto',
-                  cursor: 'not-allowed',
-                  opacity: 0.5
-                }
+                "&.Mui-disabled": {
+                  pointerEvents: "auto",
+                  cursor: "not-allowed",
+                  opacity: 0.5,
+                },
               }}
             >
               <CloseIcon />
@@ -308,25 +319,30 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
         <Divider />
         <DialogContent>
           <form onSubmit={handleSubmit}>
-            <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: '1fr 1fr' }} gap={2} mb={2}>
+            <Box
+              display="grid"
+              gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
+              gap={2}
+              mb={2}
+            >
               <TextField
                 fullWidth
                 label="Nombre del Equipo"
                 value={team.nombre}
-                onChange={(e) => handleTeamChange('nombre', e.target.value)}
+                onChange={(e) => handleTeamChange("nombre", e.target.value)}
                 required
                 margin="normal"
                 size="small"
                 disabled={loading}
                 sx={{ mt: 0 }}
               />
-              
+
               <TextField
                 fullWidth
                 label="Fecha de Fundación"
                 type="date"
                 value={team.fundacion}
-                onChange={(e) => handleTeamChange('fundacion', e.target.value)}
+                onChange={(e) => handleTeamChange("fundacion", e.target.value)}
                 required
                 margin="normal"
                 size="small"
@@ -343,13 +359,21 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
                 }}
                 sx={{ mt: 0 }}
               />
-              
-              <FormControl fullWidth margin="normal" size="small" required disabled={loading}>
+
+              <FormControl
+                fullWidth
+                margin="normal"
+                size="small"
+                required
+                disabled={loading}
+              >
                 <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
                 <Select
                   labelId="subcategoria-label"
-                  value={team.subcategoriaId || ''}
-                  onChange={(e) => handleTeamChange('subcategoriaId', Number(e.target.value))}
+                  value={team.subcategoriaId || ""}
+                  onChange={(e) =>
+                    handleTeamChange("subcategoriaId", Number(e.target.value))
+                  }
                   label="Subcategoría"
                   disabled={loadingSubcategorias || loading}
                 >
@@ -359,7 +383,10 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
                     </MenuItem>
                   ) : subcategorias.length > 0 ? (
                     subcategorias.map((sub) => (
-                      <MenuItem key={sub.subcategoriaId} value={sub.subcategoriaId}>
+                      <MenuItem
+                        key={sub.subcategoriaId}
+                        value={sub.subcategoriaId}
+                      >
                         {sub.nombre}
                       </MenuItem>
                     ))
@@ -370,20 +397,36 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
                   )}
                 </Select>
                 {subcategoriaError && (
-                  <Typography color="error" variant="caption" sx={{ display: 'block', mt: 1 }}>
+                  <Typography
+                    color="error"
+                    variant="caption"
+                    sx={{ display: "block", mt: 1 }}
+                  >
                     {subcategoriaError}
                   </Typography>
                 )}
               </FormControl>
-              
-              <FormControl fullWidth margin="normal" size="small" required disabled={loading}>
+
+              <FormControl
+                fullWidth
+                margin="normal"
+                size="small"
+                required
+                disabled={loading}
+              >
                 <InputLabel id="serie-label">Serie</InputLabel>
                 <Select
                   labelId="serie-label"
-                  value={team.serieId || ''}
-                  onChange={(e) => handleTeamChange('serieId', Number(e.target.value))}
+                  value={team.serieId || ""}
+                  onChange={(e) =>
+                    handleTeamChange("serieId", Number(e.target.value))
+                  }
                   label="Serie"
-                  disabled={loadingSeries[team.subcategoriaId] || !team.subcategoriaId || loading}
+                  disabled={
+                    loadingSeries[team.subcategoriaId] ||
+                    !team.subcategoriaId ||
+                    loading
+                  }
                 >
                   {loadingSeries[team.subcategoriaId] ? (
                     <MenuItem value="">
@@ -397,14 +440,18 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
                     ))
                   ) : (
                     <MenuItem value="" disabled>
-                      {team.subcategoriaId ? 'No hay series disponibles' : 'Seleccione una subcategoría'}
+                      {team.subcategoriaId
+                        ? "No hay series disponibles"
+                        : "Seleccione una subcategoría"}
                     </MenuItem>
                   )}
                 </Select>
               </FormControl>
             </Box>
 
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 3, mb: 1 }}>
+            <Box
+              sx={{ display: "flex", justifyContent: "flex-end", mt: 3, mb: 1 }}
+            >
               <Button
                 variant="outlined"
                 onClick={onClose}
@@ -420,7 +467,7 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
                 disabled={loading}
                 startIcon={loading ? <CircularProgress size={20} /> : null}
               >
-                {loading ? 'Actualizando...' : 'Actualizar Equipo'}
+                {loading ? "Actualizando..." : "Actualizar Equipo"}
               </Button>
             </Box>
           </form>
@@ -431,12 +478,12 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={snackbar.severity} 
-          sx={{ width: '100%' }}
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
           elevation={6}
           variant="filled"
         >

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
+import CategoriaRegisterForm from "./components/CategoriaRegisterForm";
 import {
   Box,
   Button,
@@ -103,20 +104,25 @@ const CategoriesPage: React.FC = () => {
     fetchData();
   }, [token]);
 
+  const [showAddForm, setShowAddForm] = useState(false);
+
   const handleAddNew = () => {
-    switch (tabValue) {
-      case 0:
-        navigate("/categories/new");
-        break;
-      case 1:
-        navigate("/subcategories/new");
-        break;
-      case 2:
-        navigate("/series/new");
-        break;
-      default:
-        break;
+    if (tabValue === 0) {
+      setShowAddForm(true);
+    } else if (tabValue === 1) {
+      navigate("/subcategories/new");
+    } else if (tabValue === 2) {
+      navigate("/series/new");
     }
+  };
+
+  const handleCloseForm = () => {
+    setShowAddForm(false);
+  };
+
+  const handleSuccess = async () => {
+    setShowAddForm(false);
+    await fetchData(); // Refresh the data
   };
 
   if (loading) {
@@ -190,6 +196,13 @@ const CategoriesPage: React.FC = () => {
           </TabPanel>
         </CardContent>
       </Card>
+
+      {/* Categoria Register Form Modal */}
+      <CategoriaRegisterForm 
+        open={showAddForm}
+        onClose={handleCloseForm}
+        onSuccess={handleSuccess}
+      />
     </Box>
   );
 };
