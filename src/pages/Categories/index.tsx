@@ -23,6 +23,7 @@ import subcategoriaService from "@/api/subcategoriaService";
 import { Serie } from "@/types/serie.types";
 import SubcategoriesTable from "./components/SubcategoriesTable";
 import SeriesTable from "./components/SeriesTable";
+import RegisterSubcategoriaForm from "../Subcategories/components/RegisterSubcategoriaForm";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -105,12 +106,13 @@ const CategoriesPage: React.FC = () => {
   }, [token]);
 
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddSubcategoriaForm, setShowAddSubcategoriaForm] = useState(false);
 
   const handleAddNew = () => {
     if (tabValue === 0) {
       setShowAddForm(true);
     } else if (tabValue === 1) {
-      navigate("/subcategories/new");
+      setShowAddSubcategoriaForm(true);
     } else if (tabValue === 2) {
       navigate("/series/new");
     }
@@ -198,9 +200,14 @@ const CategoriesPage: React.FC = () => {
       </Card>
 
       {/* Categoria Register Form Modal */}
-      <CategoriaRegisterForm 
+      <CategoriaRegisterForm
         open={showAddForm}
         onClose={handleCloseForm}
+        onSuccess={handleSuccess}
+      />
+      <RegisterSubcategoriaForm
+        open={showAddSubcategoriaForm}
+        onClose={() => setShowAddSubcategoriaForm(false)}
         onSuccess={handleSuccess}
       />
     </Box>

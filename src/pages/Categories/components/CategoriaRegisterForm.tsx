@@ -1,4 +1,3 @@
-import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -18,6 +17,8 @@ import {
 import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
 import { useAuth } from "../../../contexts/AuthContext";
 import { categoriaService } from "../../../api/categoriaService";
+import { Categoria } from "@/types/categoria.types";
+import { useState } from "react";
 
 interface CategoriaRegisterFormProps {
   open: boolean;
@@ -25,17 +26,12 @@ interface CategoriaRegisterFormProps {
   onSuccess: () => void;
 }
 
-interface CategoriaFormData {
-  id: number;
-  nombre: string;
-}
-
 const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
   open,
   onClose,
   onSuccess,
 }) => {
-  const [categorias, setCategorias] = useState<CategoriaFormData[]>([
+  const [categorias, setCategorias] = useState<Categoria[]>([
     { id: Date.now(), nombre: "" },
   ]);
   const [loading, setLoading] = useState(false);
