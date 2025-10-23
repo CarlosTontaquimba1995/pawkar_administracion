@@ -5,8 +5,10 @@ export interface Player {
     apellido: string;
     fechaNacimiento: string;
     documentoIdentidad: string;
+    nombreEquipo: string;
+    nombreRol: string;
+    subcategoriaId?: number;
     equipoId?: number;
-    jugadorId?: number;
     numeroCamiseta?: number;
     rolId?: number;
 }

@@ -32,8 +32,14 @@ export interface TeamResponse {
   data: Team;
   timestamp: string;
 }
-
 export interface TeamListResponse {
+  success: boolean;
+  message: string;
+  data: Team[];
+  timestamp: string;
+}
+
+export interface TeamListPageResponse {
   success: boolean;
   message: string;
   data: {

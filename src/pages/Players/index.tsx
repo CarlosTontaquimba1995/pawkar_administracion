@@ -33,8 +33,9 @@ import {
   Person as PersonIcon,
 } from '@mui/icons-material';
 import RegisterPlayerForm from './RegisterPlayerForm';
-import playerService, { Player } from '../../api/playerService';
-import EditPlayer from './EditPlayer';
+import playerService from "../../api/playerService";
+import EditPlayer from "./EditPlayer";
+import { Player } from "@/types/player.types";
 
 const Players: React.FC = () => {
   // Get auth token
@@ -42,7 +43,7 @@ const Players: React.FC = () => {
   const theme = useTheme();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [isRegisterDialogOpen, setIsRegisterDialogOpen] = useState(false);
   const [players, setPlayers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,44 +57,54 @@ const Players: React.FC = () => {
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
     message: string;
-    severity: 'success' | 'error' | 'info';
+    severity: "success" | "error" | "info";
   }>({
     open: false,
-    message: '',
-    severity: 'success',
+    message: "",
+    severity: "success",
   });
 
-  const fetchPlayers = useCallback(async (page: number = 0, size: number = rowsPerPage, search: string = searchTerm) => {
-    if (!token) return;
-    
-    setIsLoading(true);
-    setApiError(null);
-    
-    try {
-      const response = await playerService.getPlayers(token, page, size, search);
-      
-      setPlayers(response.content);
-      setTotalElements(response.totalElements);
-      setTotalPages(response.totalPages);
-      
-      // If the current page is greater than the total pages, reset to first page
-      if (page >= response.totalPages) {
-        setPage(0);
+  const fetchPlayers = useCallback(
+    async (
+      page: number = 0,
+      size: number = rowsPerPage,
+      search: string = searchTerm
+    ) => {
+      if (!token) return;
+
+      setIsLoading(true);
+      setApiError(null);
+
+      try {
+        const response = await playerService.getPlayers({ page, size, search });
+
+        setPlayers(response.data.content);
+        setTotalElements(response.data.totalElements);
+        setTotalPages(response.data.totalPages);
+
+        // If the current page is greater than the total pages, reset to first page
+        if (page >= response.data.totalPages) {
+          setPage(0);
+        }
+      } catch (error) {
+        console.error("Error fetching players:", error);
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : "Error al cargar los jugadores";
+        setApiError(errorMessage);
+        setSnackbar({
+          open: true,
+          message: errorMessage,
+          severity: "error",
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error fetching players:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Error al cargar los jugadores';
-      setApiError(errorMessage);
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: 'error'
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token, rowsPerPage, searchTerm]);
-  
+    },
+    [token, rowsPerPage, searchTerm]
+  );
+
   // Handle search
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value;
@@ -101,18 +112,20 @@ const Players: React.FC = () => {
     // Reset to first page when searching
     setPage(0);
   };
-  
+
   // Handle page change
   const handleChangePage = (_event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
   // Handle rows per page change
-  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0); // Reset to first page when changing rows per page
   };
-  
+
   // Fetch players when page, rowsPerPage, or searchTerm changes
   useEffect(() => {
     fetchPlayers(page, rowsPerPage, searchTerm);
@@ -122,15 +135,15 @@ const Players: React.FC = () => {
     setIsRegisterDialogOpen(false);
     setSnackbar({
       open: true,
-      message: 'Jugador registrado exitosamente',
-      severity: 'success'
+      message: "Jugador registrado exitosamente",
+      severity: "success",
     });
     // Refresh the players list
     fetchPlayers();
   };
 
   const handleCloseSnackbar = () => {
-    setSnackbar(prev => ({ ...prev, open: false }));
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   const handleDeleteClick = (player: Player) => {
@@ -138,23 +151,23 @@ const Players: React.FC = () => {
   };
 
   const handleDeleteConfirm = async () => {
-    if (!playerToDelete || !token) return;
-    
+    if (!playerToDelete || !token || playerToDelete.id === undefined) return;
+
     setIsDeleting(true);
     try {
-      await playerService.deletePlayer(token, playerToDelete.id);
+      await playerService.deletePlayer(playerToDelete.id);
       fetchPlayers();
       setSnackbar({
         open: true,
-        message: 'Jugador eliminado correctamente',
-        severity: 'success',
+        message: "Jugador eliminado correctamente",
+        severity: "success",
       });
     } catch (error) {
-      console.error('Error al eliminar el jugador:', error);
+      console.error("Error al eliminar el jugador:", error);
       setSnackbar({
         open: true,
-        message: 'Error al eliminar el jugador. Por favor, inténtalo de nuevo.',
-        severity: 'error',
+        message: "Error al eliminar el jugador. Por favor, inténtalo de nuevo.",
+        severity: "error",
       });
     } finally {
       setIsDeleting(false);
@@ -169,7 +182,7 @@ const Players: React.FC = () => {
   };
 
   // Filter players based on search term
-  const filteredPlayers = players.filter(player => {
+  const filteredPlayers = players.filter((player) => {
     const searchLower = searchTerm.toLowerCase();
     return (
       player.nombre.toLowerCase().includes(searchLower) ||
@@ -178,11 +191,27 @@ const Players: React.FC = () => {
     );
   });
 
-
   return (
-    <Box sx={{ width: '100%' }}>
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, minWidth: 300 }}>
+    <Box sx={{ width: "100%" }}>
+      <Box
+        sx={{
+          mb: 3,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 2,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            flex: 1,
+            minWidth: 300,
+          }}
+        >
           <TextField
             variant="outlined"
             size="small"
@@ -198,7 +227,7 @@ const Players: React.FC = () => {
             }}
             sx={{
               minWidth: 300,
-              '& .MuiOutlinedInput-root': {
+              "& .MuiOutlinedInput-root": {
                 backgroundColor: theme.palette.background.paper,
               },
             }}
@@ -211,12 +240,12 @@ const Players: React.FC = () => {
           onClick={() => setIsRegisterDialogOpen(true)}
           sx={{
             boxShadow: theme.shadows[3],
-            '&:hover': {
+            "&:hover": {
               boxShadow: theme.shadows[6],
-              transform: 'translateY(-2px)',
+              transform: "translateY(-2px)",
             },
-            transition: 'all 0.3s ease',
-            whiteSpace: 'nowrap',
+            transition: "all 0.3s ease",
+            whiteSpace: "nowrap",
           }}
         >
           Inscribir Jugadores
@@ -229,15 +258,19 @@ const Players: React.FC = () => {
           p: 3,
           mb: 3,
           borderRadius: 3,
-          border: '1px solid',
-          borderColor: 'divider',
+          border: "1px solid",
+          borderColor: "divider",
           background: theme.palette.background.paper,
-          boxShadow: '0 2px 12px rgba(0, 0, 0, 0.05)'
+          boxShadow: "0 2px 12px rgba(0, 0, 0, 0.05)",
         }}
       >
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-          <Box display="flex" gap={2} flexWrap="wrap">
-          </Box>
+        <Box
+          display="flex"
+          justifyContent="space-between"
+          alignItems="center"
+          mb={3}
+        >
+          <Box display="flex" gap={2} flexWrap="wrap"></Box>
         </Box>
 
         {apiError && (
@@ -250,12 +283,27 @@ const Players: React.FC = () => {
           <Table>
             <TableHead>
               <TableRow>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Nombre</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Apellido</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Documento</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Fecha Nacimiento</TableCell>
-                <TableCell sx={{ fontWeight: 600, color: 'text.secondary' }}>Estado</TableCell>
-                <TableCell align="right" sx={{ fontWeight: 600, color: 'text.secondary' }}>Acciones</TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>
+                  Nombre
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>
+                  Apellido
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>
+                  Documento
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>
+                  Fecha Nacimiento
+                </TableCell>
+                <TableCell sx={{ fontWeight: 600, color: "text.secondary" }}>
+                  Estado
+                </TableCell>
+                <TableCell
+                  align="right"
+                  sx={{ fontWeight: 600, color: "text.secondary" }}
+                >
+                  Acciones
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -268,28 +316,37 @@ const Players: React.FC = () => {
               ) : players.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 8 }}>
-                    <PersonIcon sx={{ fontSize: 60, color: 'text.disabled', mb: 2 }} />
+                    <PersonIcon
+                      sx={{ fontSize: 60, color: "text.disabled", mb: 2 }}
+                    />
                     <Typography variant="h6" color="text.secondary">
                       No se encontraron jugadores
                     </Typography>
                     <Typography variant="body2" color="text.disabled">
-                      {searchTerm ? 'Intenta con otros términos de búsqueda' : 'Comienza registrando tu primer jugador'}
+                      {searchTerm
+                        ? "Intenta con otros términos de búsqueda"
+                        : "Comienza registrando tu primer jugador"}
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
                 players.map((player, index) => (
-                  <TableRow 
-                    key={player.id} 
+                  <TableRow
+                    key={player.id}
                     hover
                     sx={{
-                      '&:hover': {
-                        backgroundColor: alpha(theme.palette.primary.main, 0.03),
+                      "&:hover": {
+                        backgroundColor: alpha(
+                          theme.palette.primary.main,
+                          0.03
+                        ),
                       },
-                      animation: `fadeIn 0.3s ease-in-out ${index * 0.05}s both`,
-                      '@keyframes fadeIn': {
-                        from: { opacity: 0, transform: 'translateY(10px)' },
-                        to: { opacity: 1, transform: 'translateY(0)' },
+                      animation: `fadeIn 0.3s ease-in-out ${
+                        index * 0.05
+                      }s both`,
+                      "@keyframes fadeIn": {
+                        from: { opacity: 0, transform: "translateY(10px)" },
+                        to: { opacity: 1, transform: "translateY(0)" },
                       },
                     }}
                   >
@@ -306,42 +363,46 @@ const Players: React.FC = () => {
                         color="success"
                         sx={{
                           fontWeight: 500,
-                          '&.MuiChip-colorSuccess': {
-                            bgcolor: 'accent2.light',
-                            color: 'accent2.dark',
-                            '&:hover': {
-                              bgcolor: 'accent2.main',
-                              color: 'white'
-                            }
-                          }
+                          "&.MuiChip-colorSuccess": {
+                            bgcolor: "accent2.light",
+                            color: "accent2.dark",
+                            "&:hover": {
+                              bgcolor: "accent2.main",
+                              color: "white",
+                            },
+                          },
                         }}
                       />
                     </TableCell>
                     <TableCell align="right">
                       <Tooltip title="Editar jugador">
-                      <IconButton 
-                        size="small" 
-                        onClick={() => setEditingPlayer(player)}
-                        sx={{ 
-                          color: 'primary.main',
-                          '&:hover': {
-                            backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                          },
-                          mr: 1
-                        }}
-                      >
-                        <EditIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
+                        <IconButton
+                          size="small"
+                          onClick={() => setEditingPlayer(player)}
+                          sx={{
+                            color: "primary.main",
+                            "&:hover": {
+                              backgroundColor: alpha(
+                                theme.palette.primary.main,
+                                0.1
+                              ),
+                            },
+                            mr: 1,
+                          }}
+                        >
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Eliminar jugador">
-                        <IconButton 
-                          size="small" 
-                          sx={{ 
+                        <IconButton
+                          size="small"
+                          sx={{
                             ml: 1,
                             color: theme.custom.colors.accent1,
-                            '&:hover': { 
-                              backgroundColor: theme.custom.colorWithOpacity.accent1[10],
-                            }
+                            "&:hover": {
+                              backgroundColor:
+                                theme.custom.colorWithOpacity.accent1[10],
+                            },
                           }}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -378,35 +439,39 @@ const Players: React.FC = () => {
         open={isRegisterDialogOpen}
         onClose={() => setIsRegisterDialogOpen(false)}
         onSuccess={handleRegisterSuccess}
-        token={token || ''}
+        token={token || ""}
       />
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
         TransitionComponent={Fade}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%' }}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>
 
       {/* Edit Player Dialog */}
-      {editingPlayer && (
+      {editingPlayer && editingPlayer.id !== undefined && (
         <EditPlayer
           open={!!editingPlayer}
           onClose={() => setEditingPlayer(null)}
-          playerId={editingPlayer.id}
           onSuccess={() => {
             setSnackbar({
               open: true,
-              message: 'Jugador actualizado correctamente',
-              severity: 'success',
+              message: "Jugador actualizado correctamente",
+              severity: "success",
             });
             fetchPlayers();
             setEditingPlayer(null);
           }}
+          playerId={editingPlayer.id}
         />
       )}
 
@@ -417,26 +482,26 @@ const Players: React.FC = () => {
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">
-          Confirmar eliminación
-        </DialogTitle>
+        <DialogTitle id="alert-dialog-title">Confirmar eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText id="alert-dialog-description">
-            ¿Estás seguro de que deseas eliminar al jugador {playerToDelete?.nombre} {playerToDelete?.apellido}? Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas eliminar al jugador{" "}
+            {playerToDelete?.nombre} {playerToDelete?.apellido}? Esta acción no
+            se puede deshacer.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleDeleteCancel} disabled={isDeleting}>
             Cancelar
           </Button>
-          <Button 
-            onClick={handleDeleteConfirm} 
+          <Button
+            onClick={handleDeleteConfirm}
             disabled={isDeleting}
             color="error"
             autoFocus
             startIcon={isDeleting ? <CircularProgress size={20} /> : null}
           >
-            {isDeleting ? 'Eliminando...' : 'Eliminar'}
+            {isDeleting ? "Eliminando..." : "Eliminar"}
           </Button>
         </DialogActions>
       </Dialog>

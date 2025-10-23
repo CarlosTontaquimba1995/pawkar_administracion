@@ -38,7 +38,7 @@ const subcategoriaService = {
    */
   async getSubcategorias(): Promise<SubcategoriaListResponse> {
     try {
-      const response = await api.get<SubcategoriaListResponse>('/');
+      const response = await api.get<SubcategoriaListResponse>('');
       return response.data;
     } catch (error) {
       console.error('Error fetching subcategories:', error);
