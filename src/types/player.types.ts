@@ -38,7 +38,7 @@ export interface PlayerCountResponse {
     success: boolean;
     message: string;
     data: {
-        total: number;
+        totalJugadores: number;
     };
     timestamp: string;
 }

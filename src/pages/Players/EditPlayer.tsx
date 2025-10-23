@@ -17,7 +17,6 @@ import {
   Close as CloseIcon,
   CalendarToday as CalendarTodayIcon,
 } from "@mui/icons-material";
-import { useAuth } from "../../contexts/AuthContext";
 import playerService from "../../api/playerService";
 import { Player } from "@/types/player.types";
 

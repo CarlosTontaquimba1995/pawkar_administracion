@@ -10,6 +10,7 @@ import RecentActivities from './components/RecentActivities';
 import PerformanceChart from './components/PerformanceChart';
 import teamService from '../../api/teamService';
 import { useAuth } from '@/contexts/AuthContext';
+import playerService from "@/api/playerService";
 
 const StatCard = ({
   title,
@@ -28,9 +29,9 @@ const StatCard = ({
       sx={{
         p: 3,
         borderRadius: 2,
-        height: '100%',
-        border: '1px solid',
-        borderColor: 'divider',
+        height: "100%",
+        border: "1px solid",
+        borderColor: "divider",
       }}
     >
       <Box display="flex" alignItems="center">
@@ -41,9 +42,9 @@ const StatCard = ({
             backgroundColor: `${color}15`,
             color: color,
             mr: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           {icon}
@@ -65,42 +66,48 @@ const Dashboard = () => {
   const theme = useTheme();
   const { token } = useAuth();
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
-  const [teamsCount, setTeamsCount] = useState<{ total: number; active: number; inactive: number } | null>(null);
+  const [teamsCount, setTeamsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState({
     players: true,
-    teams: true
+    teams: true,
   });
   const [error, setError] = useState({
     players: null as string | null,
-    teams: null as string | null
+    teams: null as string | null,
   });
 
   useEffect(() => {
     const fetchData = async () => {
       if (!token) return;
-      
+
       // Fetch player count
       try {
-        setLoading(prev => ({ ...prev, players: true }));
-        const count = await teamService.getTotalPlayers(token);
-        setTotalPlayers(count);
+        setLoading((prev) => ({ ...prev, players: true }));
+        const count = await playerService.getActivePlayersCount();
+        setTotalPlayers(count.data.totalJugadores);
       } catch (err) {
-        console.error('Error fetching player count:', err);
-        setError(prev => ({ ...prev, players: 'Error al cargar el total de jugadores' }));
+        console.error("Error fetching player count:", err);
+        setError((prev) => ({
+          ...prev,
+          players: "Error al cargar el total de jugadores",
+        }));
       } finally {
-        setLoading(prev => ({ ...prev, players: false }));
+        setLoading((prev) => ({ ...prev, players: false }));
       }
 
       // Fetch teams count
       try {
-        setLoading(prev => ({ ...prev, teams: true }));
-        const teamsData = await teamService.getTeamsCount(token);
-        setTeamsCount(teamsData);
+        setLoading((prev) => ({ ...prev, teams: true }));
+        const teamsData = await teamService.getTeamsCount();
+        setTeamsCount(teamsData.data.equiposActivos);
       } catch (err) {
-        console.error('Error fetching teams count:', err);
-        setError(prev => ({ ...prev, teams: 'Error al cargar el total de equipos' }));
+        console.error("Error fetching teams count:", err);
+        setError((prev) => ({
+          ...prev,
+          teams: "Error al cargar el total de equipos",
+        }));
       } finally {
-        setLoading(prev => ({ ...prev, teams: false }));
+        setLoading((prev) => ({ ...prev, teams: false }));
       }
     };
 
@@ -109,7 +116,7 @@ const Dashboard = () => {
 
   // Format number with thousands separator
   const formatNumber = (num: number | null | undefined) => {
-    if (num === null || num === undefined) return '0';
+    if (num === null || num === undefined) return "0";
     return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
   };
 
@@ -123,7 +130,16 @@ const Dashboard = () => {
       </Typography>
 
       {/* Stats Grid */}
-      <Box display="grid" gridTemplateColumns={{ xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }} gap={3} mb={4}>
+      <Box
+        display="grid"
+        gridTemplateColumns={{
+          xs: "1fr",
+          sm: "repeat(2, 1fr)",
+          md: "repeat(4, 1fr)",
+        }}
+        gap={3}
+        mb={4}
+      >
         <Box>
           <StatCard
             title="Jugadores Totales"
@@ -153,7 +169,7 @@ const Dashboard = () => {
                   Error
                 </Typography>
               ) : (
-                formatNumber(teamsCount?.active)
+                formatNumber(teamsCount)
               )
             }
             icon={<GroupIcon />}
@@ -179,16 +195,21 @@ const Dashboard = () => {
       </Box>
 
       {/* Charts Row */}
-      <Box display="grid" gridTemplateColumns={{ xs: '1fr', md: '3fr 2fr' }} gap={3} mb={4}>
+      <Box
+        display="grid"
+        gridTemplateColumns={{ xs: "1fr", md: "3fr 2fr" }}
+        gap={3}
+        mb={4}
+      >
         <Box>
           <Paper
             elevation={0}
             sx={{
               p: 3,
-              height: '100%',
+              height: "100%",
               borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
+              border: "1px solid",
+              borderColor: "divider",
             }}
           >
             <Typography variant="h6" gutterBottom fontWeight={600}>
@@ -204,10 +225,10 @@ const Dashboard = () => {
             elevation={0}
             sx={{
               p: 3,
-              height: '100%',
+              height: "100%",
               borderRadius: 2,
-              border: '1px solid',
-              borderColor: 'divider',
+              border: "1px solid",
+              borderColor: "divider",
             }}
           >
             <Typography variant="h6" gutterBottom fontWeight={600}>
@@ -224,8 +245,8 @@ const Dashboard = () => {
         sx={{
           p: 3,
           borderRadius: 2,
-          border: '1px solid',
-          borderColor: 'divider',
+          border: "1px solid",
+          borderColor: "divider",
         }}
       >
         <Typography variant="h6" gutterBottom fontWeight={600}>

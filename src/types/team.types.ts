@@ -78,11 +78,8 @@ export interface TeamCountResponse {
   message: string;
   data: {
     totalEquipos: number;
-    porSubcategoria: Array<{
-      subcategoriaId: number;
-      subcategoriaNombre: string;
-      total: number;
-    }>;
+    equiposActivos: number;
+    equiposInactivos: number;
   };
   timestamp: string;
 }
