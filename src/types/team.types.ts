@@ -8,15 +8,15 @@ export interface Team {
   nombre: string;
   fundacion: string;
   jugadoresCount: number;
-  estado: 'active' | 'inactive';
+  estado: string;
 }
 
 // Request interfaces
 export interface CreateTeamRequest {
-  nombre: string;
-  fundacion: string;
+  subcategoriaId: number;
   serieId: number;
-  estado?: 'active' | 'inactive';
+  nombre: string;
+  estado?: 'activo' | 'inactivo';
 }
 
 export interface UpdateTeamRequest extends Partial<CreateTeamRequest> { }

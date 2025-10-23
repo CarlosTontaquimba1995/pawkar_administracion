@@ -118,7 +118,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({ open, onClose, onSuccess })
 
     try {
       setLoading(true);
-      await teamService.createTeamsBulk(token, teams);
+      await teamService.createTeamsBulk({ equipos: teams });
       
       setSnackbar({
         open: true,

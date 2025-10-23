@@ -79,12 +79,12 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
   useEffect(() => {
     const fetchTeamData = async () => {
       if (!token || !open) return;
-      
+
       try {
         setLoading(true);
-        const response = await teamService.getTeamById(token, teamId);
+        const response = await teamService.getTeamById(teamId);
         const teamData = response.data;
-        
+
         setTeam({
           equipoId: teamData.equipoId,
           subcategoriaId: teamData.subcategoriaId,
@@ -92,24 +92,24 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
           serieId: teamData.serieId,
           serieNombre: teamData.serieNombre,
           nombre: teamData.nombre,
-          fundacion: teamData.fundacion.split('T')[0],
-          jugadoresCount: teamData.jugadoresCount
+          fundacion: teamData.fundacion.split("T")[0],
+          jugadoresCount: teamData.jugadoresCount,
         });
-        
+
         // Fetch series for the team's subcategory
         await fetchSeriesForSubcategoria(teamData.subcategoriaId);
       } catch (error) {
-        console.error('Error fetching team data:', error);
+        console.error("Error fetching team data:", error);
         setSnackbar({
           open: true,
-          message: 'Error al cargar los datos del equipo',
-          severity: 'error'
+          message: "Error al cargar los datos del equipo",
+          severity: "error",
         });
       } finally {
         setLoading(false);
       }
     };
-    
+
     if (open) {
       fetchTeamData();
     }
@@ -119,50 +119,53 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
   useEffect(() => {
     const fetchSubcategorias = async () => {
       if (!token) return;
-      
+
       try {
         setLoadingSubcategorias(true);
-        const response = await fetch('http://localhost:8080/api/subcategorias', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+        const response = await fetch(
+          "http://localhost:8080/api/subcategorias",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
           }
-        });
-        
+        );
+
         if (!response.ok) {
-          throw new Error('Error al cargar las subcategorías');
+          throw new Error("Error al cargar las subcategorías");
         }
-        
+
         const data = await response.json();
         if (data.success && Array.isArray(data.data)) {
           setSubcategorias(data.data);
         }
       } catch (error) {
-        console.error('Error fetching subcategorias:', error);
-        setSubcategoriaError('No se pudieron cargar las subcategorías');
+        console.error("Error fetching subcategorias:", error);
+        setSubcategoriaError("No se pudieron cargar las subcategorías");
       } finally {
         setLoadingSubcategorias(false);
       }
     };
-    
+
     if (open) {
       fetchSubcategorias();
     }
   }, [token, open]);
 
   const handleTeamChange = (field: string, value: string | number) => {
-    setTeam(prev => ({
+    setTeam((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
-    
+
     // If subcategory changed, fetch series for the new subcategory
-    if (field === 'subcategoriaId' && value !== team.subcategoriaId) {
+    if (field === "subcategoriaId" && value !== team.subcategoriaId) {
       fetchSeriesForSubcategoria(Number(value));
       // Reset serieId when subcategory changes
-      setTeam(prev => ({
+      setTeam((prev) => ({
         ...prev,
         serieId: 0,
-        serieNombre: ''
+        serieNombre: "",
       }));
     }
   };
@@ -170,90 +173,96 @@ const EditTeam: React.FC<EditTeamProps> = ({ open, onClose, onSuccess, teamId })
   // Fetch series for a specific subcategoria
   const fetchSeriesForSubcategoria = async (subcategoriaId: number) => {
     if (!token || !subcategoriaId) return;
-    
+
     // Don't fetch if we already have the series for this subcategoria
     if (series[subcategoriaId]) return;
-    
-    setLoadingSeries(prev => ({ ...prev, [subcategoriaId]: true }));
-    
+
+    setLoadingSeries((prev) => ({ ...prev, [subcategoriaId]: true }));
+
     try {
-      const seriesData = await serieService.getSeriesBySubcategoria(token, subcategoriaId);
-      
-      setSeries(prev => ({
+      const seriesData = await serieService.getSeriesBySubcategoria(
+        token,
+        subcategoriaId
+      );
+
+      setSeries((prev) => ({
         ...prev,
-        [subcategoriaId]: seriesData
+        [subcategoriaId]: seriesData,
       }));
-      
     } catch (error) {
-      console.error('Error fetching series:', error);
+      console.error("Error fetching series:", error);
       setSnackbar({
         open: true,
-        message: 'Error al cargar las series. Por favor, intente nuevamente.',
-        severity: 'error'
+        message: "Error al cargar las series. Por favor, intente nuevamente.",
+        severity: "error",
       });
     } finally {
-      setLoadingSeries(prev => ({ ...prev, [subcategoriaId]: false }));
+      setLoadingSeries((prev) => ({ ...prev, [subcategoriaId]: false }));
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!token) {
       setSnackbar({
         open: true,
-        message: 'No se encontró el token de autenticación',
-        severity: 'error'
+        message: "No se encontró el token de autenticación",
+        severity: "error",
       });
       return;
     }
 
     // Validate all required fields
-    if (!team.nombre || !team.fundacion || !team.subcategoriaId || !team.serieId) {
+    if (
+      !team.nombre ||
+      !team.fundacion ||
+      !team.subcategoriaId ||
+      !team.serieId
+    ) {
       setSnackbar({
         open: true,
-        message: 'Por favor complete todos los campos obligatorios',
-        severity: 'error'
+        message: "Por favor complete todos los campos obligatorios",
+        severity: "error",
       });
       return;
     }
 
     try {
       setLoading(true);
-      
+
       const teamData = {
         nombre: team.nombre,
         fundacion: team.fundacion,
         subcategoriaId: team.subcategoriaId,
-        serieId: team.serieId
+        serieId: team.serieId,
       };
-      
-      await teamService.updateTeam(token, teamId, teamData);
-      
+
+      await teamService.updateTeam(teamId, teamData);
+
       setSnackbar({
         open: true,
-        message: 'Equipo actualizado exitosamente',
-        severity: 'success'
+        message: "Equipo actualizado exitosamente",
+        severity: "success",
       });
-      
+
       // Notify parent component and close the dialog
       onSuccess();
       onClose();
-      
     } catch (error: any) {
-      console.error('Error al actualizar el equipo:', error);
-      
-      let errorMessage = 'Error al actualizar el equipo';
+      console.error("Error al actualizar el equipo:", error);
+
+      let errorMessage = "Error al actualizar el equipo";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
       } else if (error.message) {
         errorMessage = error.message;
       }
-      
+
       setSnackbar({
         open: true,
         message: errorMessage,
-        severity: 'error'
+        severity: "error",
       });
     } finally {
       setLoading(false);

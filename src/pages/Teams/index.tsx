@@ -693,10 +693,10 @@ const Teams = () => {
                       <TableCell>
                         <Chip
                           label={
-                            team.estado === "active" ? "Activo" : "Inactivo"
+                            team.estado === "activo" ? "Activo" : "Inactivo"
                           }
                           color={
-                            team.estado === "active" ? "success" : "default"
+                            team.estado === "activo" ? "success" : "default"
                           }
                           size="small"
                           sx={{

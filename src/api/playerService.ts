@@ -1,173 +1,142 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
+import {
+  PlayerResponse,
+  PlayerListResponse,
+  PlayerCountResponse,
+  CreatePlayerRequest,
+  UpdatePlayerRequest,
+  CreateMultiplePlayersRequest,
+  PlayerQueryParams
+} from '../types/player.types';
 
 const API_URL = 'http://localhost:8080/api/jugadores';
 
-export interface Player {
-  id: number;
-  nombre: string;
-  apellido: string;
-  fechaNacimiento: string;
-  documentoIdentidad: string;
-  estado: string;
-  nombreEquipo?: string;
-  nombreRol?: string;
-  rolDetail?: string;
-  rolId?: number;
-  subcategoriaId?: number;
-  numeroCamiseta?: number;
-}
+// Create axios instance with default config
+const api = axios.create({
+  baseURL: API_URL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-export interface PlayerData {
-  nombre: string;
-  apellido: string;
-  fechaNacimiento: string;
-  documentoIdentidad: string;
-  equipoId?: number;
-  jugadorId?: number;
-  numeroCamiseta?: string | number;
-  rolId?: number;
-}
-
-interface PlayersResponse {
-  content: Player[];
-  pageable: {
-    pageNumber: number;
-    pageSize: number;
-    sort: {
-      empty: boolean;
-      sorted: boolean;
-      unsorted: boolean;
-    };
-    offset: number;
-    paged: boolean;
-    unpaged: boolean;
-  };
-  totalPages: number;
-  totalElements: number;
-  last: boolean;
-  size: number;
-  number: number;
-  sort: {
-    empty: boolean;
-    sorted: boolean;
-    unsorted: boolean;
-  };
-  numberOfElements: number;
-  first: boolean;
-  empty: boolean;
-}
-
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-  timestamp: string;
-}
+// Add request interceptor to include auth token in headers
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 const playerService = {
-  async getPlayers(
-    token: string, 
-    page: number = 0, 
-    size: number = 10, 
-    search: string = ''
-  ): Promise<PlayersResponse> {
+  /**
+   * Get paginated list of players with optional search and sorting
+   * @param params Query parameters for pagination, sorting, and searching
+   */
+  async getPlayers(params?: PlayerQueryParams): Promise<PlayerListResponse> {
     try {
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('size', size.toString());
-      
-      if (search) {
-        params.append('search', search);
-      }
-      
-      const response = await axios.get(API_URL, {
-        params,
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      return response.data.data;
-    } catch (error) {
-      console.error('Error fetching players:', error);
-      throw error;
-    }
-  },
-
-  async getPlayerById(token: string, id: number): Promise<Player> {
-    try {
-      const response = await axios.get(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      return response.data.data;
-    } catch (error) {
-      console.error(`Error fetching player with id ${id}:`, error);
-      throw error;
-    }
-  },
-
-  async registerPlayers(players: Omit<PlayerData, 'jugadorId'>[], token: string) {
-    try {
-      // Format the players data to match the expected API format
-      const formattedPlayers = players.map(player => ({
-        ...player,
-        numeroCamiseta: Number(player.numeroCamiseta) || 0,
-        equipoId: player.equipoId || 0,
-        rolId: player.rolId || 0
-      }));
-
-      const response = await axios.post(
-        `${API_URL}/bulk`,
-        { jugadores: formattedPlayers },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
+      const response = await api.get<PlayerListResponse>('', { params });
       return response.data;
-    } catch (error: any) {
-      if (error.response) {
-        return error.response.data;
-      }
-      throw error;
-    }
-  },
-
-  async updatePlayer(
-    token: string, 
-    id: number, 
-    playerData: PlayerData
-  ): Promise<ApiResponse<Player>> {
-    try {
-      const response = await axios.put(
-        `${API_URL}/${id}`,
-        playerData,
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          }
-        }
-      );
-      return response.data;
-    } catch (error: any) {
-      console.error('Error updating player:', error);
-      throw error;
-    }
-  },
-
-  async deletePlayer(token: string, id: number): Promise<void> {
-    try {
-      await axios.delete(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
     } catch (error) {
-      console.error(`Error deleting player with id ${id}:`, error);
+      const axiosError = error as AxiosError;
+      console.error('Error fetching players:', axiosError.response?.data || axiosError.message);
       throw error;
     }
-  }
+  },
+
+  /**
+   * Get total count of active players
+   */
+  async getActivePlayersCount(): Promise<PlayerCountResponse> {
+    try {
+      const response = await api.get<PlayerCountResponse>('/count');
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error('Error fetching active players count:', axiosError.response?.data || axiosError.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Get player by ID
+   * @param id Player ID
+   */
+  async getPlayerById(id: number): Promise<PlayerResponse> {
+    try {
+      const response = await api.get<PlayerResponse>(`/${id}`);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error(`Error fetching player with id ${id}:`, axiosError.response?.data || axiosError.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Create a new player
+   * @param playerData Player data to create
+   */
+  async createPlayer(playerData: CreatePlayerRequest): Promise<PlayerResponse> {
+    try {
+      const response = await api.post<PlayerResponse>('', playerData);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error('Error creating player:', axiosError.response?.data || axiosError.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Update an existing player
+   * @param id Player ID
+   * @param playerData Updated player data
+   */
+  async updatePlayer(id: number, playerData: UpdatePlayerRequest): Promise<PlayerResponse> {
+    try {
+      const response = await api.put<PlayerResponse>(`/${id}`, playerData);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error(`Error updating player with id ${id}:`, axiosError.response?.data || axiosError.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Delete a player
+   * @param id Player ID to delete
+   */
+  async deletePlayer(id: number): Promise<void> {
+    try {
+      await api.delete(`/${id}`);
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error(`Error deleting player with id ${id}:`, axiosError.response?.data || axiosError.message);
+      throw error;
+    }
+  },
+
+  /**
+   * Create multiple players in a single request
+   * @param data Object containing array of players to create
+   */
+  async createMultiplePlayers(data: CreateMultiplePlayersRequest): Promise<PlayerListResponse> {
+    try {
+      const response = await api.post<PlayerListResponse>('/bulk', data);
+      return response.data;
+    } catch (error) {
+      const axiosError = error as AxiosError;
+      console.error('Error creating multiple players:', axiosError.response?.data || axiosError.message);
+      throw error;
+    }
+  },
 };
 
 export default playerService;
