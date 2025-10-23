@@ -5,6 +5,7 @@ export interface Subcategoria {
   descripcion: string;
   categoriaId: number;
   categoriaNombre: string;
+  estado?: boolean;
 }
 
 // Request interfaces

@@ -70,7 +70,7 @@ export const categoriaService = {
      * Obtiene todas las categorías
      */
     async getCategorias(): Promise<CategoriaListResponse> {
-        const response = await api.get<CategoriaListResponse>('/');
+        const response = await api.get<CategoriaListResponse>('');
         return response.data;
     },
 

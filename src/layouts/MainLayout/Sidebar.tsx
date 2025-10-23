@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
+  Category as CategoryIcon,
   Groups as TeamsIcon,
   People as PlayersIcon,
   Event as EventsIcon,
@@ -57,6 +58,7 @@ interface SidebarProps {
 
 const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
+  { text: "Categorías", icon: <CategoryIcon />, path: "/categories" },
   { text: "Equipos", icon: <TeamsIcon />, path: "/teams" },
   { text: "Jugadores", icon: <PlayersIcon />, path: "/players" },
   { text: "Eventos", icon: <EventsIcon />, path: "/events" },
