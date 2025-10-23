@@ -84,13 +84,6 @@ export interface TeamCountResponse {
   timestamp: string;
 }
 
-export interface TeamExistsResponse {
-  success: boolean;
-  message: string;
-  data: boolean;
-  timestamp: string;
-}
-
 // Query parameter interfaces
 export interface TeamQueryParams {
   page?: number;

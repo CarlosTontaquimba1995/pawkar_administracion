@@ -3,7 +3,6 @@ import {
   TeamResponse,
   TeamListResponse,
   TeamCountResponse,
-  TeamExistsResponse,
   CreateTeamRequest,
   UpdateTeamRequest,
   CreateMultipleTeamsRequest,
@@ -117,8 +116,8 @@ const teamService = {
    * Verifica si existen equipos registrados en el sistema
    */
   async checkTeamsExist(): Promise<boolean> {
-    const response = await api.get<TeamExistsResponse>('/existen');
-    return response.data.data;
+    const response = await api.get<boolean>('/existen');
+    return response.data; 
   },
 
   /**
