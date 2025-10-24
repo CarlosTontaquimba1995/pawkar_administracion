@@ -25,6 +25,7 @@ import {
   Settings as SettingsIcon,
   Logout as LogoutIcon,
   ErrorOutline as ErrorIcon,
+  RollerShades,
 } from "@mui/icons-material";
 import teamService from "../../api/teamService";
 
@@ -59,6 +60,7 @@ interface SidebarProps {
 const menuItems = [
   { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
   { text: "Categorías", icon: <CategoryIcon />, path: "/categories" },
+  { text: "Roles", icon: <RollerShades />, path: "/roles" },
   { text: "Equipos", icon: <TeamsIcon />, path: "/teams" },
   { text: "Jugadores", icon: <PlayersIcon />, path: "/players" },
   { text: "Eventos", icon: <EventsIcon />, path: "/events" },
@@ -93,9 +95,26 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
   const handleNavigation = async (path: string) => {
     if (path === "/logout") {
-      logout();
+      await logout();
       navigate("/login");
       return;
+    }
+
+    // Verificar si se está accediendo al módulo de roles
+    if (path === "/roles") {
+      try {
+        const hasData = await verificationService.checkRequiredRegistrations();
+        if (!hasData) {
+          toast.error(
+            "Debe existir al menos una categoría registrada para acceder a este módulo"
+          );
+          return;
+        }
+      } catch (error) {
+        console.error("Error verificando datos requeridos:", error);
+        alert("Error al verificar los datos requeridos");
+        return;
+      }
     }
 
     // Check if trying to access Teams or Players module

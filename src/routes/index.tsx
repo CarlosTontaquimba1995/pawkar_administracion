@@ -14,6 +14,7 @@ const TeamsPage = lazy(() => import('@/pages/Teams'));
 const PlayersPage = lazy(() => import('@/pages/Players'));
 const EventsPage = lazy(() => import('@/pages/Events'));
 const CategoriesPage = lazy(() => import('@/pages/Categories'));
+const RolesPage = lazy(() => import('@/pages/Roles'));
 const NotFoundPage = lazy(() => import('@/pages/NotFound'));
 
 const LoadingSpinner = () => (
@@ -56,6 +57,7 @@ const AppRoutes = () => {
           <Route path="players" element={<PlayersPage />} />
           <Route path="events" element={<EventsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
+          <Route path="roles" element={<RolesPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
