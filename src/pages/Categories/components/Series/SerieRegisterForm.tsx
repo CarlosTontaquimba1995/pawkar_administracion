@@ -59,8 +59,7 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
       setSeries([
         {
           serieId: Date.now(),
-          nombre: "",
-          descripcion: "",
+          nombreSerie: "",
           subcategoriaId: defaultSubcategoriaId,
           subcategoriaNombre:
             subcategorias.find(
@@ -78,8 +77,7 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
       ...series,
       {
         serieId: Date.now() + series.length,
-        nombre: "",
-        descripcion: "",
+        nombreSerie: "",
         subcategoriaId: defaultSubcategoriaId,
         subcategoriaNombre:
           subcategorias.find((s) => s.subcategoriaId === defaultSubcategoriaId)
@@ -97,8 +95,16 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
         {
           ...series[0],
           serieId: Date.now(),
-          nombre: "",
-          descripcion: "",
+          nombreSerie: "",
+          subcategoriaId:
+            subcategoriaId || subcategorias[0]?.subcategoriaId || 0,
+          subcategoriaNombre:
+            subcategorias.find(
+              (s) =>
+                s.subcategoriaId === subcategoriaId ||
+                subcategorias[0]?.subcategoriaId ||
+                0
+            )?.nombre || "",
         },
       ]);
     }
@@ -133,7 +139,7 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!token) {
       setSnackbar({
         open: true,
@@ -143,25 +149,26 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
       return;
     }
 
+    // Validate all fields are filled
+    const hasEmptyFields = series.some(
+      (serie) => !serie.nombreSerie.trim()
+    );
+
+    if (hasEmptyFields) {
+      setSnackbar({
+        open: true,
+        message: "Por favor complete todos los campos obligatorios",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-
-      // Filter out empty series
-      const validSeries = series.filter((s) => s.nombre.trim() !== "");
-
-      if (validSeries.length === 0) {
-        setSnackbar({
-          open: true,
-          message: "Por favor ingrese al menos una serie válida",
-          severity: "error",
-        });
-        return;
-      }
-
+      
       // Prepare series data for bulk creation
-      const seriesToCreate = validSeries.map((s) => ({
-        nombre: s.nombre.trim(),
-        descripcion: s.descripcion.trim(),
+      const seriesToCreate = series.map((s) => ({
+        nombreSerie: s.nombreSerie.trim(),
         subcategoriaId: s.subcategoriaId,
       }));
 
@@ -172,21 +179,35 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
 
       setSnackbar({
         open: true,
-        message: `Se crearon ${validSeries.length} ${
-          validSeries.length === 1 ? "serie" : "series"
-        } exitosamente`,
+        message: "Series registradas exitosamente",
         severity: "success",
       });
 
+      // Call onSuccess to notify parent component
       onSuccess();
-      onClose();
+
+      // Reset form
+      const defaultSubcategoriaId = subcategoriaId || subcategorias[0]?.subcategoriaId || 0;
+      setSeries([
+        {
+          serieId: Date.now(),
+          nombreSerie: "",
+          subcategoriaId: defaultSubcategoriaId,
+          subcategoriaNombre:
+            subcategorias.find((s) => s.subcategoriaId === defaultSubcategoriaId)?.nombre || "",
+        },
+      ]);
+      
+      // Close the modal after a short delay
+      setTimeout(() => {
+        onClose();
+      }, 1000);
     } catch (error: any) {
-      console.error("Error creating series:", error);
+      console.error("Error al crear las series:", error);
+      const errorMessage = error.response?.data?.message || "Error al crear las series";
       setSnackbar({
         open: true,
-        message:
-          error.response?.data?.message ||
-          "Error al crear las series. Por favor, intente nuevamente.",
+        message: errorMessage,
         severity: "error",
       });
     } finally {
@@ -322,35 +343,17 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
                       <TextField
                         fullWidth
                         label={`Serie ${index + 1}`}
-                        value={serie.nombre}
+                        value={serie.nombreSerie}
                         onChange={(e) =>
                           handleSerieChange(
                             serie.serieId,
-                            "nombre",
+                            "nombreSerie",
                             e.target.value
                           )
                         }
                         size="small"
                         disabled={loading}
                         required
-                      />
-                    </Box>
-                    <Box>
-                      <TextField
-                        label="Descripción"
-                        value={serie.descripcion}
-                        onChange={(e) =>
-                          handleSerieChange(
-                            serie.serieId,
-                            "descripcion",
-                            e.target.value
-                          )
-                        }
-                        fullWidth
-                        multiline
-                        rows={2}
-                        size="small"
-                        disabled={loading}
                       />
                     </Box>
                   </Paper>

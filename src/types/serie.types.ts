@@ -9,8 +9,7 @@ export interface Serie {
 }
 
 export interface CreateSerieRequest {
-    nombre: string;
-    descripcion: string;
+    nombreSerie: string;
     subcategoriaId: number;
 }
 
