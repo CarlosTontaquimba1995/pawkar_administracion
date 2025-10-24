@@ -46,7 +46,7 @@ interface SeriesTableProps {
 const SeriesTable: React.FC<SeriesTableProps> = ({
   subcategorias = [],
   loading = false,
-  onRefresh,  
+  onRefresh,
   onEdit,
 }) => {
   const [page, setPage] = useState(0);
@@ -152,9 +152,8 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
         (serie) =>
           (serie.nombreSerie?.toLowerCase() || "").includes(searchLower) ||
           (
-            subcategorias.find(
-              (s) => s.subcategoriaId === serie.subcategoriaId
-            )?.nombre || ""
+            subcategorias.find((s) => s.subcategoriaId === serie.subcategoriaId)
+              ?.nombre || ""
           )
             .toLowerCase()
             .includes(searchLower)
@@ -193,9 +192,6 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
             }}
             displayEmpty
           >
-            <MenuItem value="">
-              <em>Seleccionar subcategoría</em>
-            </MenuItem>
             {subcategorias.map((sub) => (
               <MenuItem key={sub.subcategoriaId} value={sub.subcategoriaId}>
                 {sub.nombre}

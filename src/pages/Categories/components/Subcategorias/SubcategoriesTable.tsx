@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Table,
   TableBody,
@@ -21,6 +21,10 @@ import {
   DialogActions,
   Button,
   CircularProgress,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -38,17 +42,23 @@ interface SubcategoriesTableProps {
 }
 
 const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
-  subcategories,
+  subcategories: initialSubcategories,
   categories,
   onRefresh,
 }) => {
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [subcategoryToDelete, setSubcategoryToDelete] = useState<number | null>(
     null
   );
+  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
+  const [filteredSubcategories, setFilteredSubcategories] = useState<
+    Subcategoria[]
+  >([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -103,29 +113,85 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
     return category?.nombre || "Sin categoría";
   };
 
+  // Fetch subcategories when category changes
+  useEffect(() => {
+    const fetchSubcategories = async () => {
+      if (!selectedCategory) {
+        setFilteredSubcategories(initialSubcategories);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const response = await subcategoriaService.getSubcategoriasByCategoria(
+          selectedCategory
+        );
+        setFilteredSubcategories(response.data);
+      } catch (error) {
+        console.error("Error fetching subcategories:", error);
+        setFilteredSubcategories([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSubcategories();
+  }, [selectedCategory, initialSubcategories]);
+
+  // Set first category on initial load
+  useEffect(() => {
+    if (initialLoad && categories.length > 0) {
+      setSelectedCategory(categories[0]?.categoriaId || null);
+      setInitialLoad(false);
+    }
+  }, [categories, initialLoad]);
+
   // Filter subcategories based on search term
-  const filteredSubcategories = subcategories.filter(
-    (subcategory) =>
-      subcategory.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      getCategoryName(subcategory.categoriaId)
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-  );
+  const searchedSubcategories = React.useMemo(() => {
+    if (!searchTerm) return filteredSubcategories;
+
+    const searchLower = searchTerm.toLowerCase();
+    return filteredSubcategories.filter(
+      (subcategory) =>
+        subcategory.nombre.toLowerCase().includes(searchLower) ||
+        getCategoryName(subcategory.categoriaId)
+          .toLowerCase()
+          .includes(searchLower)
+    );
+  }, [filteredSubcategories, searchTerm, categories]);
+
+  // Handle category change
+  const handleCategoryChange = (event: any) => {
+    const categoryId =
+      event.target.value === "" ? null : Number(event.target.value);
+    setSelectedCategory(categoryId);
+    setPage(0);
+  };
 
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
     page > 0
-      ? Math.max(0, (1 + page) * rowsPerPage - filteredSubcategories.length)
+      ? Math.max(0, (1 + page) * rowsPerPage - searchedSubcategories.length)
       : 0;
 
   return (
     <Box>
-      <Box
-        mb={2}
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-      >
+      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
+        <FormControl sx={{ minWidth: 200 }} size="small">
+          <InputLabel>Filtrar por categoría</InputLabel>
+          <Select
+            value={selectedCategory || ""}
+            onChange={handleCategoryChange}
+            label="Filtrar por categoría"
+          >
+            {categories.map((category) => (
+              <MenuItem key={category.categoriaId} value={category.categoriaId}>
+                {category.nombre}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <TextField
           variant="outlined"
           size="small"
@@ -139,6 +205,7 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
               </InputAdornment>
             ),
           }}
+          sx={{ minWidth: 250 }}
         />
       </Box>
 
@@ -154,7 +221,15 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredSubcategories.length === 0 ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={5} align="center">
+                  <Box py={4}>
+                    <CircularProgress />
+                  </Box>
+                </TableCell>
+              </TableRow>
+            ) : searchedSubcategories.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={5} align="center">
                   <Box py={4}>
@@ -166,7 +241,7 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
               </TableRow>
             ) : (
               <>
-                {filteredSubcategories
+                {searchedSubcategories
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((subcategory) => (
                     <TableRow key={subcategory.subcategoriaId}>
@@ -233,7 +308,7 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}
         component="div"
-        count={filteredSubcategories.length}
+        count={searchedSubcategories.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
