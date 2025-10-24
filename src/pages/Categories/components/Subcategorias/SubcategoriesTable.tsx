@@ -31,9 +31,11 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
+import { Snackbar, Alert } from "@mui/material";
 import { Subcategoria } from "../../../../types/subcategoria.types";
 import { Categoria } from "../../../../types/categoria.types";
 import subcategoriaService from "@/api/subcategoriaService";
+import SubcategoriaEditForm from "./SubcategoriaEditForm";
 
 interface SubcategoriesTableProps {
   subcategories: Subcategoria[];
@@ -59,6 +61,20 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
   >([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSubcategoryId, setEditingSubcategoryId] = useState<
+    number | null
+  >(null);
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "warning",
+  });
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -77,8 +93,8 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
   };
 
   const handleEdit = (id: number) => {
-    // Implement edit navigation
-    console.log("Edit subcategory:", id);
+    setEditingSubcategoryId(id);
+    setEditDialogOpen(true);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -90,11 +106,40 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
 
     try {
       setIsDeleting(true);
-      await subcategoriaService.deleteSubcategoria(subcategoryToDelete);
-      // La notificación de éxito se manejará en el componente padre
-      await onRefresh();
-    } catch (error) {
-      // La notificación de error se manejará en el componente padre
+      const response = await subcategoriaService.deleteSubcategoria(
+        subcategoryToDelete
+      );
+
+      if (response.success) {
+        setSnackbar({
+          open: true,
+          message: response.message,
+          severity: "success",
+        });
+        await onRefresh();
+      } else {
+        throw new Error(
+          response.message || "Error al eliminar la subcategoría"
+        );
+      }
+    } catch (error: any) {
+      console.error("Error al eliminar la subcategoría:", error);
+
+      // Handle 400 Bad Request with custom message
+      if (error.response?.data?.message) {
+        setSnackbar({
+          open: true,
+          message: error.response.data.message,
+          severity: "error",
+        });
+      } else {
+        // Handle other errors
+        setSnackbar({
+          open: true,
+          message: error.message || "Error al eliminar la subcategoría",
+          severity: "error",
+        });
+      }
     } finally {
       setSubcategoryToDelete(null);
       setIsDeleting(false);
@@ -315,6 +360,34 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
         labelDisplayedRows={({ from, to, count }) =>
           `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
         }
+      />
+
+      {/* Snackbar para mostrar mensajes */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Edit Dialog */}
+      <SubcategoriaEditForm
+        open={editDialogOpen}
+        onClose={() => setEditDialogOpen(false)}
+        onSuccess={async () => {
+          await onRefresh();
+          setEditDialogOpen(false);
+        }}
+        subcategoriaId={editingSubcategoryId || 0}
+        categorias={categories}
       />
 
       {/* Diálogo de confirmación para eliminar */}

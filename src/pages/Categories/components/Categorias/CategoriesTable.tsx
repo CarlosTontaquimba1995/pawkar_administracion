@@ -27,8 +27,10 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
+import { Snackbar, Alert } from "@mui/material";
 import { Categoria } from "@/types/categoria.types";
 import categoriaService from "@/api/categoriaService";
+import CategoriaEditForm from "./CategoriaEditForm";
 
 interface CategoriesTableProps {
   categories: Categoria[];
@@ -44,6 +46,19 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<number | null>(
+    null
+  );
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "warning",
+  });
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -62,8 +77,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   };
 
   const handleEdit = (id: number) => {
-    // Implement edit navigation
-    console.log("Edit category:", id);
+    setEditingCategoryId(id);
   };
 
   const handleDeleteClick = (id: number) => {
@@ -75,11 +89,36 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
 
     try {
       setIsDeleting(true);
-      await categoriaService.deleteCategoria(categoryToDelete);
-      // La notificación de éxito se manejará en el componente padre
-      await onRefresh();
-    } catch (error) {
-      // La notificación de error se manejará en el componente padre
+      const response = await categoriaService.deleteCategoria(categoryToDelete);
+
+      if (response.success) {
+        setSnackbar({
+          open: true,
+          message: response.message,
+          severity: "success",
+        });
+        await onRefresh();
+      } else {
+        throw new Error(response.message || "Error al eliminar la categoría");
+      }
+    } catch (error: any) {
+      console.error("Error al eliminar la categoría:", error);
+
+      // Handle 400 Bad Request with custom message
+      if (error.response?.data?.message) {
+        setSnackbar({
+          open: true,
+          message: error.response.data.message,
+          severity: "error",
+        });
+      } else {
+        // Handle other errors
+        setSnackbar({
+          open: true,
+          message: error.message || "Error al eliminar la categoría",
+          severity: "error",
+        });
+      }
     } finally {
       setCategoryToDelete(null);
       setIsDeleting(false);
@@ -260,6 +299,30 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
           }
         />
       </Box>
+
+      {/* Edit Category Dialog */}
+      {editingCategoryId !== null && (
+        <CategoriaEditForm
+          open={!!editingCategoryId}
+          onClose={() => setEditingCategoryId(null)}
+          onSuccess={onRefresh}
+          categoriaId={editingCategoryId || 0}
+        />
+      )}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

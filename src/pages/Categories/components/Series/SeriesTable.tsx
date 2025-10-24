@@ -34,6 +34,7 @@ import {
 import { Serie } from "@/types/serie.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import serieService from "@/api/serieService";
+import { log } from "console";
 
 interface SeriesTableProps {
   series: Serie[];
@@ -49,6 +50,9 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
   onRefresh,
   onEdit,
 }) => {
+  console.log("SeriesTable props:", {
+    subcategorias,
+  });
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");

@@ -34,35 +34,10 @@ import playerService from "../../api/playerService";
 import teamService from "../../api/teamService";
 import subcategoriaRolesService from "../../api/subcategoriaRolesService";
 import subcategoriaService from "../../api/subcategoriaService";
-
-interface Subcategoria {
-  subcategoriaId: number;
-  nombre: string;
-}
-
-interface Serie {
-  serieId: number;
-  subcategoriaId: number;
-  subcategoriaNombre: string;
-  nombreSerie: string;
-}
-
-interface Rol {
-  id: number;
-  name: string;
-  detail: string;
-}
-
-interface PlayerFormData {
-  nombre: string;
-  apellido: string;
-  fechaNacimiento: string;
-  documentoIdentidad: string;
-  equipoId?: number;
-  numeroCamiseta?: string;
-  rolId?: number;
-  rolName?: string;
-}
+import { Player } from "@/types/player.types";
+import { Subcategoria } from "@/types/subcategoria.types";
+import { Serie } from "@/types/serie.types";
+import { Role } from "@/types/role.types";
 
 interface RegisterPlayerFormProps {
   open: boolean;
@@ -77,15 +52,17 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   onSuccess,
   token,
 }) => {
-  const [players, setPlayers] = useState<PlayerFormData[]>([
+  const [players, setPlayers] = useState<Player[]>([
     {
       nombre: "",
       apellido: "",
       fechaNacimiento: "",
       documentoIdentidad: "",
-      equipoId: undefined,
-      numeroCamiseta: "",
-      rolId: undefined,
+      equipoId: 0,
+      numeroCamiseta: 0,
+      rolId: 0,
+      nombreEquipo: "",
+      nombreRol: "",
     },
   ]);
 
@@ -98,7 +75,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   const [teams, setTeams] = useState<
     Array<{ equipoId: number; nombre: string }>
   >([]);
-  const [allRoles, setAllRoles] = useState<Rol[]>([]); // Store all available roles
+  const [allRoles, setAllRoles] = useState<Role[]>([]); // Store all available roles
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]); // Track selected role IDs
 
   const [snackbar, setSnackbar] = useState<{
@@ -137,17 +114,20 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     const fetchRoles = async () => {
       if (selectedSubcategoria) {
         try {
-          const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(
-            selectedSubcategoria,
-            token
-          );
-          setAllRoles(rolesData);
+          const response =
+            await subcategoriaRolesService.getRolesPorSubcategoriaId(
+              selectedSubcategoria
+            );
+          // The response has a data property that contains the array of roles
+          const roles = response?.data || [];
+          setAllRoles(roles);
           // Reset selected roles when subcategoria changes
           setSelectedRoleIds(
             players.map((p) => p.rolId).filter(Boolean) as number[]
           );
         } catch (error) {
           console.error("Error fetching roles:", error);
+          setAllRoles([]); // Ensure allRoles is always an array
           setSnackbar({
             open: true,
             message: "Error al cargar los roles",
@@ -232,20 +212,19 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         fechaNacimiento: "",
         documentoIdentidad: "",
         equipoId: undefined,
-        numeroCamiseta: "",
+        numeroCamiseta: 0,
         rolId: undefined,
-        rolName: "",
+        nombreEquipo: "",
+        nombreRol: "",
       },
     ]);
 
     // Load roles for the selected subcategory
     if (value) {
       try {
-        const rolesData = await subcategoriaRolesService.getSubcategoriaRoles(
-          value,
-          token
-        );
-        setAllRoles(rolesData);
+        const rolesData =
+          await subcategoriaRolesService.getRolesPorSubcategoriaId(value);
+        setAllRoles(rolesData.data);
         setSelectedRoleIds([]); // Reset selected roles when subcategoria changes
       } catch (error) {
         console.error("Error fetching roles:", error);
@@ -272,9 +251,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         fechaNacimiento: "",
         documentoIdentidad: "",
         equipoId: undefined,
-        numeroCamiseta: "",
+        numeroCamiseta: 0,
         rolId: undefined,
-        rolName: "",
+        nombreEquipo: "",
+        nombreRol: "",
       },
     ]);
   };
@@ -296,7 +276,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
 
   const handlePlayerChange = (
     index: number,
-    field: keyof PlayerFormData,
+    field: keyof Player,
     value: any
   ) => {
     // If the field is documentoIdentidad or numeroCamiseta, only allow numbers
@@ -333,7 +313,6 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     event: SelectChangeEvent<number>
   ) => {
     const value = event.target.value as number;
-    const selectedRole = allRoles.find((role) => role.id === value);
 
     // Update selected roles
     const newSelectedRoleIds = [...selectedRoleIds];
@@ -354,12 +333,15 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
 
     setSelectedRoleIds(newSelectedRoleIds);
 
+    // Find the selected role from allRoles
+    const foundRole = allRoles.find((role) => role.rolId === value);
+
     // Update players
     const newPlayers = [...players];
     newPlayers[index] = {
       ...newPlayers[index],
       rolId: value || undefined,
-      rolName: selectedRole?.detail || "",
+      nombreRol: foundRole?.rolDetail || "",
     };
     setPlayers(newPlayers);
   };
@@ -434,9 +416,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
             fechaNacimiento: "",
             documentoIdentidad: "",
             equipoId: undefined,
-            numeroCamiseta: "",
+            numeroCamiseta: 0,
             rolId: undefined,
-            rolName: "",
+            nombreEquipo: "",
+            nombreRol: "",
           },
         ]);
         setSelectedSubcategoria(undefined);
@@ -914,7 +897,6 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                         }}
                       />
                     </Box>
-
                     <Box>
                       <FormControl fullWidth margin="normal">
                         <InputLabel id={`rol-label-${index}`}>Rol</InputLabel>
@@ -939,13 +921,13 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                             allRoles
                               .filter(
                                 (role) =>
-                                  !selectedRoleIds.includes(role.id) ||
-                                  players[index]?.rolId === role.id
+                                  !selectedRoleIds.includes(role.rolId) ||
+                                  players[index]?.rolId === role.rolId
                               )
                               .map((role) => (
-                                <MenuItem key={role.id} value={role.id}>
+                                <MenuItem key={role.rolId} value={role.rolId}>
                                   <Typography variant="body1">
-                                    {role.detail}
+                                    {role.rolDetail}
                                   </Typography>
                                 </MenuItem>
                               ))
