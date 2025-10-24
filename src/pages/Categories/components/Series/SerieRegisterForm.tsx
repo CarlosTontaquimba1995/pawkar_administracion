@@ -12,6 +12,7 @@ import {
   DialogContent,
   DialogActions,
   Paper,
+  Divider,
 } from "@mui/material";
 import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
 import { useAuth } from "@/contexts/AuthContext";
@@ -204,177 +205,225 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
         onClose={loading ? undefined : onClose}
         maxWidth="md"
         fullWidth
+        PaperProps={{ sx: { borderRadius: 3 } }}
       >
-        <form onSubmit={handleSubmit}>
-          <DialogTitle>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Typography variant="h6">
-                {subcategoriaId
-                  ? `Registrar Series para ${
-                      subcategorias.find(
-                        (s) => s.subcategoriaId === subcategoriaId
-                      )?.nombre || "Subcategoría"
-                    }`
-                  : "Registrar Nuevas Series"}
-              </Typography>
-              <IconButton
-                onClick={onClose}
-                disabled={loading}
-                aria-label="close"
+        <DialogTitle>
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h6">
+              {subcategoriaId
+                ? `Registrar Series para ${
+                    subcategorias.find(
+                      (s) => s.subcategoriaId === subcategoriaId
+                    )?.nombre || "Subcategoría"
+                  }`
+                : "Registrar Nuevas Series"}
+            </Typography>
+            <IconButton onClick={onClose} size="small" disabled={loading}>
+              <CloseIcon />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+        <Divider />
+        <DialogContent>
+          <form onSubmit={handleSubmit}>
+            <Box sx={{ mb: 3 }}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
               >
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent dividers>
-            <Box mb={2}>
-              <Typography variant="body2" color="textSecondary" gutterBottom>
-                Complete los campos para cada serie. Puede agregar múltiples
-                series a la vez.
-              </Typography>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<AddIcon />}
-                onClick={handleAddSerie}
-                disabled={loading}
-                sx={{ mt: 1, mb: 2 }}
-              >
-                Agregar Otra Serie
-              </Button>
-            </Box>
-
-            {series.map((serie, index) => (
-              <Paper
-                key={serie.serieId}
-                variant="outlined"
-                sx={{ p: 2, mb: 2, position: "relative" }}
-              >
-                <IconButton
+                <Typography variant="subtitle1" fontWeight="medium">
+                  Información de las Series
+                </Typography>
+                <Button
+                  variant="outlined"
                   size="small"
-                  onClick={() => handleRemoveSerie(serie.serieId)}
+                  startIcon={<AddIcon />}
+                  onClick={handleAddSerie}
                   disabled={loading}
+                >
+                  Agregar otra
+                </Button>
+              </Box>
+
+              {series.map((serie, index) => (
+                <Box
+                  key={serie.serieId}
                   sx={{
-                    position: "absolute",
-                    right: 8,
-                    top: 8,
-                    color: "error.main",
+                    position: "relative",
+                    mb: 2,
+                    "&:hover .delete-button": {
+                      opacity: 1,
+                      visibility: "visible",
+                      transform: "translate(4px, -4px)",
+                    },
+                    transition: "all 0.2s ease",
                   }}
                 >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-
-                <Typography
-                  variant="subtitle2"
-                  color="textSecondary"
-                  gutterBottom
-                >
-                  Serie {index + 1}
-                </Typography>
-
-                <Box
-                  display="grid"
-                  gap={2}
-                  gridTemplateColumns={{ xs: "1fr", md: "1fr 1fr" }}
-                >
-                  <TextField
-                    label="Nombre de la serie"
-                    value={serie.nombre}
-                    onChange={(e) =>
-                      handleSerieChange(serie.serieId, "nombre", e.target.value)
-                    }
-                    fullWidth
-                    margin="normal"
-                    required
-                    disabled={loading}
-                    size="small"
-                  />
-
-                  <TextField
-                    select
-                    label="Subcategoría"
-                    value={serie.subcategoriaId}
-                    onChange={(e) =>
-                      handleSerieChange(
-                        serie.serieId,
-                        "subcategoriaId",
-                        Number(e.target.value)
-                      )
-                    }
-                    fullWidth
-                    margin="normal"
-                    required
-                    disabled={
-                      loading || subcategorias.length === 0 || !!subcategoriaId
-                    }
-                    SelectProps={{
-                      native: true,
+                  <Paper
+                    variant="outlined"
+                    sx={{
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 2,
+                      position: "relative",
+                      overflow: "visible",
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                      },
                     }}
-                    size="small"
                   >
                     {!subcategoriaId && (
-                      <option value="">Seleccione una subcategoría</option>
+                      <Box>
+                        <TextField
+                          select
+                          fullWidth
+                          label="Subcategoría"
+                          value={serie.subcategoriaId || ""}
+                          onChange={(e) =>
+                            handleSerieChange(
+                              serie.serieId,
+                              "subcategoriaId",
+                              Number(e.target.value)
+                            )
+                          }
+                          size="small"
+                          disabled={loading}
+                          variant="outlined"
+                          InputLabelProps={{
+                            shrink: true,
+                          }}
+                          SelectProps={{
+                            native: true,
+                          }}
+                        >
+                          <option value="" disabled>
+                            Seleccione una subcategoría
+                          </option>
+                          {subcategorias.map((sub) => (
+                            <option
+                              key={`sub-${sub.subcategoriaId}`}
+                              value={sub.subcategoriaId}
+                            >
+                              {sub.nombre}
+                            </option>
+                          ))}
+                        </TextField>
+                      </Box>
                     )}
-                    {subcategorias.map((sub) => (
-                      <option
-                        key={sub.subcategoriaId}
-                        value={sub.subcategoriaId}
-                      >
-                        {sub.nombre}
-                      </option>
-                    ))}
-                  </TextField>
+                    <Box>
+                      <TextField
+                        fullWidth
+                        label={`Serie ${index + 1}`}
+                        value={serie.nombre}
+                        onChange={(e) =>
+                          handleSerieChange(
+                            serie.serieId,
+                            "nombre",
+                            e.target.value
+                          )
+                        }
+                        size="small"
+                        disabled={loading}
+                        required
+                      />
+                    </Box>
+                    <Box>
+                      <TextField
+                        label="Descripción"
+                        value={serie.descripcion}
+                        onChange={(e) =>
+                          handleSerieChange(
+                            serie.serieId,
+                            "descripcion",
+                            e.target.value
+                          )
+                        }
+                        fullWidth
+                        multiline
+                        rows={2}
+                        size="small"
+                        disabled={loading}
+                      />
+                    </Box>
+                  </Paper>
+                  {series.length > 1 && (
+                    <IconButton
+                      className="delete-button"
+                      size="small"
+                      onClick={() => handleRemoveSerie(serie.serieId)}
+                      sx={{
+                        position: "absolute",
+                        right: -12,
+                        top: -12,
+                        color: "white",
+                        backgroundColor: "error.main",
+                        opacity: 0,
+                        visibility: "hidden",
+                        transition: "all 0.2s ease",
+                        zIndex: 1,
+                        "&:hover": {
+                          backgroundColor: "error.dark",
+                          transform: "scale(1.1)",
+                        },
+                      }}
+                      disabled={loading}
+                    >
+                      <CloseIcon fontSize="small" />
+                    </IconButton>
+                  )}
                 </Box>
+              ))}
+            </Box>
 
-                <TextField
-                  label="Descripción (Opcional)"
-                  value={serie.descripcion}
-                  onChange={(e) =>
-                    handleSerieChange(
-                      serie.serieId,
-                      "descripcion",
-                      e.target.value
-                    )
-                  }
-                  fullWidth
-                  margin="normal"
-                  multiline
-                  rows={2}
-                  disabled={loading}
-                  size="small"
-                />
-              </Paper>
-            ))}
-          </DialogContent>
-
-          <DialogActions sx={{ p: 2, justifyContent: "space-between" }}>
-            <Button
-              onClick={onClose}
-              disabled={loading}
-              variant="outlined"
-              color="inherit"
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              disabled={loading || series.length === 0}
-              startIcon={loading ? <CircularProgress size={20} /> : null}
-            >
-              {loading
-                ? "Guardando..."
-                : `Guardar ${series.length} ${
-                    series.length === 1 ? "serie" : "series"
-                  }`}
-            </Button>
-          </DialogActions>
-        </form>
+            <DialogActions sx={{ px: 0 }}>
+              <Button
+                onClick={onClose}
+                variant="outlined"
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  "&:hover": {
+                    transform: "translateY(-1px)",
+                    boxShadow: 1,
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                variant="contained"
+                disabled={loading || series.length === 0}
+                startIcon={loading ? <CircularProgress size={20} /> : null}
+                sx={{
+                  borderRadius: 2,
+                  textTransform: "none",
+                  "&:hover": {
+                    transform: "translateY(-1px)",
+                    boxShadow: 2,
+                  },
+                  transition: "all 0.2s ease",
+                }}
+              >
+                {loading
+                  ? "Guardando..."
+                  : `Guardar ${series.length} ${
+                      series.length === 1 ? "serie" : "series"
+                    }`}
+              </Button>
+            </DialogActions>
+          </form>
+        </DialogContent>
       </Dialog>
 
       <Snackbar

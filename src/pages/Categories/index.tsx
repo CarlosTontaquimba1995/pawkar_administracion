@@ -24,6 +24,7 @@ import SubcategoriesTable from "./components/Subcategorias/SubcategoriesTable";
 import RegisterSubcategoriaForm from "./components/Subcategorias/RegisterSubcategoriaForm";
 import CategoriesTable from "./components/Categorias/CategoriesTable";
 import SeriesTable from "./components/Series/SeriesTable";
+import SerieRegisterForm from "./components/Series/SerieRegisterForm";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -107,6 +108,7 @@ const CategoriesPage: React.FC = () => {
 
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddSubcategoriaForm, setShowAddSubcategoriaForm] = useState(false);
+  const [showAddSerieForm, setShowAddSerieForm] = useState(false);
 
   const handleAddNew = () => {
     if (tabValue === 0) {
@@ -114,7 +116,7 @@ const CategoriesPage: React.FC = () => {
     } else if (tabValue === 1) {
       setShowAddSubcategoriaForm(true);
     } else if (tabValue === 2) {
-      navigate("/series/new");
+      setShowAddSerieForm(true);
     }
   };
 
@@ -213,6 +215,12 @@ const CategoriesPage: React.FC = () => {
         open={showAddSubcategoriaForm}
         onClose={() => setShowAddSubcategoriaForm(false)}
         onSuccess={handleSuccess}
+      />
+      <SerieRegisterForm
+        open={showAddSerieForm}
+        onClose={() => setShowAddSerieForm(false)}
+        onSuccess={handleSuccess}
+        subcategorias={subcategories}
       />
     </Box>
   );
