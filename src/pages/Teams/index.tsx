@@ -739,16 +739,7 @@ const Teams = () => {
                             size="small"
                             onClick={() => handleDeleteClick(team)}
                             disabled={isDeleting}
-                            sx={{
-                              color: "accent1.main",
-                              "&:hover": {
-                                bgcolor: "accent1.light",
-                                color: "white",
-                              },
-                              "&:disabled": {
-                                opacity: 0.5,
-                              },
-                            }}
+                            color="error"
                           >
                             {isDeleting ? (
                               <CircularProgress size={20} />

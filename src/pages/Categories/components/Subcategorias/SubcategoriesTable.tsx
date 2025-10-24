@@ -213,7 +213,6 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell>ID</TableCell>
               <TableCell>Nombre</TableCell>
               <TableCell>Categoría</TableCell>
               <TableCell>Estado</TableCell>
@@ -223,7 +222,7 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={4} align="center">
                   <Box py={4}>
                     <CircularProgress />
                   </Box>
@@ -231,7 +230,7 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
               </TableRow>
             ) : searchedSubcategories.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} align="center">
+                <TableCell colSpan={4} align="center">
                   <Box py={4}>
                     <Typography variant="body1" color="textSecondary">
                       No se encontraron subcategorías
@@ -245,7 +244,6 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                   .map((subcategory) => (
                     <TableRow key={subcategory.subcategoriaId}>
-                      <TableCell>{subcategory.subcategoriaId}</TableCell>
                       <TableCell>{subcategory.nombre}</TableCell>
                       <TableCell>
                         {getCategoryName(subcategory.categoriaId)}
@@ -296,7 +294,7 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
                   ))}
                 {emptyRows > 0 && (
                   <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={5} />
+                    <TableCell colSpan={4} />
                   </TableRow>
                 )}
               </>
