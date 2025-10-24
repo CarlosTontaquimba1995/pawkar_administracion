@@ -1,8 +1,9 @@
 // Types for Categoria
 
 export interface Categoria {
-  id: number;
+  categoriaId: number;
   nombre: string;
+  estado: boolean;
 }
 
 export interface CategoriaListResponse {

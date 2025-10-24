@@ -7,7 +7,8 @@ import {
   UpdateTeamRequest,
   CreateMultipleTeamsRequest,
   TeamQueryParams,
-  TeamBySubcategoryParams
+  TeamBySubcategoryParams,
+  TeamListPageResponse
 } from '../types/team.types';
 
 const API_URL = 'http://localhost:8080/api/equipos';
@@ -39,8 +40,8 @@ const teamService = {
    * Obtiene una lista paginada de equipos con opciones de búsqueda y ordenamiento
    * @param params Parámetros de consulta (paginación, ordenamiento, búsqueda)
    */
-  async getTeams(params?: TeamQueryParams): Promise<TeamListResponse> {
-    const response = await api.get<TeamListResponse>('', { params });
+  async getTeams(params?: TeamQueryParams): Promise<TeamListPageResponse> {
+    const response = await api.get<TeamListPageResponse>('', { params });
     return response.data;
   },
 

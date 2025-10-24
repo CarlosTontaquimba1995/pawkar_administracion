@@ -13,6 +13,7 @@ import {
   InputAdornment,
   Box,
   Typography,
+  Chip,
   Button,
   Dialog,
   DialogTitle,
@@ -26,8 +27,8 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { Categoria } from "../../../types/categoria.types";
-import { categoriaService } from "../../../api/categoriaService";
+import { Categoria } from "@/types/categoria.types";
+import categoriaService from "@/api/categoriaService";
 
 interface CategoriesTableProps {
   categories: Categoria[];
@@ -43,7 +44,6 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
-  const [loading, setLoading] = useState(false);
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -132,13 +132,14 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
           <TableHead>
             <TableRow>
               <TableCell>Nombre</TableCell>
+              <TableCell>Estado</TableCell>
               <TableCell align="right">Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredCategories.length === 0 ? (
               <TableRow key="no-results">
-                <TableCell colSpan={2} align="center">
+                <TableCell colSpan={3} align="center">
                   <Box py={4}>
                     <Typography variant="body1" color="textSecondary">
                       No se encontraron categorías
@@ -155,26 +156,45 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
                     )
                   : filteredCategories
                 ).map((category, index) => (
-                  <TableRow key={`category-${category.id || index}`}>
+                  <TableRow key={`category-${category.categoriaId || index}`}>
                     <TableCell>{category.nombre}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={category.estado ? "Activo" : "Inactivo"}
+                        color={category.estado ? "success" : "default"}
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          "&.MuiChip-colorSuccess": {
+                            bgcolor: "accent2.light",
+                            color: "accent2.dark",
+                            "&:hover": {
+                              bgcolor: "accent2.main",
+                              color: "white",
+                            },
+                          },
+                        }}
+                      />
+                    </TableCell>
                     <TableCell align="right">
                       <IconButton
-                        onClick={() => handleEdit(category.id)}
+                        onClick={() => handleEdit(category.categoriaId)}
                         size="small"
                         color="primary"
-                        disabled={loading}
+                        disabled={isDeleting}
                         aria-label={`Editar ${category.nombre}`}
                       >
                         <EditIcon />
                       </IconButton>
                       <IconButton
-                        onClick={() => handleDeleteClick(category.id)}
+                        onClick={() => handleDeleteClick(category.categoriaId)}
                         size="small"
                         color="error"
-                        disabled={loading}
+                        disabled={isDeleting}
                         aria-label={`Eliminar ${category.nombre}`}
                       >
-                        {isDeleting && categoryToDelete === category.id ? (
+                        {isDeleting &&
+                        categoryToDelete === category.categoriaId ? (
                           <CircularProgress size={24} />
                         ) : (
                           <DeleteIcon />
@@ -188,7 +208,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
                     key={`empty-rows-${page}`}
                     style={{ height: 53 * emptyRows }}
                   >
-                    <TableCell colSpan={2} />
+                    <TableCell colSpan={3} />
                   </TableRow>
                 )}
               </>

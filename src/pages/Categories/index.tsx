@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
-import CategoriaRegisterForm from "./components/CategoriaRegisterForm";
+import CategoriaRegisterForm from "./components/Categorias/CategoriaRegisterForm";
 import {
   Box,
   Button,
@@ -16,14 +16,14 @@ import {
 import { Add as AddIcon } from "@mui/icons-material";
 import { Categoria } from "../../types/categoria.types";
 import { categoriaService } from "../../api/categoriaService";
-import CategoriesTable from "./components/CategoriesTable";
 import { Subcategoria } from "@/types/subcategoria.types";
 import serieService from "@/api/serieService";
 import subcategoriaService from "@/api/subcategoriaService";
 import { Serie } from "@/types/serie.types";
-import SubcategoriesTable from "./components/SubcategoriesTable";
-import SeriesTable from "./components/SeriesTable";
-import RegisterSubcategoriaForm from "../Subcategories/components/RegisterSubcategoriaForm";
+import SubcategoriesTable from "./components/Subcategorias/SubcategoriesTable";
+import RegisterSubcategoriaForm from "./components/Subcategorias/RegisterSubcategoriaForm";
+import CategoriesTable from "./components/Categorias/CategoriesTable";
+import SeriesTable from "./components/Series/SeriesTable";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -89,7 +89,7 @@ const CategoriesPage: React.FC = () => {
         subcategoriaService.getSubcategorias(),
         serieService.getSeriesBySubcategoria(1),
       ]);
-
+      console.log(catRes);
       setCategories(catRes.data);
       setSubcategories(subRes.data);
       setSeries(serRes.data);
@@ -194,7 +194,11 @@ const CategoriesPage: React.FC = () => {
           </TabPanel>
 
           <TabPanel value={tabValue} index={2}>
-            <SeriesTable series={series} onRefresh={fetchData} />
+            <SeriesTable
+              series={series}
+              subcategorias={subcategories}
+              onRefresh={fetchData}
+            />
           </TabPanel>
         </CardContent>
       </Card>

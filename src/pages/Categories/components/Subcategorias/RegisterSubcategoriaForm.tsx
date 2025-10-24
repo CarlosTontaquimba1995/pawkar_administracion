@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -16,16 +15,12 @@ import {
   Paper,
 } from "@mui/material";
 import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
-import { useAuth } from "../../../contexts/AuthContext";
-import subcategoriaService from "../../../api/subcategoriaService";
-import categoriaService from "../../../api/categoriaService";
-import { Categoria as BaseCategoria } from "@/types/categoria.types";
 import { Subcategoria } from "@/types/subcategoria.types";
-
-// Extend the Categoria interface to include categoriaId
-interface Categoria extends BaseCategoria {
-  categoriaId?: number;
-}
+import { Categoria } from "@/types/categoria.types";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import categoriaService from "@/api/categoriaService";
+import subcategoriaService from "@/api/subcategoriaService";
 
 interface RegisterSubcategoriaFormProps {
   open: boolean;
@@ -132,7 +127,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
               [field]: isNaN(numValue) ? 0 : numValue,
               categoriaNombre:
                 categorias.find(
-                  (cat) => (cat.categoriaId || cat.id) === numValue
+                  (cat) => (cat.categoriaId || cat.categoriaId) === numValue
                 )?.nombre || "",
             };
           }
@@ -330,7 +325,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
                           </option>
                           {Array.isArray(categorias) &&
                             categorias.map((cat) => {
-                              const id = cat.categoriaId || cat.id;
+                              const id = cat.categoriaId || cat.categoriaId;
                               return (
                                 <option key={`cat-${id}`} value={id}>
                                   {cat.nombre}

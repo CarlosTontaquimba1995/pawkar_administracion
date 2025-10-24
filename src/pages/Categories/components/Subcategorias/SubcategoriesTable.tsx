@@ -27,8 +27,8 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { Subcategoria } from "../../../types/subcategoria.types";
-import { Categoria } from "../../../types/categoria.types";
+import { Subcategoria } from "../../../../types/subcategoria.types";
+import { Categoria } from "../../../../types/categoria.types";
 import subcategoriaService from "@/api/subcategoriaService";
 
 interface SubcategoriesTableProps {
@@ -99,8 +99,8 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
 
   // Get category name by ID
   const getCategoryName = (categoryId: number): string => {
-    const category = categories.find((cat) => cat.id === categoryId);
-    return category ? category.nombre : "Sin categoría";
+    const category = categories.find((cat) => cat.categoriaId === categoryId);
+    return category?.nombre || "Sin categoría";
   };
 
   // Filter subcategories based on search term
@@ -177,9 +177,24 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={subcategory.estado ? "Activo" : "Inactivo"}
-                          color={subcategory.estado ? "success" : "default"}
+                          label={
+                            subcategory.estado === true ? "Activo" : "Inactivo"
+                          }
+                          color={
+                            subcategory.estado === true ? "success" : "default"
+                          }
                           size="small"
+                          sx={{
+                            fontWeight: 500,
+                            "&.MuiChip-colorSuccess": {
+                              bgcolor: "accent2.light",
+                              color: "accent2.dark",
+                              "&:hover": {
+                                bgcolor: "accent2.main",
+                                color: "white",
+                              },
+                            },
+                          }}
                         />
                       </TableCell>
                       <TableCell align="right">

@@ -15,8 +15,8 @@ import {
   Paper,
 } from "@mui/material";
 import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
-import { useAuth } from "../../../contexts/AuthContext";
-import { categoriaService } from "../../../api/categoriaService";
+import { useAuth } from "../../../../contexts/AuthContext";
+import { categoriaService } from "../../../../api/categoriaService";
 import { Categoria } from "@/types/categoria.types";
 import { useState } from "react";
 
@@ -32,7 +32,7 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
   onSuccess,
 }) => {
   const [categorias, setCategorias] = useState<Categoria[]>([
-    { id: Date.now(), nombre: "" },
+    { categoriaId: Date.now(), nombre: "" },
   ]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -45,19 +45,21 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
   const handleAddCategoria = () => {
     setCategorias([
       ...categorias,
-      { id: Date.now() + categorias.length, nombre: "" },
+      { categoriaId: Date.now() + categorias.length, nombre: "" },
     ]);
   };
 
   const handleRemoveCategoria = (id: number) => {
     if (categorias.length > 1) {
-      setCategorias(categorias.filter((cat) => cat.id !== id));
+      setCategorias(categorias.filter((cat) => cat.categoriaId !== id));
     }
   };
 
   const handleCategoriaChange = (id: number, value: string) => {
     setCategorias(
-      categorias.map((cat) => (cat.id === id ? { ...cat, nombre: value } : cat))
+      categorias.map((cat) =>
+        cat.categoriaId === id ? { ...cat, nombre: value } : cat
+      )
     );
   };
 
@@ -106,7 +108,7 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
       });
 
       // Reset form
-      setCategorias([{ id: Date.now(), nombre: "" }]);
+      setCategorias([{ categoriaId: Date.now(), nombre: "" }]);
 
       // Notify parent component
       onSuccess();
@@ -175,7 +177,7 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
 
               {categorias.map((categoria, index) => (
                 <Box
-                  key={categoria.id}
+                  key={categoria.categoriaId}
                   sx={{
                     position: "relative",
                     mb: 2,
@@ -208,7 +210,10 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                         label={`Categoría ${index + 1}`}
                         value={categoria.nombre}
                         onChange={(e) =>
-                          handleCategoriaChange(categoria.id, e.target.value)
+                          handleCategoriaChange(
+                            categoria.categoriaId,
+                            e.target.value
+                          )
                         }
                         size="small"
                         disabled={loading}
@@ -219,7 +224,9 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                     <IconButton
                       className="delete-button"
                       size="small"
-                      onClick={() => handleRemoveCategoria(categoria.id)}
+                      onClick={() =>
+                        handleRemoveCategoria(categoria.categoriaId)
+                      }
                       sx={{
                         position: "absolute",
                         right: -12,

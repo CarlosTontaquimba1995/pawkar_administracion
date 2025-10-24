@@ -119,10 +119,9 @@ const Teams = () => {
 
       try {
         const seriesData = await serieService.getSeriesBySubcategoria(
-          token,
           subcategoriaId
         );
-        const formattedSeries = seriesData.map((serie: any) => ({
+        const formattedSeries = seriesData.data.map((serie: any) => ({
           serieId: serie.serieId,
           nombre: serie.nombreSerie || serie.nombre || "",
         }));
@@ -179,7 +178,7 @@ const Teams = () => {
         const response = await teamService.getTeams({ page, size });
         if (response.success) {
           // Los equipos están en response.data.content
-          const teamsData = response.data?.content || [];
+          const teamsData = response.data || [];
 
           // Actualizar el estado de paginación
           setTotalElements(response.data.totalElements);
@@ -187,7 +186,7 @@ const Teams = () => {
           setPage(response.data.number);
 
           // Mapear la respuesta de la API para que coincida con nuestra interfaz Equipo
-          const formattedTeams = teamsData.map((team: any) => ({
+          const formattedTeams = teamsData.content.map((team: any) => ({
             // Original API fields
             equipoId: team.equipoId,
             subcategoriaId: team.subcategoriaId,
