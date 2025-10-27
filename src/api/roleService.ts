@@ -4,7 +4,9 @@ import {
     RoleListResponse,
     CreateRoleRequest,
     BulkCreateRolesRequest,
-    BulkCreateRolesResponse
+    BulkCreateRolesResponse,
+    DeleteRoleResponse,
+    UpdateRoleRequest
 } from '@/types/role.types';
 
 const API_URL = 'http://localhost:8080/api/roles';
@@ -68,7 +70,7 @@ const roleService = {
      * @returns Promesa con la lista de roles
      */
     async getAllRoles(): Promise<RoleListResponse> {
-        const response = await api.get<RoleListResponse>('/');
+        const response = await api.get<RoleListResponse>('');
         return response.data;
     },
 
@@ -103,12 +105,12 @@ const roleService = {
     },
 
     /**
-     * Elimina un rol por su ID
-     * @param id ID del rol a eliminar
-     * @returns Promesa vacía que se resuelve cuando la operación es exitosa
-     */
-    async deleteRole(id: number): Promise<void> {
-        await api.delete(`/${id}`);
+       * Elimina un rol existente
+       * @param id ID del rol a eliminar
+       */
+    async deleteRole(id: number): Promise<DeleteRoleResponse> {
+        const response = await api.delete<DeleteRoleResponse>(`/${id}`);
+        return response.data;
     },
 
     /**
@@ -118,7 +120,28 @@ const roleService = {
      */
     async deleteRoleByName(name: string): Promise<void> {
         await api.delete(`/name/${encodeURIComponent(name)}`);
-    }
+    },
+
+    /**
+     * Obtiene un rol por su ID
+     * @param id ID del rol a buscar
+     * @returns Promesa con los detalles del rol
+     */
+    async getRoleById(id: number): Promise<RoleResponse> {
+        const response = await api.get<RoleResponse>(`/${id}`);
+        return response.data;
+    },
+
+    /**
+      * Actualiza un rol existente
+      * @param id ID del rol a actualizar
+      * @param roleData Datos actualizados del rol
+      */
+    async updateRole(id: number, roleData: UpdateRoleRequest): Promise<RoleResponse> {
+        const response = await api.put<RoleResponse>(`/${id}`, roleData);
+        return response.data;
+    },
+
 };
 
 export default roleService;

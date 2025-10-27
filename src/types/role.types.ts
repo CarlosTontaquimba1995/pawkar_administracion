@@ -1,7 +1,8 @@
 export interface Role {
-  rolId: number;
+  id: number;
   name: string;
-  rolDetail: string;
+  detail: string;
+  estado: boolean;
 }
 
 export interface RoleResponse {
@@ -18,7 +19,7 @@ export interface RoleListResponse {
 
 export interface CreateRoleRequest {
   name: string;
-  description: string;
+  detail: string;
 }
 
 export interface BulkCreateRolesRequest {
@@ -30,3 +31,17 @@ export interface BulkCreateRolesResponse {
   message: string;
   data: Role[];
 }
+
+
+export interface DeleteRoleResponse {
+  success: boolean;
+  message: string;
+  data: null;
+  timestamp: string;
+}
+
+export interface UpdateRoleRequest {
+  name?: string;
+  detail?: string;
+}
+
