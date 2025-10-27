@@ -1,61 +1,82 @@
 export interface SubcategoriaRol {
+  id?: number;
   rolId: number;
-  rolName: string;
-  rolDetail: string;
+  rolName?: string;
+  rolDetail?: string;
   subcategoriaId: number;
-  subcategoriaName: string;
+  subcategoriaName?: string;
+  nombre?: string; // For compatibility with different response formats
 }
 
 export interface AsignarRolResponse {
   success: boolean;
   message: string;
   data: {
-    rolId: number;
-    rolName: string;
-    rolDetail: string;
     subcategoriaId: number;
-    subcategoriaName: string;
+    rolId: number;
+    nombreSubcategoria: string;
+    nombreRol: string;
   };
 }
 
-export interface SubcategoriaRequest {
-  categoriaId: number;
-  nombre: string;
-  descripcion: string;
-}
-
-export interface SubcategoriaResponse {
+export interface SubcategoriaRoleRequest {
   subcategoriaId: number;
-  categoriaId: number;
-  categoriaNombre: string;
-  nombre: string;
-  descripcion: string;
+  rolId: number;
 }
 
-export interface BulkCreateSubcategoriasRequest {
-  subcategorias: SubcategoriaRequest[];
+export interface BulkAsignarRolesRequest {
+  subcategoriaId: number;
+  roles: number[];
 }
 
-export interface BulkCreateSubcategoriasResponse {
-  success: boolean;
-  message: string;
-  data: SubcategoriaResponse[];
-}
-
-export interface EliminarRolResponse {
+export interface BulkAsignarRolesResponse {
   success: boolean;
   message: string;
   data: {
-    rolId: number;
-    rolName: string;
-    rolDetail: string;
     subcategoriaId: number;
-    subcategoriaName: string;
+    rolesAsignados: Array<{
+      id: number;
+      nombre: string;
+    }>;
   };
 }
 
 export interface ObtenerRolesPorSubcategoriaResponse {
   success: boolean;
   message: string;
-  data: SubcategoriaRol[];
+  data: Array<{
+    id?: number;
+    rolId: number;
+    rolName?: string;
+    rolDetail?: string;
+    subcategoriaId: number;
+    subcategoriaName?: string;
+    nombre?: string; // For compatibility with different response formats
+  }>;
+}
+
+export interface EliminarRolResponse {
+  success: boolean;
+  message: string;
+  data: null;
+}
+
+export interface RolAsignado {
+  id: number;
+  nombre: string;
+}
+
+export interface ActualizarRelacionRequest {
+  subcategoriaId: number;
+  rolId: number;
+}
+
+export interface ActualizarRelacionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    id: number;
+    subcategoriaId: number;
+    rolId: number;
+  };
 }

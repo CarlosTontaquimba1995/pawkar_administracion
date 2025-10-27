@@ -13,10 +13,6 @@ import {
   DialogActions,
   Divider,
   Paper,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
 import { useEffect, useState } from "react";
@@ -33,7 +29,6 @@ interface RoleFormData {
   id: number;
   name: string;
   detail: string;
-  estado: boolean;
 }
 
 const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
@@ -46,7 +41,6 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
       id: Date.now(),
       name: "",
       detail: "",
-      estado: true,
     },
   ]);
 
@@ -67,7 +61,6 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
           id: Date.now(),
           name: "",
           detail: "",
-          estado: true,
         },
       ]);
     }
@@ -80,7 +73,6 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
         id: Date.now() + roles.length,
         name: "",
         detail: "",
-        estado: true,
       },
     ]);
   };
@@ -93,16 +85,11 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
 
   const handleRoleChange = (
     id: number,
-    field: string,
-    value: string | boolean
+    field: keyof RoleFormData,
+    value: string
   ) => {
     setRoles(
-      roles.map((role) => {
-        if (role.id === id) {
-          return { ...role, [field]: value };
-        }
-        return role;
-      })
+      roles.map((role) => (role.id === id ? { ...role, [field]: value } : role))
     );
   };
 
@@ -118,27 +105,41 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
       return;
     }
 
-    // Validate all roles have names
-    const hasEmptyFields = roles.some((role) => !role.name.trim());
+    // Filter out any empty roles (both name and detail empty)
+    const validRoles = roles.filter(
+      (role) => role.name.trim() !== "" || role.detail.trim() !== ""
+    );
 
-    if (hasEmptyFields) {
+    if (validRoles.length === 0) {
       setSnackbar({
         open: true,
-        message: "Por favor complete el nombre para todos los roles",
+        message: "Debe agregar al menos un rol válido",
         severity: "error",
       });
       return;
     }
 
-    try {
-      setLoading(true);
+    // Check if any role has an empty name
+    const hasEmptyName = validRoles.some((role) => role.name.trim() === "");
+    if (hasEmptyName) {
+      setSnackbar({
+        open: true,
+        message: "El nombre del rol es obligatorio",
+        severity: "error",
+      });
+      return;
+    }
 
-      // Create all roles
-      const createPromises = roles.map((role) =>
-        roleService.createOrUpdateRole({
-          name: role.name,
-          detail: role.detail,
-        })
+    setLoading(true);
+
+    try {
+      const rolesToCreate = validRoles.map((role) => ({
+        name: role.name.trim(),
+        detail: role.detail.trim(),
+      }));
+
+      const createPromises = rolesToCreate.map((role) =>
+        roleService.createOrUpdateRole(role)
       );
 
       await Promise.all(createPromises);
@@ -152,14 +153,12 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
       });
 
       // Reset form
-      setRoles([
-        {
-          id: Date.now(),
-          name: "",
-          detail: "",
-          estado: true,
-        },
-      ]);
+      const initialRoleState = {
+        id: Date.now(),
+        name: "",
+        detail: "",
+      };
+      setRoles([initialRoleState]);
 
       // Notify parent component
       onSuccess();
@@ -182,14 +181,12 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
   };
 
   const handleClose = () => {
-    setRoles([
-      {
-        id: Date.now(),
-        name: "",
-        detail: "",
-        estado: true,
-      },
-    ]);
+    const initialRoleState = {
+      id: Date.now(),
+      name: "",
+      detail: "",
+    };
+    setRoles([initialRoleState]);
     onClose();
   };
 
@@ -293,29 +290,6 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
                         multiline
                         rows={2}
                       />
-                    </Box>
-                    <Box>
-                      <FormControl fullWidth size="small">
-                        <InputLabel id={`status-label-${role.id}`}>
-                          Estado
-                        </InputLabel>
-                        <Select
-                          labelId={`status-label-${role.id}`}
-                          value={role.estado ? 1 : 0}
-                          onChange={(e) =>
-                            handleRoleChange(
-                              role.id,
-                              "estado",
-                              e.target.value === 1
-                            )
-                          }
-                          label="Estado"
-                          disabled={loading}
-                        >
-                          <MenuItem value={1}>Activo</MenuItem>
-                          <MenuItem value={0}>Inactivo</MenuItem>
-                        </Select>
-                      </FormControl>
                     </Box>
                   </Paper>
                   {roles.length > 1 && (

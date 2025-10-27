@@ -61,10 +61,12 @@ function a11yProps(index: number) {
 const RolesPage = () => {
   const [value, setValue] = useState(0);
   const [roles, setRoles] = useState<Role[]>([]);
+  const [selectedSubcategoria, setSelectedSubcategoria] = useState<string>("");
   const [rolesBySubcategoria, setRolesBySubcategoria] = useState<
     Record<string, SubcategoriaRol[]>
   >({});
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAssignRoleForm, setShowAssignRoleForm] = useState(false);
@@ -82,6 +84,13 @@ const RolesPage = () => {
       const response = await subcategoriaService.getSubcategorias();
       if (response.success && response.data) {
         setSubcategorias(response.data);
+        // Only set the first subcategory if this is the initial load
+        if (isInitialLoad && response.data.length > 0) {
+          const firstSubcategoria = response.data[0].nombre;
+          setSelectedSubcategoria(firstSubcategoria);
+          // Mark initial load as complete
+          setIsInitialLoad(false);
+        }
       }
     } catch (error) {
       console.error("Error fetching subcategories:", error);
@@ -111,12 +120,20 @@ const RolesPage = () => {
     }
   };
 
+  // Fetch roles and subcategories on mount
   useEffect(() => {
     if (token) {
       fetchRoles();
       fetchSubcategorias();
     }
   }, [token]);
+
+  // Fetch roles when selectedSubcategoria changes
+  useEffect(() => {
+    if (selectedSubcategoria && !rolesBySubcategoria[selectedSubcategoria]) {
+      fetchRolesBySubcategoria(selectedSubcategoria);
+    }
+  }, [selectedSubcategoria]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
@@ -132,7 +149,19 @@ const RolesPage = () => {
   };
 
   const handleAssignRoleSuccess = async () => {
-    await fetchRoles();
+    // Refresh the roles for the current subcategory
+    if (selectedSubcategoria) {
+      // Clear the cached data for this subcategory to force a refetch
+      setRolesBySubcategoria((prev) => {
+        const newState = { ...prev };
+        delete newState[selectedSubcategoria];
+        return newState;
+      });
+
+      // Fetch the updated roles for the current subcategory
+      await fetchRolesBySubcategoria(selectedSubcategoria);
+    }
+
     setSnackbar({
       open: true,
       message: "Rol asignado correctamente",
@@ -142,31 +171,29 @@ const RolesPage = () => {
 
   const fetchRolesBySubcategoria = async (subcategoriaNombre: string) => {
     try {
-      const response =
-        await subcategoriaRolesService.getRolesPorNombreSubcategoria(
-          subcategoriaNombre
-        );
+      // Find the subcategoria by name to get its ID
+      const subcategoria = subcategorias.find(
+        (sub) => sub.nombre === subcategoriaNombre
+      );
 
-      // Check if response.data exists and is an array
+      if (!subcategoria) {
+        throw new Error(`Subcategoría '${subcategoriaNombre}' no encontrada`);
+      }
+
+      // Use the ID to fetch roles
+      const response = await subcategoriaRolesService.getRolesPorSubcategoriaId(
+        subcategoria.subcategoriaId
+      );
+
+      // The response should already be in the correct format
       const rolesData = response?.data || [];
-
-      // Map the API response to match SubcategoriaRol interface
-      const mappedRoles = Array.isArray(rolesData)
-        ? rolesData.map((item: any) => ({
-            rolId: item.id || 0,
-            rolName: item.rol || "",
-            rolDetail: item.rol || "Sin descripción",
-            subcategoriaId: 0,
-            subcategoriaName: item.subcategoria || "Sin subcategoría",
-          }))
-        : [];
 
       setRolesBySubcategoria((prev) => ({
         ...prev,
-        [subcategoriaNombre]: mappedRoles,
+        [subcategoriaNombre]: rolesData,
       }));
     } catch (error) {
-      console.error("Error fetching roles by subcategoria:", error);
+      console.error("Error fetching roles by subcategoria ID:", error);
       setSnackbar({
         open: true,
         message: "Error al cargar los roles de la subcategoría",
@@ -176,9 +203,8 @@ const RolesPage = () => {
   };
 
   const handleSubcategoriaSelect = (subcategoriaNombre: string) => {
-    if (!rolesBySubcategoria[subcategoriaNombre]) {
-      fetchRolesBySubcategoria(subcategoriaNombre);
-    }
+    setSelectedSubcategoria(subcategoriaNombre);
+    // The useEffect will handle fetching the roles
   };
 
   const handleSnackbarClose = () => {
@@ -205,7 +231,7 @@ const RolesPage = () => {
             startIcon={<GroupAddIcon />}
             onClick={() => setShowAssignRoleForm(true)}
             sx={{
-              display: value === 1 ? "flex" : "none",
+              display: value === 0 ? "flex" : "none",
               "&:hover": {
                 backgroundColor: "primary.main",
                 color: "white",
@@ -221,7 +247,7 @@ const RolesPage = () => {
             startIcon={<AddIcon />}
             onClick={() => setShowAddForm(true)}
             sx={{
-              display: value === 0 ? "flex" : "none",
+              display: value === 1 ? "flex" : "none",
               "&:hover": {
                 backgroundColor: "primary.main",
                 color: "white",
@@ -244,15 +270,12 @@ const RolesPage = () => {
               variant={isMobile ? "scrollable" : "standard"}
               scrollButtons="auto"
             >
-              <Tab label="Lista de Roles" {...a11yProps(0)} />
-              <Tab label="Asignación de Roles" {...a11yProps(1)} />
+              <Tab label="Asignación de Roles" {...a11yProps(0)} />
+              <Tab label="Lista de Roles" {...a11yProps(1)} />
             </Tabs>
           </Box>
 
           <TabPanel value={value} index={0}>
-            <RolesTable roles={roles} onRefresh={fetchRoles} />
-          </TabPanel>
-          <TabPanel value={value} index={1}>
             <AssignRolesTable
               onSubcategoriaSelect={handleSubcategoriaSelect}
               rolesBySubcategoria={rolesBySubcategoria}
@@ -260,6 +283,9 @@ const RolesPage = () => {
               onRefresh={fetchRoles}
               loading={loading}
             />
+          </TabPanel>
+          <TabPanel value={value} index={1}>
+            <RolesTable roles={roles} onRefresh={fetchRoles} />
           </TabPanel>
         </CardContent>
       </Card>

@@ -1,26 +1,32 @@
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Button,
   Typography,
-  Snackbar,
-  Alert,
-  IconButton,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
+  TextField,
   FormControl,
+  IconButton,
+  Paper,
+  CircularProgress,
+  Snackbar,
+  Alert,
+  Autocomplete,
+  Divider,
   InputLabel,
   Select,
   MenuItem,
-  FormHelperText,
 } from "@mui/material";
-import { Close as CloseIcon, Person as PersonIcon } from "@mui/icons-material";
-import { useEffect, useState } from "react";
+import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
 import roleService from "@/api/roleService";
 import subcategoriaRolesService from "@/api/subcategoriaRolesService";
+import { Subcategoria } from "@/types/subcategoria.types";
+import { Role } from "@/types/role.types";
+import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
+import subcategoriaService from "@/api/subcategoriaService";
 
 interface AssignRoleRegisterFormProps {
   open: boolean;
@@ -28,137 +34,200 @@ interface AssignRoleRegisterFormProps {
   onSuccess: () => void;
 }
 
-interface Subcategoria {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-}
-
-interface Role {
-  id: number;
-  name: string;
-}
+type SnackbarSeverity = "success" | "error" | "warning" | "info";
 
 const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
   open,
   onClose,
   onSuccess,
 }) => {
+  // State for form data
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [roles, setRoles] = useState<Role[]>([]);
   const [selectedSubcategoria, setSelectedSubcategoria] = useState<number | "">(
     ""
   );
-  const [selectedRole, setSelectedRole] = useState<number | "">("");
+  const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
+  const [roleAssignments, setRoleAssignments] = useState<SubcategoriaRol[]>([]);
+
+  // UI State
   const [loading, setLoading] = useState(false);
   const [subcategoriaLoading, setSubcategoriaLoading] = useState(true);
   const [roleLoading, setRoleLoading] = useState(true);
-  const [snackbar, setSnackbar] = useState({
+
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: SnackbarSeverity;
+  }>({
     open: false,
     message: "",
-    severity: "success" as "success" | "error" | "warning",
+    severity: "success" as const,
   });
 
+  const handleCloseSnackbar = useCallback((): void => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  }, []);
+
+  // Fetch data when dialog opens
   useEffect(() => {
-    if (open) {
-      fetchSubcategorias();
-      fetchRoles();
-    }
+    const fetchData = async () => {
+      if (open) {
+        try {
+          setSubcategoriaLoading(true);
+          setRoleLoading(true);
+          await Promise.all([fetchSubcategorias(), fetchRoles()]);
+        } catch (error) {
+          console.error("Error fetching data:", error);
+          showSnackbar("Error al cargar los datos", "error");
+        } finally {
+          setSubcategoriaLoading(false);
+          setRoleLoading(false);
+        }
+      }
+    };
+
+    fetchData();
   }, [open]);
 
-  const fetchSubcategorias = async () => {
+  const fetchSubcategorias = async (): Promise<void> => {
     try {
-      setSubcategoriaLoading(true);
-      // Replace with actual subcategory service call
-      // const response = await subcategoriaService.getSubcategorias();
-      // setSubcategorias(response.data);
-
-      // Mock data for now
-      setSubcategorias([
-        { id: 1, nombre: "Subcategoría 1", descripcion: "Descripción 1" },
-        { id: 2, nombre: "Subcategoría 2", descripcion: "Descripción 2" },
-      ]);
+      const response = await subcategoriaService.getSubcategorias();
+      setSubcategorias(response.data);
     } catch (error) {
       console.error("Error fetching subcategorias:", error);
-      setSnackbar({
-        open: true,
-        message: "Error al cargar las subcategorías",
-        severity: "error",
-      });
-    } finally {
-      setSubcategoriaLoading(false);
+      throw error;
     }
   };
 
-  const fetchRoles = async () => {
+  const fetchRoles = async (): Promise<void> => {
     try {
-      setRoleLoading(true);
       const response = await roleService.getAllRoles();
       setRoles(response.data);
     } catch (error) {
       console.error("Error fetching roles:", error);
-      setSnackbar({
-        open: true,
-        message: "Error al cargar los roles",
-        severity: "error",
-      });
-    } finally {
-      setRoleLoading(false);
+      throw error;
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const showSnackbar = useCallback(
+    (message: string, severity: SnackbarSeverity = "success") => {
+      setSnackbar({ open: true, message, severity });
+    },
+    []
+  );
+
+  const handleAddRole = (): void => {
+    const newAssignment: SubcategoriaRol = {
+      id: Date.now(),
+      rolId: 0,
+      rolName: "",
+      rolDetail: "",
+      subcategoriaId: 0,
+      subcategoriaName: "",
+    };
+
+    setRoleAssignments((prev) => [...prev, newAssignment]);
+  };
+
+  const handleRemoveRole = (id: number): void => {
+    setRoleAssignments((prev) => prev.filter((role) => role.id !== id));
+  };
+
+  const handleRoleChange = (
+    id: number | undefined,
+    role: Role | null
+  ): void => {
+    if (id === undefined) return;
+
+    setRoleAssignments((prev) =>
+      prev.map((assignment) =>
+        assignment.id === id
+          ? {
+              ...assignment,
+              rolId: role?.id ?? 0,
+              rolName: role?.name ?? "",
+              rolDetail: role?.detail ?? "",
+            }
+          : assignment
+      )
+    );
+  };
+
+  const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault();
 
-    if (!selectedSubcategoria || !selectedRole) {
-      setSnackbar({
-        open: true,
-        message: "Por favor seleccione una subcategoría y un rol",
-        severity: "error",
-      });
+    if (!selectedSubcategoria) {
+      showSnackbar("Por favor seleccione una subcategoría", "error");
+      return;
+    }
+
+    const validAssignments = roleAssignments.filter(
+      (assignment) => assignment.rolId !== 0
+    );
+
+    if (validAssignments.length === 0) {
+      showSnackbar("Por favor seleccione al menos un rol", "error");
+      return;
+    }
+
+    const subcategoria = subcategorias.find(
+      (s) => s.subcategoriaId === selectedSubcategoria
+    );
+
+    if (!subcategoria) {
+      showSnackbar("Subcategoría no encontrada", "error");
       return;
     }
 
     try {
       setLoading(true);
-      await subcategoriaRolesService.asignarRolASubcategoria(
-        selectedSubcategoria,
-        selectedRole
+
+      // Get the selected subcategoria details
+      const selectedSubcategoriaData = subcategorias.find(
+        (s) => s.subcategoriaId === selectedSubcategoria
       );
 
-      setSnackbar({
-        open: true,
-        message: "Rol asignado a la subcategoría correctamente",
-        severity: "success",
-      });
+      if (!selectedSubcategoriaData) {
+        throw new Error("No se encontró la subcategoría seleccionada");
+      }
 
-      onSuccess();
-      onClose();
-      resetForm();
+      // Prepare data for bulk assignment
+      const bulkData = {
+        subcategoriaId: selectedSubcategoriaData.subcategoriaId,
+        roles: validAssignments.map((assignment) => assignment.rolId as number),
+      };
+
+      // Make a single API call to assign all roles
+      await subcategoriaRolesService.asignarMultiplesRoles(bulkData);
+
+      showSnackbar(
+        "Roles asignados correctamente a la subcategoría",
+        "success"
+      );
+
+      // Reset form and trigger parent refresh
+      setSelectedRoles([]);
+      setSelectedSubcategoria("");
+      onSuccess(); // Call the success callback to refresh parent data
+      handleClose();
     } catch (error: any) {
-      console.error("Error assigning role:", error);
+      console.error("Error assigning roles:", error);
       const errorMessage =
-        error.response?.data?.message || "Error al asignar el rol";
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
+        error.response?.data?.message || "Error al asignar los roles";
+      showSnackbar(errorMessage, "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const resetForm = () => {
+  const resetForm = (): void => {
     setSelectedSubcategoria("");
-    setSelectedRole("");
+    setRoleAssignments([]);
   };
 
-  const handleCloseSnackbar = () => {
-    setSnackbar({ ...snackbar, open: false });
-  };
-
-  const handleClose = () => {
+  const handleClose = (): void => {
     resetForm();
     onClose();
   };
@@ -167,8 +236,8 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
     <>
       <Dialog
         open={open}
-        onClose={handleClose}
-        maxWidth="sm"
+        onClose={!loading ? handleClose : undefined}
+        maxWidth="md"
         fullWidth
         PaperProps={{ sx: { borderRadius: 3 } }}
       >
@@ -178,8 +247,13 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="h6">Asignar Rol a Usuario</Typography>
-            <IconButton onClick={handleClose} size="small" disabled={loading}>
+            <Typography variant="h6">Asignar Roles a Subcategoría</Typography>
+            <IconButton
+              onClick={handleClose}
+              size="small"
+              disabled={loading}
+              aria-label="cerrar"
+            >
               <CloseIcon />
             </IconButton>
           </Box>
@@ -188,22 +262,50 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
         <DialogContent>
           <form onSubmit={handleSubmit}>
             <Box sx={{ mb: 3 }}>
-              <Box mb={3}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="subtitle1" fontWeight="medium">
+                  Información de la Asignación
+                </Typography>
+              </Box>
+
+              <Paper
+                variant="outlined"
+                sx={{
+                  p: 2,
+                  mb: 3,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 2,
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  },
+                }}
+              >
                 <FormControl
                   fullWidth
-                  margin="normal"
-                  disabled={subcategoriaLoading}
+                  size="small"
+                  disabled={subcategoriaLoading || loading}
+                  error={
+                    !selectedSubcategoria &&
+                    roleAssignments.some((ra) => ra.rolId !== 0)
+                  }
                 >
                   <InputLabel id="subcategoria-select-label">
-                    Subcategoría
+                    Subcategoría *
                   </InputLabel>
                   <Select
                     labelId="subcategoria-select-label"
                     id="subcategoria-select"
                     value={selectedSubcategoria}
-                    label="Subcategoría"
+                    label="Subcategoría *"
                     onChange={(e) =>
-                      setSelectedSubcategoria(e.target.value as number)
+                      setSelectedSubcategoria(Number(e.target.value))
                     }
                     required
                   >
@@ -211,56 +313,158 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
                       <em>Seleccione una subcategoría</em>
                     </MenuItem>
                     {subcategorias.map((subcategoria) => (
-                      <MenuItem key={subcategoria.id} value={subcategoria.id}>
+                      <MenuItem
+                        key={subcategoria.subcategoriaId}
+                        value={subcategoria.subcategoriaId}
+                      >
                         {subcategoria.nombre}
                       </MenuItem>
                     ))}
                   </Select>
                   {subcategoriaLoading && (
-                    <FormHelperText>Cargando subcategorías...</FormHelperText>
+                    <Typography
+                      variant="caption"
+                      color="textSecondary"
+                      sx={{ mt: 1, display: "block" }}
+                    >
+                      Cargando subcategorías...
+                    </Typography>
                   )}
                 </FormControl>
+              </Paper>
 
-                <FormControl fullWidth margin="normal" disabled={roleLoading}>
-                  <InputLabel id="role-select-label">Rol</InputLabel>
-                  <Select
-                    labelId="role-select-label"
-                    id="role-select"
-                    value={selectedRole}
-                    label="Rol"
-                    onChange={(e) => setSelectedRole(e.target.value as number)}
-                    required
+              <Box sx={{ mb: 2 }}>
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  mb={2}
+                >
+                  <Typography variant="subtitle1" fontWeight="medium">
+                    Roles a Asignar
+                  </Typography>
+                  <Button
+                    onClick={handleAddRole}
+                    variant="outlined"
+                    size="small"
+                    startIcon={<AddIcon />}
+                    disabled={roleLoading || loading}
+                    sx={{ textTransform: "none" }}
                   >
-                    <MenuItem value="">
-                      <em>Seleccione un rol</em>
-                    </MenuItem>
-                    {roles.map((role) => (
-                      <MenuItem key={role.id} value={role.id}>
-                        {role.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                  {roleLoading && (
-                    <FormHelperText>Cargando roles...</FormHelperText>
-                  )}
-                </FormControl>
+                    Agregar Rol
+                  </Button>
+                </Box>
+
+                {roleAssignments.length === 0 && (
+                  <Box textAlign="center" py={3}>
+                    <Typography variant="body2" color="textSecondary">
+                      No hay roles asignados. Haga clic en "Agregar Rol" para
+                      comenzar.
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                  {roleAssignments.map((assignment) => (
+                    <Box
+                      key={assignment.id}
+                      sx={{
+                        position: "relative",
+                        mb: 2,
+                        "&:hover .delete-button": {
+                          opacity: 1,
+                          visibility: "visible",
+                        },
+                      }}
+                    >
+                      <Paper
+                        sx={{
+                          p: 2,
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 2,
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <FormControl fullWidth size="small">
+                            <Autocomplete<Role, false, false, false>
+                              options={roles}
+                              getOptionLabel={(option) =>
+                                option
+                                  ? `${option.name} - ${option.detail || ""}`
+                                  : ""
+                              }
+                              value={
+                                roles.find((r) => r.id === assignment.rolId) ||
+                                null
+                              }
+                              onChange={(_, newValue) =>
+                                handleRoleChange(assignment.id, newValue)
+                              }
+                              renderInput={(params) => (
+                                <TextField
+                                  {...params}
+                                  label="Rol *"
+                                  variant="outlined"
+                                  size="small"
+                                  required
+                                />
+                              )}
+                              isOptionEqualToValue={(option, value) =>
+                                option.id === value.id
+                              }
+                              noOptionsText="No se encontraron roles"
+                              loading={roleLoading}
+                              loadingText="Cargando roles..."
+                              disabled={loading}
+                              fullWidth
+                            />
+                          </FormControl>
+                        </Box>
+                      </Paper>
+
+                      <IconButton
+                        className="delete-button"
+                        size="small"
+                        onClick={() =>
+                          assignment.id && handleRemoveRole(assignment.id)
+                        }
+                        sx={{
+                          position: "absolute",
+                          top: -12,
+                          right: -12,
+                          backgroundColor: "error.main",
+                          color: "white",
+                          opacity: 0,
+                          visibility: "hidden",
+                          transition: "all 0.2s ease",
+                          "&:hover": {
+                            backgroundColor: "error.dark",
+                          },
+                        }}
+                        aria-label="eliminar rol"
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
               </Box>
             </Box>
 
-            <DialogActions sx={{ px: 0 }}>
+            <DialogActions sx={{ px: 0, pb: 0 }}>
               <Button
                 onClick={handleClose}
-                variant="outlined"
                 disabled={loading}
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: 1,
-                  },
-                  transition: "all 0.2s ease",
-                }}
+                variant="outlined"
+                color="inherit"
               >
                 Cancelar
               </Button>
@@ -268,21 +472,15 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
                 type="submit"
                 variant="contained"
                 color="primary"
-                disabled={loading || !selectedSubcategoria || !selectedRole}
-                startIcon={
-                  loading ? <CircularProgress size={20} /> : <PersonIcon />
+                disabled={
+                  loading ||
+                  !selectedSubcategoria ||
+                  roleAssignments.length === 0 ||
+                  roleAssignments.some((ra) => ra.rolId === 0)
                 }
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: 2,
-                  },
-                  transition: "all 0.2s ease",
-                }}
+                startIcon={loading ? <CircularProgress size={20} /> : null}
               >
-                {loading ? "Asignando..." : "Asignar Rol a Subcategoría"}
+                {loading ? "Guardando..." : "Guardar"}
               </Button>
             </DialogActions>
           </form>
@@ -293,12 +491,11 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}
