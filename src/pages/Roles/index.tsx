@@ -15,7 +15,11 @@ import {
 } from "@mui/material";
 import { Add as AddIcon, GroupAdd as GroupAddIcon } from "@mui/icons-material";
 import { Role } from "@/types/role.types";
+import { Subcategoria } from "@/types/subcategoria.types";
+import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
 import roleService from "@/api/roleService";
+import subcategoriaService from "@/api/subcategoriaService";
+import subcategoriaRolesService from "@/api/subcategoriaRolesService";
 import RolesTable from "./components/Roles/RolesTable";
 import RoleRegisterForm from "./components/Roles/RoleRegisterForm";
 import AssignRolesTable from "./components/AssignRoles/AssignRolesTable";
@@ -57,8 +61,10 @@ function a11yProps(index: number) {
 const RolesPage = () => {
   const [value, setValue] = useState(0);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [userRoles, setUserRoles] = useState<Role[]>([]);
-  const [allRoles, setAllRoles] = useState<Role[]>([]);
+  const [rolesBySubcategoria, setRolesBySubcategoria] = useState<
+    Record<string, SubcategoriaRol[]>
+  >({});
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAssignRoleForm, setShowAssignRoleForm] = useState(false);
@@ -71,21 +77,28 @@ const RolesPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const { token } = useAuth();
 
+  const fetchSubcategorias = async () => {
+    try {
+      const response = await subcategoriaService.getSubcategorias();
+      if (response.success && response.data) {
+        setSubcategorias(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching subcategories:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al cargar las subcategorías",
+        severity: "error",
+      });
+    }
+  };
+
   const fetchRoles = async () => {
     try {
       setLoading(true);
       // Fetch all roles
       const rolesResponse = await roleService.getAllRoles();
       setRoles(rolesResponse.data);
-      setAllRoles(rolesResponse.data);
-
-      // Fetch user roles (you'll need to implement this in your roleService)
-      // This is a placeholder - adjust according to your API
-      // const userRolesResponse = await roleService.getUserRoles();
-      // setUserRoles(userRolesResponse.data);
-
-      // For now, using the same data as a fallback
-      setUserRoles(rolesResponse.data);
     } catch (error) {
       console.error("Error fetching roles:", error);
       setSnackbar({
@@ -101,6 +114,7 @@ const RolesPage = () => {
   useEffect(() => {
     if (token) {
       fetchRoles();
+      fetchSubcategorias();
     }
   }, [token]);
 
@@ -124,6 +138,47 @@ const RolesPage = () => {
       message: "Rol asignado correctamente",
       severity: "success",
     });
+  };
+
+  const fetchRolesBySubcategoria = async (subcategoriaNombre: string) => {
+    try {
+      const response =
+        await subcategoriaRolesService.getRolesPorNombreSubcategoria(
+          subcategoriaNombre
+        );
+
+      // Check if response.data exists and is an array
+      const rolesData = response?.data || [];
+
+      // Map the API response to match SubcategoriaRol interface
+      const mappedRoles = Array.isArray(rolesData)
+        ? rolesData.map((item: any) => ({
+            rolId: item.id || 0,
+            rolName: item.rol || "",
+            rolDetail: item.rol || "Sin descripción",
+            subcategoriaId: 0,
+            subcategoriaName: item.subcategoria || "Sin subcategoría",
+          }))
+        : [];
+
+      setRolesBySubcategoria((prev) => ({
+        ...prev,
+        [subcategoriaNombre]: mappedRoles,
+      }));
+    } catch (error) {
+      console.error("Error fetching roles by subcategoria:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al cargar los roles de la subcategoría",
+        severity: "error",
+      });
+    }
+  };
+
+  const handleSubcategoriaSelect = (subcategoriaNombre: string) => {
+    if (!rolesBySubcategoria[subcategoriaNombre]) {
+      fetchRolesBySubcategoria(subcategoriaNombre);
+    }
   };
 
   const handleSnackbarClose = () => {
@@ -199,8 +254,9 @@ const RolesPage = () => {
           </TabPanel>
           <TabPanel value={value} index={1}>
             <AssignRolesTable
-              userRoles={userRoles}
-              allRoles={allRoles}
+              onSubcategoriaSelect={handleSubcategoriaSelect}
+              rolesBySubcategoria={rolesBySubcategoria}
+              subcategorias={subcategorias}
               onRefresh={fetchRoles}
               loading={loading}
             />

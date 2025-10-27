@@ -89,12 +89,6 @@ const RoleEditForm: React.FC<RoleEditFormProps> = ({
     }
   }, [token, roleId, open]);
 
-  const handleNameChange = (value: string) => {
-    setRole((prev) => ({
-      ...prev,
-      name: value,
-    }));
-  };
 
   const handleDetailChange = (value: string) => {
     setRole((prev) => ({
@@ -197,11 +191,28 @@ const RoleEditForm: React.FC<RoleEditFormProps> = ({
                 fullWidth
                 margin="normal"
                 value={role.name}
-                onChange={(e) => handleNameChange(e.target.value)}
-                disabled={loading}
-                required
-                autoFocus
-                sx={{ mt: 2 }}
+                InputProps={{
+                  readOnly: true,
+                }}
+                disabled={true}
+                sx={{
+                  mt: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "& fieldset": {
+                      borderColor: "rgba(0, 0, 0, 0.23)",
+                    },
+                    "&:hover fieldset": {
+                      borderColor: "rgba(0, 0, 0, 0.23)",
+                    },
+                    "&.Mui-focused fieldset": {
+                      borderColor: "rgba(0, 0, 0, 0.23)",
+                    },
+                  },
+                  "& .MuiInputBase-input": {
+                    color: "rgba(0, 0, 0, 0.6)",
+                    WebkitTextFillColor: "rgba(0, 0, 0, 0.6)",
+                  },
+                }}
               />
 
               <TextField

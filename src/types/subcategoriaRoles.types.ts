@@ -1,45 +1,61 @@
-import { Role } from "./role.types";
-
 export interface SubcategoriaRol {
-  subcategoriaId: number;
   rolId: number;
-  nombreSubcategoria?: string;
-  nombreRol?: string;
+  rolName: string;
+  rolDetail: string;
+  subcategoriaId: number;
+  subcategoriaName: string;
 }
 
 export interface AsignarRolResponse {
   success: boolean;
   message: string;
   data: {
-    subcategoriaId: number;
     rolId: number;
-    nombreSubcategoria: string;
-    nombreRol: string;
+    rolName: string;
+    rolDetail: string;
+    subcategoriaId: number;
+    subcategoriaName: string;
   };
 }
 
-export interface BulkAsignarRolesRequest {
-  subcategoriaId: number;
-  rolesIds: number[];
+export interface SubcategoriaRequest {
+  categoriaId: number;
+  nombre: string;
+  descripcion: string;
 }
 
-export interface BulkAsignarRolesResponse {
+export interface SubcategoriaResponse {
+  subcategoriaId: number;
+  categoriaId: number;
+  categoriaNombre: string;
+  nombre: string;
+  descripcion: string;
+}
+
+export interface BulkCreateSubcategoriasRequest {
+  subcategorias: SubcategoriaRequest[];
+}
+
+export interface BulkCreateSubcategoriasResponse {
   success: boolean;
   message: string;
-  data: {
-    subcategoriaId: number;
-    rolesAsignados: Role[];
-  };
+  data: SubcategoriaResponse[];
 }
 
 export interface EliminarRolResponse {
   success: boolean;
   message: string;
-  data: null;
+  data: {
+    rolId: number;
+    rolName: string;
+    rolDetail: string;
+    subcategoriaId: number;
+    subcategoriaName: string;
+  };
 }
 
-export interface ObtenerRolesResponse {
+export interface ObtenerRolesPorSubcategoriaResponse {
   success: boolean;
   message: string;
-  data: Role[];
+  data: SubcategoriaRol[];
 }

@@ -1,44 +1,84 @@
 import React, { useMemo, useState } from "react";
 import {
+  Box,
+  Chip,
   Table,
   TableBody,
   TableCell,
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   TablePagination,
   TextField,
-  InputAdornment,
-  Box,
-  Typography,
-  Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Paper,
   IconButton,
+  Snackbar,
+  Alert,
   CircularProgress,
+  SelectChangeEvent,
+  InputAdornment,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { Role } from "@/types/role.types";
+import { Subcategoria } from "@/types/subcategoria.types";
+import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
 
 interface AssignRolesTableProps {
-  userRoles: Role[];
-  allRoles: Role[];
+  rolesBySubcategoria: Record<string, SubcategoriaRol[]>;
+  subcategorias?: Subcategoria[];
   loading?: boolean;
-  onRefresh: () => Promise<void>;
+  onSubcategoriaSelect: (subcategoriaNombre: string) => void;
+  onRefresh?: () => Promise<void>;
 }
 
 const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
-  allRoles = [],
+  subcategorias = [],
+  rolesBySubcategoria = {},
+  onSubcategoriaSelect,
   loading = false,
 }) => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedSubcategoria, setSelectedSubcategoria] = useState<string | "">(
+    subcategorias[0]?.nombre || ""
+  );
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  // Automatically select the first subcategory if none is selected
+  React.useEffect(() => {
+    if (subcategorias.length > 0 && !selectedSubcategoria) {
+      setSelectedSubcategoria(subcategorias[0].nombre);
+      onSubcategoriaSelect?.(subcategorias[0].nombre);
+    }
+  }, [subcategorias, selectedSubcategoria, onSubcategoriaSelect]);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
+
+  const handleSubcategoriaChange = async (event: SelectChangeEvent<string>) => {
+    const subcategoriaNombre = event.target.value as string;
+    setSelectedSubcategoria(subcategoriaNombre);
+
+    if (!subcategoriaNombre) {
+      return;
+    }
+
+    // Notify parent component to load roles for this subcategory if not already loaded
+    onSubcategoriaSelect(subcategoriaNombre);
+
+    // Update filtered roles from the rolesBySubcategoria prop
+  };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -49,41 +89,81 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
     setPage(0);
   };
 
-  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(event.target.value);
-    setPage(0);
-  };
-
-  // Filter roles based on search term
-  const filteredRoles = useMemo(() => {
-    if (!Array.isArray(allRoles)) return [];
-    if (!searchTerm.trim()) return allRoles;
-
-    const searchLower = searchTerm.toLowerCase().trim();
-    return allRoles.filter(
-      (role) =>
-        (role?.name?.toLowerCase() || "").includes(searchLower) ||
-        (role?.detail?.toLowerCase() || "").includes(searchLower)
+  const filteredData = useMemo(() => {
+    if (!selectedSubcategoria) {
+      // If no subcategory is selected, show all roles from all subcategories
+      return Object.values(rolesBySubcategoria)
+        .flat()
+        .filter(
+          (role: SubcategoriaRol) =>
+            (role.rolName || "")
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()) ||
+            (role.rolDetail || "")
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+        );
+    }
+    const roles = rolesBySubcategoria[selectedSubcategoria] || [];
+    return roles.filter(
+      (role: SubcategoriaRol) =>
+        (role.rolName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (role.rolDetail || "").toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [allRoles, searchTerm]);
+  }, [selectedSubcategoria, rolesBySubcategoria, searchTerm]);
 
-  // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filteredRoles.length) : 0;
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filteredData.length) : 0;
 
-  const isSystemRole = (roleName: string): boolean => {
-    return roleName === "ROLE_USER" || roleName === "ROLE_ADMIN";
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
+
+  const isSystemRole = (roleName?: string) => {
+    if (!roleName) return false;
+    return ["ADMIN", "MANAGER", "USER"].includes(roleName);
+  };
+
+  // Check if user has a specific role
+
+  if (loading) {
+    return (
+      <Box display="flex" justifyContent="center" p={4}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box>
-      <Box mb={2}>
+      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
+        <FormControl sx={{ minWidth: 200 }} size="small">
+          <InputLabel>Filtrar por subcategoría</InputLabel>
+          <Select
+            value={selectedSubcategoria}
+            onChange={handleSubcategoriaChange}
+            label="Filtrar por subcategoría"
+            disabled={loading || subcategorias.length === 0}
+          >
+            {subcategorias?.map((subcategoria) => (
+              <MenuItem
+                key={`subcat-${
+                  subcategoria.subcategoriaId || subcategoria.nombre
+                }`}
+                value={subcategoria.nombre || ""}
+              >
+                {subcategoria.nombre}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+
         <TextField
           variant="outlined"
           size="small"
           placeholder="Buscar roles..."
           value={searchTerm}
-          onChange={handleSearchChange}
+          onChange={(e) => setSearchTerm(e.target.value)}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -95,128 +175,113 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
         />
       </Box>
 
-      <TableContainer component={Paper} elevation={0}>
+      <TableContainer component={Paper}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>Nombre</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Descripción</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Estado</TableCell>
-              <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                Acciones
-              </TableCell>
+              <TableCell sx={{ fontWeight: "bold" }} >Descripción del Rol</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }} >Subcategoría</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }} >Estado</TableCell>
+              <TableCell align="right" sx={{ fontWeight: "bold" }} >Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {loading ? (
               <TableRow>
                 <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <CircularProgress />
-                  </Box>
+                  <CircularProgress />
                 </TableCell>
               </TableRow>
-            ) : filteredRoles.length === 0 ? (
+            ) : filteredData.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <Typography variant="body1" color="textSecondary">
-                      No se encontraron roles
-                    </Typography>
-                  </Box>
+                  No se encontraron roles
                 </TableCell>
               </TableRow>
             ) : (
-              <>
-                {filteredRoles
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((role) => (
-                    <TableRow key={role.id}>
-                      <TableCell>{role.name}</TableCell>
-                      <TableCell>{role.detail || "Sin descripción"}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={role.estado ? "Activo" : "Inactivo"}
-                          color={role.estado ? "success" : "default"}
-                          size="small"
-                          sx={{
-                            fontWeight: 500,
-                            minWidth: 80,
-                            justifyContent: "center",
-                            "&.MuiChip-colorSuccess": {
-                              bgcolor: "success.light",
-                              color: "success.contrastText",
-                              "&:hover": {
-                                bgcolor: "success.main",
-                              },
+              filteredData
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((role: SubcategoriaRol, index: number) => (
+                  <TableRow
+                    key={`role-${role.rolId}-${role.subcategoriaId}-${index}`}
+                  >
+                    <TableCell>{role.rolDetail || "Sin descripción"}</TableCell>
+                    <TableCell>
+                      {role.subcategoriaName || "Sin subcategoría"}
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label="Activo"
+                        color="success"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          "&.MuiChip-colorSuccess": {
+                            bgcolor: "accent2.light",
+                            color: "accent2.dark",
+                            "&:hover": {
+                              bgcolor: "accent2.main",
+                              color: "white",
                             },
-                            "&.MuiChip-colorDefault": {
-                              bgcolor: "grey.200",
-                              color: "text.secondary",
-                            },
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          disabled={isSystemRole(role.name)}
-                          title={
-                            isSystemRole(role.name)
-                              ? "No se puede editar este rol del sistema"
-                              : "Editar"
-                          }
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          size="small"
-                          color="error"
-                          disabled={isSystemRole(role.name)}
-                          title={
-                            isSystemRole(role.name)
-                              ? "No se puede eliminar este rol del sistema"
-                              : "Eliminar"
-                          }
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={4} />
+                          },
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <IconButton
+                        color="primary"
+                        onClick={() => {
+                          // Handle edit
+                        }}
+                        disabled={isSystemRole(role.rolName)}
+                      >
+                        <EditIcon />
+                      </IconButton>
+                      <IconButton
+                        color="error"
+                        onClick={() => {
+                          // Handle delete
+                        }}
+                        disabled={isSystemRole(role.rolName)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </TableCell>
                   </TableRow>
-                )}
-              </>
+                ))
+            )}
+            {emptyRows > 0 && (
+              <TableRow style={{ height: 53 * emptyRows }}>
+                <TableCell colSpan={4} />
+              </TableRow>
             )}
           </TableBody>
         </Table>
       </TableContainer>
 
-      <Box mt={2} display="flex" justifyContent="flex-end">
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredRoles.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Filas por página:"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-          }
-          sx={{
-            "& .MuiTablePagination-selectLabel, & .MuiTablePagination-displayedRows":
-              {
-                marginBottom: 0,
-              },
-          }}
-        />
-      </Box>
+      <TablePagination
+        rowsPerPageOptions={[5, 10, 25]}
+        component="div"
+        count={filteredData.length}
+        rowsPerPage={rowsPerPage}
+        page={page}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        labelRowsPerPage="Filas por página:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+        }
+      />
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

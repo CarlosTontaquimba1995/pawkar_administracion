@@ -2,12 +2,11 @@ import axios from 'axios';
 import {
     SubcategoriaRol,
     AsignarRolResponse,
-    BulkAsignarRolesRequest,
-    BulkAsignarRolesResponse,
     EliminarRolResponse,
-    ObtenerRolesResponse
+    ObtenerRolesPorSubcategoriaResponse,
+    BulkCreateSubcategoriasRequest,
+    BulkCreateSubcategoriasResponse,
 } from '../types/subcategoriaRoles.types';
-import { Role } from '@/types/role.types';
 
 const API_URL = 'http://localhost:8080/api/subcategoria-roles';
 
@@ -125,8 +124,8 @@ const subcategoriaRolesService = {
      */
     async getRolesPorSubcategoriaId(
         subcategoriaId: number
-    ): Promise<ObtenerRolesResponse> {
-        const response = await api.get<ObtenerRolesResponse>(
+    ): Promise<ObtenerRolesPorSubcategoriaResponse> {
+        const response = await api.get<ObtenerRolesPorSubcategoriaResponse>(
             `/subcategoria/${subcategoriaId}`
         );
         console.log(response.data);
@@ -146,8 +145,8 @@ const subcategoriaRolesService = {
      */
     async getRolesPorNombreSubcategoria(
         nombreSubcategoria: string
-    ): Promise<ObtenerRolesResponse> {
-        const response = await api.get<ObtenerRolesResponse>(
+    ): Promise<ObtenerRolesPorSubcategoriaResponse> {
+        const response = await api.get<ObtenerRolesPorSubcategoriaResponse>(
             `/subcategoria/nombre/${encodeURIComponent(nombreSubcategoria)}`
         );
         return response.data;
@@ -165,28 +164,13 @@ const subcategoriaRolesService = {
      * @returns Promesa con la respuesta de la operación
      */
     async asignarMultiplesRoles(
-        data: BulkAsignarRolesRequest
-    ): Promise<BulkAsignarRolesResponse> {
-        const response = await api.post<BulkAsignarRolesResponse>('/bulk', data);
+        data: BulkCreateSubcategoriasRequest
+    ): Promise<BulkCreateSubcategoriasResponse> {
+        const response = await api.post<BulkCreateSubcategoriasResponse>('/bulk', data);
         return response.data;
     },
 
-    /**
-     * Obtiene los roles de una subcategoría (método alternativo)
-     * @deprecated Usar getRolesPorSubcategoriaId o getRolesPorNombreSubcategoria en su lugar
-     */
-    /**
-     * Obtiene los roles de una subcategoría (método alternativo)
-     * @deprecated Usar getRolesPorSubcategoriaId o getRolesPorNombreSubcategoria en su lugar
-     */
-    /**
-     * Obtiene los roles de una subcategoría (método alternativo)
-     * @deprecated Usar getRolesPorSubcategoriaId o getRolesPorNombreSubcategoria en su lugar
-     */
-    async getSubcategoriaRoles(subcategoriaId: number): Promise<Role[]> {
-        const response = await subcategoriaRolesService.getRolesPorSubcategoriaId(subcategoriaId);
-        return response.data || [];
-    },
+
 
     /**
      * Obtiene todas las relaciones subcategoría-rol
