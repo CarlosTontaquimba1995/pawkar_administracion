@@ -90,7 +90,7 @@ const roleService = {
      * @returns Promesa con el rol creado o actualizado
      */
     async createOrUpdateRole(roleData: CreateRoleRequest): Promise<RoleResponse> {
-        const response = await api.post<RoleResponse>('/', roleData);
+        const response = await api.post<RoleResponse>('', roleData);
         return response.data;
     },
 

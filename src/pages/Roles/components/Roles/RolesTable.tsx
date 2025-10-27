@@ -140,16 +140,20 @@ const RolesTable: React.FC<RolesTableProps> = ({
     return roleName === "ROLE_USER" || roleName === "ROLE_ADMIN";
   };
 
-  // Filter roles based on search term
+  // Filter out system roles and apply search filter
   const searchedRoles = React.useMemo(() => {
-    if (!searchTerm) return roles;
+    // First filter out system roles
+    const nonSystemRoles = roles.filter((role) => !isSystemRole(role.name));
+
+    // Then apply search filter if there's a search term
+    if (!searchTerm) return nonSystemRoles;
 
     const searchLower = searchTerm.toLowerCase();
-    return roles.filter(
+    return nonSystemRoles.filter(
       (role) =>
         role.name.toLowerCase().includes(searchLower) ||
         role.detail?.toLowerCase().includes(searchLower) ||
-        ""
+        false
     );
   }, [roles, searchTerm]);
 

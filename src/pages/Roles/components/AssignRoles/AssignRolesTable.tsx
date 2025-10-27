@@ -21,17 +21,26 @@ import {
   CircularProgress,
   SelectChangeEvent,
   InputAdornment,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import {
   Search as SearchIcon,
-  Edit as EditIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
 import { Subcategoria } from "@/types/subcategoria.types";
 import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
+import subcategoriaRolesService from "@/api/subcategoriaRolesService";
 
 interface AssignRolesTableProps {
   rolesBySubcategoria: Record<string, SubcategoriaRol[]>;
+  setRolesBySubcategoria: React.Dispatch<
+    React.SetStateAction<Record<string, SubcategoriaRol[]>>
+  >;
   subcategorias?: Subcategoria[];
   loading?: boolean;
   onSubcategoriaSelect: (subcategoriaNombre: string) => void;
@@ -41,6 +50,7 @@ interface AssignRolesTableProps {
 const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
   subcategorias = [],
   rolesBySubcategoria = {},
+  setRolesBySubcategoria,
   onSubcategoriaSelect,
   loading = false,
 }) => {
@@ -64,6 +74,12 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
     severity: "success" as "success" | "error" | "info" | "warning",
   });
 
+  // Delete dialog state
+  const [roleToDelete, setRoleToDelete] = useState<SubcategoriaRol | null>(
+    null
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const handleSubcategoriaChange = async (event: SelectChangeEvent<string>) => {
     const subcategoriaNombre = event.target.value as string;
     setSelectedSubcategoria(subcategoriaNombre);
@@ -74,8 +90,6 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
 
     // Notify parent component to load roles for this subcategory if not already loaded
     onSubcategoriaSelect(subcategoriaNombre);
-
-    // Update filtered roles from the rolesBySubcategoria prop
   };
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -117,6 +131,78 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleDeleteClick = (role: SubcategoriaRol) => {
+    setRoleToDelete(role);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!roleToDelete || !selectedSubcategoria) return;
+
+    try {
+      setIsDeleting(true);
+      const response = await subcategoriaRolesService.eliminarRolDeSubcategoria(
+        roleToDelete.subcategoriaId,
+        roleToDelete.rolId
+      );
+
+      if (response.success) {
+        setSnackbar({
+          open: true,
+          message:
+            response.message || "Rol eliminado exitosamente de la subcategoría",
+          severity: "success",
+        });
+
+        // Update the local state immediately
+        if (rolesBySubcategoria[selectedSubcategoria]) {
+          const updatedRoles = rolesBySubcategoria[selectedSubcategoria].filter(
+            (role) =>
+              !(
+                role.rolId === roleToDelete.rolId &&
+                role.subcategoriaId === roleToDelete.subcategoriaId
+              )
+          );
+
+          setRolesBySubcategoria((prev) => ({
+            ...prev,
+            [selectedSubcategoria]: updatedRoles,
+          }));
+        }
+
+        // Also trigger a refresh from the server to ensure consistency
+        onSubcategoriaSelect(selectedSubcategoria);
+      } else {
+        throw new Error(
+          response.message || "Error al eliminar el rol de la subcategoría"
+        );
+      }
+    } catch (error: any) {
+      console.error("Error al eliminar el rol de la subcategoría:", error);
+
+      if (error.response?.data?.message) {
+        setSnackbar({
+          open: true,
+          message: error.response.data.message,
+          severity: "error",
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message:
+            error.message || "Error al eliminar el rol de la subcategoría",
+          severity: "error",
+        });
+      }
+    } finally {
+      setRoleToDelete(null);
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setRoleToDelete(null);
   };
 
   const isSystemRole = (roleName?: string) => {
@@ -179,10 +265,14 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }} >Descripción del Rol</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }} >Subcategoría</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }} >Estado</TableCell>
-              <TableCell align="right" sx={{ fontWeight: "bold" }} >Acciones</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>
+                Descripción del Rol
+              </TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Subcategoría</TableCell>
+              <TableCell sx={{ fontWeight: "bold" }}>Estado</TableCell>
+              <TableCell align="right" sx={{ fontWeight: "bold" }}>
+                Acciones
+              </TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -229,19 +319,8 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
                     </TableCell>
                     <TableCell>
                       <IconButton
-                        color="primary"
-                        onClick={() => {
-                          // Handle edit
-                        }}
-                        disabled={isSystemRole(role.rolName)}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
                         color="error"
-                        onClick={() => {
-                          // Handle delete
-                        }}
+                        onClick={() => handleDeleteClick(role)}
                         disabled={isSystemRole(role.rolName)}
                       >
                         <DeleteIcon />
@@ -268,17 +347,51 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
         labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={!!roleToDelete}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            ¿Está seguro que desea eliminar el rol "{roleToDelete?.rolName}" de
+            esta subcategoría? Esta acción no se puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            disabled={
+              isDeleting ||
+              (roleToDelete ? isSystemRole(roleToDelete.rolName) : false)
+            }
+            startIcon={isDeleting ? <CircularProgress size={20} /> : null}
+          >
+            {isDeleting ? "Eliminando..." : "Eliminar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity}>
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
           {snackbar.message}
         </Alert>
       </Snackbar>

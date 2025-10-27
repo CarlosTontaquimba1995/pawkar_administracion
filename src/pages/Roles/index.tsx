@@ -279,6 +279,7 @@ const RolesPage = () => {
             <AssignRolesTable
               onSubcategoriaSelect={handleSubcategoriaSelect}
               rolesBySubcategoria={rolesBySubcategoria}
+              setRolesBySubcategoria={setRolesBySubcategoria}
               subcategorias={subcategorias}
               onRefresh={fetchRoles}
               loading={loading}
