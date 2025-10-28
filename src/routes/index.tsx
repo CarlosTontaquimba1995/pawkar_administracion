@@ -15,7 +15,7 @@ const PlayersPage = lazy(() => import('@/pages/Players'));
 const EventsPage = lazy(() => import('@/pages/Events'));
 const CategoriesPage = lazy(() => import('@/pages/Categories'));
 const RolesPage = lazy(() => import('@/pages/Roles'));
-const EncuentrosPage = lazy(() => import("@/pages/Encuentros"));
+const EncuentrosPage = lazy(() => import("@/pages/Encuentros/indexEncuentros"));
 const NotFoundPage = lazy(() => import("@/pages/NotFound"));
 
 const LoadingSpinner = () => (

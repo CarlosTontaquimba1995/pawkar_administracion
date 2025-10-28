@@ -11,6 +11,7 @@ export interface Encuentro {
   equipoLocalNombre?: string;
   equipoVisitanteNombre?: string;
   subcategoriaNombre?: string;
+  titulo?: string;
 }
 
 export interface CreateEncuentroRequest {

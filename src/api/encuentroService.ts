@@ -12,6 +12,11 @@ import {
 
 const API_URL = 'http://localhost:8080/api/encuentros';
 
+interface Subcategoria {
+    id: number;
+    nombre: string;
+}
+
 // Create axios instance with default config
 const api = axios.create({
     baseURL: API_URL,
@@ -157,7 +162,7 @@ const encuentroService = {
     ): Promise<EncuentroPageResponse['data']> {
         const { page = 0, size = 10, ...restParams } = params;
         const response = await api.get<EncuentroPageResponse>(
-            '/search/params',
+            '/search',
             { params: { page, size, ...restParams } }
         );
         return response.data.data;
