@@ -15,7 +15,8 @@ const PlayersPage = lazy(() => import('@/pages/Players'));
 const EventsPage = lazy(() => import('@/pages/Events'));
 const CategoriesPage = lazy(() => import('@/pages/Categories'));
 const RolesPage = lazy(() => import('@/pages/Roles'));
-const NotFoundPage = lazy(() => import('@/pages/NotFound'));
+const EncuentrosPage = lazy(() => import("@/pages/Encuentros"));
+const NotFoundPage = lazy(() => import("@/pages/NotFound"));
 
 const LoadingSpinner = () => (
   <Box
@@ -35,11 +36,15 @@ const AppRoutes = () => {
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
         {/* Ruta pública de login */}
-        <Route 
-          path="/login" 
+        <Route
+          path="/login"
           element={
-            isAuthenticated ? <Navigate to="/dashboard" replace /> : <LoginPage />
-          } 
+            isAuthenticated ? (
+              <Navigate to="/dashboard" replace />
+            ) : (
+              <LoginPage />
+            )
+          }
         />
 
         {/* Rutas protegidas */}
@@ -58,6 +63,7 @@ const AppRoutes = () => {
           <Route path="events" element={<EventsPage />} />
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="roles" element={<RolesPage />} />
+          <Route path="encuentros" element={<EncuentrosPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

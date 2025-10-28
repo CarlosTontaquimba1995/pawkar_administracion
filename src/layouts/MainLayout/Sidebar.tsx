@@ -26,6 +26,7 @@ import {
   Logout as LogoutIcon,
   ErrorOutline as ErrorIcon,
   RollerShades,
+  Watch as MatchIcon,
 } from "@mui/icons-material";
 import teamService from "../../api/teamService";
 
@@ -63,6 +64,7 @@ const menuItems = [
   { text: "Roles", icon: <RollerShades />, path: "/roles" },
   { text: "Equipos", icon: <TeamsIcon />, path: "/teams" },
   { text: "Jugadores", icon: <PlayersIcon />, path: "/players" },
+  { text: "Encuentros", icon: <MatchIcon />, path: "/encuentros" },
   { text: "Eventos", icon: <EventsIcon />, path: "/events" },
 ];
 
