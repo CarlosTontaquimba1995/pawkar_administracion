@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Table,
   TableBody,
@@ -21,10 +21,6 @@ import {
   CircularProgress,
   Snackbar,
   Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -37,22 +33,15 @@ import EncuentrosEditForm from "./EncuentrosEditForm";
 
 interface EncuentrosTableProps {
   encuentros: Encuentro[];
-  subcategorias: Array<{ id: number; nombre: string }>;
-  onSubcategoriaChange: (subcategoriaId: number) => void;
   onRefresh: () => Promise<void>;
   loading: boolean;
 }
 
 const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
   encuentros: initialEncuentros,
-  subcategorias,
-  onSubcategoriaChange,
   onRefresh,
   loading,
 }) => {
-  const [selectedSubcategoria, setSelectedSubcategoria] = useState<number | "">(
-    ""
-  );
   const [searchTerm, setSearchTerm] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [encuentroToDelete, setEncuentroToDelete] = useState<Encuentro | null>(
@@ -162,29 +151,6 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
           flexShrink: 0,
         }}
       >
-        <FormControl size="small" sx={{ minWidth: 200 }}>
-          <InputLabel id="subcategoria-filter-label">Subcategoría</InputLabel>
-          <Select
-            labelId="subcategoria-filter-label"
-            value={selectedSubcategoria}
-            label="Subcategoría"
-            onChange={(e) => {
-              const value = e.target.value as number;
-              setSelectedSubcategoria(value);
-              onSubcategoriaChange(value);
-            }}
-          >
-            <MenuItem value="">
-              <em>Todas</em>
-            </MenuItem>
-            {subcategorias.map((sub) => (
-              <MenuItem key={sub.id} value={sub.id}>
-                {sub.nombre}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-
         <TextField
           size="small"
           placeholder="Buscar..."
@@ -214,7 +180,6 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         <Table stickyHeader>
           <TableHead>
             <TableRow>
-              <TableCell sx={tableCellStyle}>Subcategoría</TableCell>
               <TableCell sx={tableCellStyle}>Título</TableCell>
               <TableCell sx={tableCellStyle}>Fecha y Hora</TableCell>
               <TableCell sx={tableCellStyle}>Estadio/Lugar</TableCell>
@@ -243,7 +208,6 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
             ) : (
               paginatedEncuentros.map((encuentro) => (
                 <TableRow key={encuentro.id}>
-                  <TableCell>{encuentro.subcategoriaNombre}</TableCell>
                   <TableCell>{encuentro.titulo}</TableCell>
                   <TableCell>{formatFechaHora(encuentro.fechaHora)}</TableCell>
                   <TableCell>{encuentro.estadioLugar}</TableCell>

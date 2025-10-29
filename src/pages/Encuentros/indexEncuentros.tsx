@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { SelectChangeEvent } from "@mui/material/Select";
 import {
   Box,
   Button,
@@ -8,34 +9,48 @@ import {
   Typography,
   TextField,
   FormControl,
+  InputLabel,
   Select,
   MenuItem,
   TablePagination,
   Snackbar,
   Alert,
-  useTheme,
-  useMediaQuery,
   InputAdornment,
 } from "@mui/material";
-import {
-  Add as AddIcon,
-  Clear as ClearIcon,
-  Search as SearchIcon,
-  FiberManualRecord as FiberManualRecordIcon,
-} from "@mui/icons-material";
+import { Add as AddIcon, Clear as ClearIcon } from "@mui/icons-material";
 import { Encuentro } from "@/types/encuentro.types";
 import EncuentrosTable from "./EncuentrosTable";
 import EncuentrosRegisterForm from "./EncuentrosRegisterForm";
 import encuentroService from "@/api/encuentroService";
 import subcategoriaService from "@/api/subcategoriaService";
 import { Subcategoria } from "@/types/subcategoria.types";
+import teamService from "@/api/teamService";
+import { Team } from "@/types/team.types";
+import PlaceIcon from "@mui/icons-material/Place";
 
-const EncuentrosPage = () => {
+interface SearchParams {
+  fechaInicio: string;
+  fechaFin: string;
+  subcategoriaId: number;
+  equipoId: number;
+  estadioLugar: string;
+  estado: string;
+  page: number;
+  size: number;
+  [key: string]: string | number | undefined; // Allow undefined in the index signature
+}
+
+const EncuentrosPage: React.FC = () => {
   const { token } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [loading, setLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [encuentros, setEncuentros] = useState<Encuentro[]>([]);
+  const [totalElements, setTotalElements] = useState(0);
+  const [subcategorias, setSubcategorias] = useState<
+    Array<{ id: number; nombre: string }>
+  >([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [loadingTeams, setLoadingTeams] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -43,10 +58,10 @@ const EncuentrosPage = () => {
   });
 
   // Search and pagination state
-  const [searchParams, setSearchParams] = useState({
+  const [searchParams, setSearchParams] = useState<SearchParams>({
     fechaInicio: "",
     fechaFin: "",
-    subcategoriaId: 0, // Will be set after fetching subcategorias
+    subcategoriaId: 0,
     equipoId: 0,
     estadioLugar: "",
     estado: "",
@@ -54,32 +69,16 @@ const EncuentrosPage = () => {
     size: 10,
   });
 
-  const [encuentros, setEncuentros] = useState<Encuentro[]>([]);
-  const [totalElements, setTotalElements] = useState(0);
-  const [subcategorias, setSubcategorias] = useState<
-    Array<{ id: number; nombre: string }>
-  >([]);
-
-  // Fetch encuentros when component mounts or searchParams/token changes
-  useEffect(() => {
-    if (token) {
-      fetchEncuentros();
-    }
-  }, [searchParams, token]);
-
-  const fetchEncuentros = async () => {
+  const fetchEncuentros = useCallback(async () => {
     if (!token) return;
 
     try {
       setLoading(true);
-
-      // Create a clean params object with only non-empty values
       const cleanParams: Record<string, any> = {
         page: searchParams.page,
         size: searchParams.size,
       };
 
-      // Only add parameters that have values
       if (searchParams.fechaInicio)
         cleanParams.fechaInicio = searchParams.fechaInicio;
       if (searchParams.fechaFin) cleanParams.fechaFin = searchParams.fechaFin;
@@ -93,7 +92,6 @@ const EncuentrosPage = () => {
       const response = await encuentroService.searchEncuentrosByQuery(
         cleanParams
       );
-
       setEncuentros(response.content);
       setTotalElements(response.totalElements);
     } catch (error) {
@@ -106,8 +104,49 @@ const EncuentrosPage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchParams, token]);
 
+  // Load teams when subcategory changes
+  useEffect(() => {
+    const loadTeams = async () => {
+      if (searchParams.subcategoriaId > 0) {
+        try {
+          setLoadingTeams(true);
+          const response = await teamService.getTeamsBySubcategoria(
+            searchParams.subcategoriaId
+          );
+
+          // Map the response to match the expected format
+          const mappedTeams = Array.isArray(response.data)
+            ? response.data.map((team) => ({
+                equipoId: team.equipoId,
+                nombre: team.nombre,
+                subcategoriaId: team.subcategoriaId,
+                subcategoriaNombre: team.subcategoriaNombre,
+                serieId: team.serieId,
+                serieNombre: team.serieNombre,
+                fundacion: team.fundacion,
+                jugadoresCount: team.jugadoresCount,
+                estado: "activo", // Default value for estado as it's required
+              }))
+            : [];
+
+          setTeams(mappedTeams);
+        } catch (error) {
+          console.error("Error loading teams:", error);
+          setTeams([]);
+        } finally {
+          setLoadingTeams(false);
+        }
+      } else {
+        setTeams([]);
+      }
+    };
+
+    loadTeams();
+  }, [searchParams.subcategoriaId]);
+
+  // Load subcategories on mount
   useEffect(() => {
     const fetchSubcategorias = async () => {
       try {
@@ -117,20 +156,6 @@ const EncuentrosPage = () => {
           nombre: sub.nombre,
         }));
         setSubcategorias(mappedSubcategorias);
-
-        // If we have subcategorias, update the searchParams with the first valid subcategoriaId
-        if (mappedSubcategorias.length > 0) {
-          const firstValidSubcategoriaId = mappedSubcategorias[0].id;
-          setSearchParams((prev) => ({
-            ...prev,
-            subcategoriaId: firstValidSubcategoriaId,
-            // Reset page to 0 when changing subcategoria
-            page: 0,
-          }));
-
-          // Fetch encuentros with the new subcategoriaId
-          fetchEncuentros();
-        }
       } catch (error) {
         console.error("Error fetching subcategorias:", error);
       }
@@ -139,14 +164,14 @@ const EncuentrosPage = () => {
     fetchSubcategorias();
   }, []);
 
+  // Fetch encuentros when search params change
   useEffect(() => {
-    // Only fetch if we have a subcategoria selected or if we're not filtering by subcategoria
     if (searchParams.subcategoriaId !== 0 || !searchParams.subcategoriaId) {
       fetchEncuentros();
     }
-  }, [searchParams, token]);
+  }, [searchParams, fetchEncuentros]);
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setSearchParams((prev) => ({ ...prev, page: newPage }));
   };
 
@@ -155,68 +180,69 @@ const EncuentrosPage = () => {
   ) => {
     setSearchParams((prev) => ({
       ...prev,
-      page: 0, // Reset to first page when changing page size
+      page: 0,
       size: parseInt(event.target.value, 10),
     }));
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  const handleFilterChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | { name?: string; value: string | number }
+    >
   ) => {
     const { name, value } = e.target;
-    setSearchParams((prev) => ({
-      ...prev,
-      [name as string]: value,
-    }));
-  };
+    if (!name) return;
 
-  const handleSelectChange = (
-    e:
-      | React.ChangeEvent<{ name?: string; value: unknown }>
-      | (Event & { target: { value: string; name: string } })
-  ) => {
-    const target = e.target as HTMLInputElement;
-    const { name, value } = target;
-
-    // If we have subcategorias and the selected subcategoria is not in the list,
-    // select the first available subcategoria
-    if (name === "subcategoriaId" && subcategorias.length > 0) {
-      const selectedId = Number(value);
-      const subcategoriaExists = subcategorias.some(
-        (sc) => sc.id === selectedId
-      );
-
-      if (!subcategoriaExists) {
-        setSearchParams((prev) => ({
-          ...prev,
-          subcategoriaId: subcategorias[0].id,
-          page: 0, // Reset to first page when changing subcategoria
-        }));
-        return;
-      }
-    }
-
-    // For all other cases, update the search params normally
-    setSearchParams((prev) => ({
-      ...prev,
-      [name as string]: value,
-      ...(name !== "page" && { page: 0 }), // Reset to first page for non-pagination changes
-    }));
-  };
-
-  const handleFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
-  ) => {
-    const { name } = e.target;
-    if (name !== "subcategoriaId" && searchParams.subcategoriaId === 0) {
-      setSearchParams((prev) => ({
+    setSearchParams((prev) => {
+      const updates: Partial<SearchParams> = {
         ...prev,
-        subcategoriaId: 0, // Clear the default subcategoriaId when other filters are used
-        [name as string]: e.target.value,
-      }));
-    } else {
-      handleInputChange(e);
-    }
+        [name]: value as string | number,
+      };
+      if (name !== "page") {
+        updates.page = 0;
+      }
+      return {
+        ...prev,
+        ...updates,
+      } as SearchParams;
+    });
+  };
+
+  const handleSelectChange = (event: SelectChangeEvent<number | string>) => {
+    const { name, value } = event.target as {
+      name: keyof SearchParams;
+      value: unknown;
+    };
+    if (!name) return;
+
+    setSearchParams((prev: SearchParams) => {
+      const updates: Partial<SearchParams> = {
+        ...prev,
+        page: 0, // Reset to first page (0-based index) when filters change
+      };
+
+      // Handle number fields
+      if (name === "subcategoriaId" || name === "equipoId") {
+        const numericValue = value === "" ? 0 : Number(value);
+        updates[name] = numericValue;
+
+        // When selecting a team, make sure subcategoriaId is included if it exists
+        if (name === "equipoId" && prev.subcategoriaId) {
+          updates.subcategoriaId = prev.subcategoriaId;
+        }
+      }
+      // Handle string fields
+      else if (name === "estado" || name === "estadioLugar") {
+        updates[name] = String(value);
+      }
+
+      // Reset equipoId when subcategoriaId changes
+      if (name === "subcategoriaId") {
+        updates.equipoId = 0;
+      }
+
+      return { ...prev, ...updates };
+    });
   };
 
   const handleSuccess = () => {
@@ -229,20 +255,35 @@ const EncuentrosPage = () => {
   };
 
   const handleSnackbarClose = () => {
-    setSnackbar({ ...snackbar, open: false });
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setSearchParams({
+      fechaInicio: "",
+      fechaFin: "",
+      subcategoriaId: 0,
+      equipoId: 0,
+      estadioLugar: "",
+      estado: "",
+      page: 0,
+      size: searchParams.size,
+    });
+    setTeams([]);
   };
 
   return (
-    <Box>
+    <Box sx={{ p: 3 }}>
       <Box
-        mb={4}
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        flexWrap="wrap"
-        gap={2}
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
       >
-        <Typography variant="h4" component="h1">
+        <Typography variant="h5" component="h1">
           Gestión de Encuentros
         </Typography>
         <Button
@@ -255,210 +296,134 @@ const EncuentrosPage = () => {
         </Button>
       </Box>
 
-      <Card
-        variant="outlined"
-        sx={{ mb: 3, borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Box
-            sx={{
-              mb: 2,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography
-              variant="h6"
-              component="h2"
-              sx={{ fontWeight: 600, color: "text.primary" }}
-            >
-              Filtros de Búsqueda
-            </Typography>
-            <Button
-              variant="text"
-              color="primary"
-              onClick={() => {
-                setSearchParams({
-                  fechaInicio: "",
-                  fechaFin: "",
-                  subcategoriaId: 0,
-                  equipoId: 0,
-                  estadioLugar: "",
-                  estado: "",
-                  page: 0,
-                  size: searchParams.size,
-                });
+      <Card>
+        <CardContent>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}>
+            {/* Fecha Inicio */}
+            <TextField
+              label="Fecha Inicio"
+              type="date"
+              name="fechaInicio"
+              value={searchParams.fechaInicio}
+              onChange={handleFilterChange}
+              InputLabelProps={{
+                shrink: true,
               }}
+              size="small"
+            />
+
+            {/* Fecha Fin */}
+            <TextField
+              label="Fecha Fin"
+              type="date"
+              name="fechaFin"
+              value={searchParams.fechaFin}
+              onChange={handleFilterChange}
+              InputLabelProps={{
+                shrink: true,
+              }}
+              size="small"
+            />
+
+            {/* Subcategoría */}
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Subcategoría</InputLabel>
+              <Select
+                name="subcategoriaId"
+                value={searchParams.subcategoriaId}
+                onChange={handleSelectChange}
+                label="Subcategoría"
+              >
+                <MenuItem value={0}>
+                  <em>Todas las categorías</em>
+                </MenuItem>
+                {subcategorias.map((sub) => (
+                  <MenuItem key={sub.id} value={sub.id}>
+                    {sub.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Equipo */}
+            <FormControl
+              size="small"
+              sx={{ minWidth: 200 }}
+              disabled={!searchParams.subcategoriaId}
+            >
+              <InputLabel>Equipo</InputLabel>
+              <Select
+                name="equipoId"
+                value={searchParams.equipoId}
+                onChange={handleSelectChange}
+                label="Equipo"
+                disabled={!searchParams.subcategoriaId || loadingTeams}
+              >
+                <MenuItem value={0}>
+                  <em>Todos los equipos</em>
+                </MenuItem>
+                {teams.map((team) => (
+                  <MenuItem key={team.equipoId} value={team.equipoId}>
+                    {team.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Estadio/Lugar */}
+            <TextField
+              name="estadioLugar"
+              label="Estadio/Lugar"
+              value={searchParams.estadioLugar || ""}
+              onChange={handleFilterChange}
+              size="small"
+              sx={{ minWidth: 200 }}
+              placeholder="Filtrar por estadio/lugar"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <PlaceIcon fontSize="small" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            {/* Estado */}
+            <FormControl size="small" sx={{ minWidth: 150 }}>
+              <InputLabel>Estado</InputLabel>
+              <Select
+                name="estado"
+                value={searchParams.estado}
+                onChange={handleSelectChange}
+                label="Estado"
+              >
+                <MenuItem value="">
+                  <em>Todos los estados</em>
+                </MenuItem>
+                <MenuItem value="PENDIENTE">Pendiente</MenuItem>
+                <MenuItem value="EN_JUEGO">En juego</MenuItem>
+                <MenuItem value="FINALIZADO">Finalizado</MenuItem>
+                <MenuItem value="CANCELADO">Cancelado</MenuItem>
+              </Select>
+            </FormControl>
+
+            {/* Clear Filters Button */}
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={handleClearFilters}
               size="small"
               startIcon={<ClearIcon fontSize="small" />}
               sx={{
                 textTransform: "none",
-                fontWeight: 500,
-                "&:hover": { backgroundColor: "action.hover" },
+                height: "40px",
+                whiteSpace: "nowrap",
+                alignSelf: "flex-end",
+                mb: 1,
               }}
             >
-              Limpiar todo
+              Limpiar
             </Button>
-          </Box>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            {/* Filtro de Fechas */}
-            <Box>
-              <Typography
-                variant="subtitle2"
-                fontWeight={500}
-                color="text.secondary"
-                gutterBottom
-              >
-                Rango de Fechas
-              </Typography>
-              <Box
-                sx={{
-                  display: "grid",
-                  gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
-                  gap: 2,
-                  alignItems: "end",
-                }}
-              >
-                <Box>
-                  <TextField
-                    fullWidth
-                    label="Fecha de inicio"
-                    type="date"
-                    name="fechaInicio"
-                    value={searchParams.fechaInicio}
-                    onChange={handleFilterChange}
-                    size="small"
-                    variant="outlined"
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                    InputProps={{
-                      sx: { backgroundColor: "background.paper" },
-                    }}
-                  />
-                </Box>
-                <Box>
-                  <TextField
-                    fullWidth
-                    label="Fecha de fin"
-                    type="date"
-                    name="fechaFin"
-                    value={searchParams.fechaFin}
-                    onChange={handleFilterChange}
-                    size="small"
-                    variant="outlined"
-                    InputLabelProps={{
-                      shrink: true,
-                    }}
-                    InputProps={{
-                      sx: { backgroundColor: "background.paper" },
-                    }}
-                  />
-                </Box>
-              </Box>
-            </Box>
-
-            {/* Filtros Adicionales */}
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
-                gap: 3,
-              }}
-            >
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  fontWeight={500}
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Búsqueda por Lugar
-                </Typography>
-                <TextField
-                  fullWidth
-                  placeholder="Ej: Estadio Olímpico"
-                  name="estadioLugar"
-                  value={searchParams.estadioLugar}
-                  onChange={handleFilterChange}
-                  size="small"
-                  variant="outlined"
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchIcon color="action" />
-                      </InputAdornment>
-                    ),
-                    sx: { backgroundColor: "background.paper" },
-                  }}
-                />
-              </Box>
-
-              <Box>
-                <Typography
-                  variant="subtitle2"
-                  fontWeight={500}
-                  color="text.secondary"
-                  gutterBottom
-                >
-                  Estado del Encuentro
-                </Typography>
-                <FormControl fullWidth size="small" variant="outlined">
-                  <Select
-                    name="estado"
-                    value={searchParams.estado}
-                    onChange={handleSelectChange}
-                    displayEmpty
-                    inputProps={{ "aria-label": "Estado del encuentro" }}
-                    sx={{ backgroundColor: "background.paper" }}
-                  >
-                    <MenuItem value="">
-                      <em>Todos los estados</em>
-                    </MenuItem>
-                    <MenuItem value="PENDIENTE">
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <FiberManualRecordIcon fontSize="small" color="info" />
-                        Pendiente
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="EN_JUEGO">
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <FiberManualRecordIcon
-                          fontSize="small"
-                          color="warning"
-                        />
-                        En Juego
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="FINALIZADO">
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <FiberManualRecordIcon
-                          fontSize="small"
-                          color="success"
-                        />
-                        Finalizado
-                      </Box>
-                    </MenuItem>
-                    <MenuItem value="CANCELADO">
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                      >
-                        <FiberManualRecordIcon fontSize="small" color="error" />
-                        Cancelado
-                      </Box>
-                    </MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-            </Box>
           </Box>
         </CardContent>
       </Card>
@@ -467,27 +432,21 @@ const EncuentrosPage = () => {
         <EncuentrosTable
           encuentros={encuentros}
           loading={loading}
-          subcategorias={subcategorias}
-          onSubcategoriaChange={(subcategoriaId: number) => {
-            setSearchParams((prev) => ({
-              ...prev,
-              subcategoriaId,
-              page: 0,
-            }));
-          }}
           onRefresh={fetchEncuentros}
         />
 
         <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
           component="div"
           count={totalElements}
-          rowsPerPage={searchParams.size}
           page={searchParams.page}
           onPageChange={handleChangePage}
+          rowsPerPage={searchParams.size}
           onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Filas por página:"
-          sx={{ mt: 2 }}
+          rowsPerPageOptions={[5, 10, 25]}
+          labelRowsPerPage="Filas por página"
+          labelDisplayedRows={({ from, to, count }) =>
+            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+          }
         />
       </Box>
 
@@ -504,6 +463,7 @@ const EncuentrosPage = () => {
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={handleSnackbarClose}
