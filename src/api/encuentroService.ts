@@ -12,11 +12,6 @@ import {
 
 const API_URL = 'http://localhost:8080/api/encuentros';
 
-interface Subcategoria {
-    id: number;
-    nombre: string;
-}
-
 // Create axios instance with default config
 const api = axios.create({
     baseURL: API_URL,
@@ -90,7 +85,7 @@ const encuentroService = {
      * @param encuentroData Datos del encuentro a crear
      */
     async createEncuentro(encuentroData: CreateEncuentroRequest): Promise<Encuentro> {
-        const response = await api.post<EncuentroResponse>('/', encuentroData);
+        const response = await api.post<EncuentroResponse>('', encuentroData);
         return response.data.data;
     },
 

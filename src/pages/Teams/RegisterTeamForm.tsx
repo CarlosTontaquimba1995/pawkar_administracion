@@ -31,6 +31,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import teamService from '../../api/teamService';
 import { Serie } from "@/types/serie.types";
 import serieService from "@/api/serieService";
+import subcategoriaService from "@/api/subcategoriaService";
 
 interface Subcategoria {
   subcategoriaId: number;
@@ -218,30 +219,32 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
       setSubcategoriaError("");
 
       try {
-        const response = await fetch(
-          "http://localhost:8080/api/subcategorias",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const response = await subcategoriaService.getSubcategorias();
 
-        if (!response.ok) {
-          throw new Error("Error al cargar las subcategorías");
-        }
+        if (response.success && Array.isArray(response.data)) {
+          setSubcategorias(response.data);
 
-        const data = await response.json();
-        if (data.success && Array.isArray(data.data)) {
-          setSubcategorias(data.data);
+          // Only update if we have subcategories
+          if (response.data.length > 0) {
+            // Check if current subcategoryId is valid
+            const currentSubcategoriaId = teams[0]?.subcategoriaId;
+            const isValidSubcategoria = response.data.some(
+              (sub) => sub.subcategoriaId === currentSubcategoriaId
+            );
 
-          // Set the first subcategory as default if no subcategory is selected
-          if (data.data.length > 0 && teams[0].subcategoriaId === 0) {
-            const newTeams = [...teams];
-            newTeams[0].subcategoriaId = data.data[0].subcategoriaId;
-            setTeams(newTeams);
-            // Fetch series for the first subcategory
-            fetchSeriesForSubcategoria(data.data[0].subcategoriaId);
+            // If no valid subcategory is selected, set the first one
+            if (!isValidSubcategoria) {
+              const newTeams = [...teams];
+              newTeams[0] = {
+                ...newTeams[0],
+                subcategoriaId: response.data[0].subcategoriaId,
+              };
+              setTeams(newTeams);
+              fetchSeriesForSubcategoria(response.data[0].subcategoriaId);
+            } else if (currentSubcategoriaId) {
+              // If we have a valid subcategory, make sure to fetch its series
+              fetchSeriesForSubcategoria(currentSubcategoriaId);
+            }
           }
         }
       } catch (error) {
@@ -295,12 +298,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                 position: "relative",
               }}
             >
-              <Box
-                display="flex"
-                alignItems="center"
-                color="primary.main"
-                mb={2}
-              >
+              <Box display="flex" alignItems="center" mb={2}>
                 <EmojiEventsIcon sx={{ mr: 1 }} />
                 <Typography variant="subtitle1" fontWeight="medium">
                   Información del Torneo
@@ -316,47 +314,24 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                 <FormControl fullWidth size="small" required>
                   <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
                   <Select
-                    labelId="subcategoria-label"
                     value={teams[0]?.subcategoriaId || ""}
-                    onChange={(e) =>
-                      handleTeamChange(
-                        0,
-                        "subcategoriaId",
-                        Number(e.target.value)
-                      )
-                    }
-                    label="Subcategoría"
-                    disabled={loadingSubcategorias}
-                    variant="outlined"
-                    sx={{
-                      "& .MuiSelect-select": {
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        py: 1.5,
-                      },
+                    onChange={(e) => {
+                      const subcategoriaId = Number(e.target.value);
+                      const newTeams = [...teams];
+                      newTeams[0] = { ...newTeams[0], subcategoriaId };
+                      setTeams(newTeams);
+                      fetchSeriesForSubcategoria(subcategoriaId);
                     }}
+                    disabled={loadingSubcategorias}
                   >
-                    {loadingSubcategorias ? (
-                      <MenuItem value="">
-                        <CircularProgress size={24} />
+                    {subcategorias.map((sub) => (
+                      <MenuItem
+                        key={sub.subcategoriaId}
+                        value={sub.subcategoriaId}
+                      >
+                        {sub.nombre}
                       </MenuItem>
-                    ) : subcategorias.length > 0 ? (
-                      subcategorias.map((sub) => (
-                        <MenuItem
-                          key={sub.subcategoriaId}
-                          value={sub.subcategoriaId}
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <FilterListIcon fontSize="small" />
-                          {sub.nombre}
-                        </MenuItem>
-                      ))
-                    ) : (
-                      <MenuItem value="" disabled>
-                        No hay subcategorías disponibles
-                      </MenuItem>
-                    )}
+                    ))}
                   </Select>
                   {subcategoriaError && (
                     <Typography color="error" variant="caption">
