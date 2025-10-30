@@ -86,7 +86,6 @@ const Teams = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [totalElements, setTotalElements] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
 
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -182,7 +181,6 @@ const Teams = () => {
 
           // Actualizar el estado de paginación
           setTotalElements(response.data.totalElements);
-          setTotalPages(response.data.totalPages);
           setPage(response.data.number);
 
           // Mapear la respuesta de la API para que coincida con nuestra interfaz Equipo
@@ -253,10 +251,8 @@ const Teams = () => {
           // Actualizar el estado de paginación con valores por defecto
           // ya que la respuesta de la API no incluye información de paginación
           const totalElements = teamsData.length;
-          const totalPages = 1; // Como no tenemos paginación del servidor, asumimos una sola página
 
           setTotalElements(totalElements);
-          setTotalPages(totalPages);
           setPage(0); // Siempre mostramos la primera página
 
           // Mapear la respuesta de la API para que coincida con nuestra interfaz Equipo
@@ -407,7 +403,6 @@ const Teams = () => {
     setFilteredTeams(filtered);
     setPage(0); // Reset to first page when searching
     setTotalElements(filtered.length);
-    setTotalPages(Math.ceil(filtered.length / rowsPerPage));
   };
 
   const emptyRows =

@@ -47,7 +47,7 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
   const [selectedSubcategoria, setSelectedSubcategoria] = useState<number | "">(
     ""
   );
-  const [selectedRoles, setSelectedRoles] = useState<Role[]>([]);
+  // State for role assignments to subcategories
   const [roleAssignments, setRoleAssignments] = useState<SubcategoriaRol[]>([]);
 
   // UI State
@@ -208,7 +208,6 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
       );
 
       // Reset form and trigger parent refresh
-      setSelectedRoles([]);
       setSelectedSubcategoria("");
       onSuccess(); // Call the success callback to refresh parent data
       handleClose();

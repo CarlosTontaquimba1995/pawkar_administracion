@@ -1,58 +1,46 @@
 import React, { useState, useEffect } from "react";
 import {
-  Delete as DeleteIcon,
-  FilterList as FilterListIcon,
-  Group as GroupIcon,
-} from "@mui/icons-material";
-import {
-  Box,
-  Button,
-  TextField,
-  Typography,
-  Snackbar,
-  Alert as MuiAlert,
-  IconButton,
-  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Button,
+  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
+  Box,
+  CircularProgress,
+  Snackbar,
+  Alert as MuiAlert,
+  IconButton,
   Paper,
-  Divider,
+  Typography,
 } from "@mui/material";
-import {
-  Close as CloseIcon,
-  Add as AddIcon,
-  EmojiEvents as EmojiEventsIcon,
-  Event as EventIcon,
-  AccessTime as AccessTimeIcon,
-  SportsSoccer as StadiumIcon,
-} from "@mui/icons-material";
+import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
+
+// Services
 import { useAuth } from "@/contexts/AuthContext";
 import encuentroService from "@/api/encuentroService";
 import subcategoriaService from "@/api/subcategoriaService";
 import serieService from "@/api/serieService";
 import teamService from "@/api/teamService";
+
+// Types
+import {
+  CreateEncuentroRequest,
+  EstadoEncuentro,
+} from "@/types/encuentro.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import { Serie } from "@/types/serie.types";
 import { Team } from "@/types/team.types";
-import { EstadoEncuentro } from "@/types/encuentro.types";
-
-// Alert component for snackbar
-const Alert = React.forwardRef<HTMLDivElement, any>((props, ref) => {
-  return <MuiAlert elevation={6} ref={ref} variant="filled" {...props} />;
-});
-
-Alert.displayName = "Alert";
 
 interface EncuentrosRegisterFormProps {
   open: boolean;
@@ -60,17 +48,27 @@ interface EncuentrosRegisterFormProps {
   onSuccess: () => void;
 }
 
-interface EncuentroFormData {
-  fecha: Date;
-  hora: Date;
-  estado: EstadoEncuentro;
-  estadioLugar: string;
+interface EncuentroFormData
+  extends Omit<CreateEncuentroRequest, "fecha" | "hora"> {
+  fechaHora: Date | null;
+  fecha: string;
+  hora: string;
   subcategoriaId: number;
   serieId: number;
-  equipoLocalId: number;
-  equipoVisitanteId: number;
+  estado?: EstadoEncuentro;
 }
 
+const defaultEncuentro: EncuentroFormData = {
+  fechaHora: new Date(),
+  fecha: format(new Date(), "yyyy-MM-dd"),
+  hora: format(new Date(), "HH:mm"),
+  estadio: "",
+  equipoLocalId: 0,
+  equipoVisitanteId: 0,
+  subcategoriaId: 0,
+  serieId: 0,
+  estado: "PROGRAMADO",
+};
 const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
   open,
   onClose,
@@ -83,30 +81,27 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
     message: "",
     severity: "success" as "success" | "error",
   });
+
+  // Data states
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
-  const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
   const [series, setSeries] = useState<Record<number, Serie[]>>({});
+  const [equipos, setEquipos] = useState<Record<string, Team[]>>({});
+
+  // Loading states
+  const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
   const [loadingSeries, setLoadingSeries] = useState<Record<number, boolean>>(
     {}
   );
-  const [equipos, setEquipos] = useState<Record<number, Team[]>>({});
-  const [loadingEquipos, setLoadingEquipos] = useState<Record<number, boolean>>(
+  const [loadingEquipos, setLoadingEquipos] = useState<Record<string, boolean>>(
     {}
   );
+
+  // Form state
   const [encuentros, setEncuentros] = useState<EncuentroFormData[]>([
-    {
-      fecha: new Date(),
-      hora: new Date(),
-      estado: "PENDIENTE",
-      estadioLugar: "",
-      subcategoriaId: 0,
-      serieId: 0,
-      equipoLocalId: 0,
-      equipoVisitanteId: 0,
-    },
+    { ...defaultEncuentro },
   ]);
 
-  // Load subcategorias on mount
+  // Load subcategorias when component mounts
   useEffect(() => {
     const fetchSubcategorias = async () => {
       if (!token) return;
@@ -132,16 +127,19 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
     }
   }, [open, token]);
 
-  // Load series when subcategoria changes
+  // Fetch series when a subcategoria is selected
   const fetchSeries = async (subcategoriaId: number) => {
-    if (!token || !subcategoriaId) return;
+    if (!subcategoriaId) return;
 
     try {
       setLoadingSeries((prev) => ({ ...prev, [subcategoriaId]: true }));
       const response = await serieService.getSeriesBySubcategoria(
         subcategoriaId
       );
-      setSeries((prev) => ({ ...prev, [subcategoriaId]: response.data }));
+      setSeries((prev) => ({
+        ...prev,
+        [subcategoriaId]: response.data,
+      }));
     } catch (error) {
       console.error("Error fetching series:", error);
       setSnackbar({
@@ -154,59 +152,79 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
     }
   };
 
-  const handleAddEncuentro = () => {
-    setEncuentros([
-      ...encuentros,
-      {
-        fecha: new Date(),
-        hora: new Date(),
-        estado: "PENDIENTE",
-        estadioLugar: "",
-        subcategoriaId: 0,
-        serieId: 0,
-        equipoLocalId: 0,
-        equipoVisitanteId: 0,
-      },
-    ]);
+  // Fetch teams when a serie is selected
+  const fetchEquipos = async (subcategoriaId: number, serieId: number) => {
+    if (!subcategoriaId || !serieId) return;
+    const equipoKey = `${subcategoriaId}-${serieId}`;
+
+    try {
+      setLoadingEquipos((prev) => ({ ...prev, [equipoKey]: true }));
+      const response = await teamService.getTeamsBySerie(serieId);
+      setEquipos((prev) => ({
+        ...prev,
+        [equipoKey]: response.data,
+      }));
+    } catch (error) {
+      console.error("Error fetching equipos:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al cargar los equipos",
+        severity: "error",
+      });
+    } finally {
+      setLoadingEquipos((prev) => ({ ...prev, [equipoKey]: false }));
+    }
   };
 
-  const handleRemoveEncuentro = (index: number) => {
-    if (encuentros.length === 1) return; // Don't remove the last encounter
-    const newEncuentros = [...encuentros];
-    newEncuentros.splice(index, 1);
-    setEncuentros(newEncuentros);
-  };
-
-  const handleEncuentroChange = (
+  // Handle form field changes
+  const handleInputChange = (
     index: number,
     field: keyof EncuentroFormData,
     value: any
   ) => {
-    if (field === "subcategoriaId" && value !== 0) {
-      // Reset dependent fields when subcategoria changes
-      value = parseInt(value);
-      setEncuentros((prev) => {
-        const newEncuentros = [...prev];
-        newEncuentros[index] = {
-          ...newEncuentros[index],
-          [field]: value,
-        };
-        return newEncuentros;
-      });
+    const updatedEncuentros = [...encuentros];
+    updatedEncuentros[index] = { ...updatedEncuentros[index], [field]: value };
 
-      // Load series for the selected subcategoria
-      fetchSeries(value);
-    } else {
-      const newEncuentros = [...encuentros];
-      newEncuentros[index] = {
-        ...newEncuentros[index],
-        [field]: value,
-      };
-      setEncuentros(newEncuentros);
+    // Update dependent fields
+    if (field === "fecha" || field === "hora") {
+      const [year, month, day] = updatedEncuentros[index].fecha
+        .split("-")
+        .map(Number);
+      const [hours, minutes] = updatedEncuentros[index].hora
+        .split(":")
+        .map(Number);
+      updatedEncuentros[index].fechaHora = new Date(
+        year,
+        month - 1,
+        day,
+        hours,
+        minutes
+      );
+    }
+
+    setEncuentros(updatedEncuentros);
+  };
+
+  // Handle subcategoria change
+  const handleSubcategoriaChange = (index: number, subcategoriaId: number) => {
+    const updatedEncuentros = [...encuentros];
+    updatedEncuentros[index] = {
+      ...updatedEncuentros[index],
+      subcategoriaId,
+      serieId: 0,
+      equipoLocalId: 0,
+      equipoVisitanteId: 0,
+    };
+    setEncuentros(updatedEncuentros);
+
+    if (subcategoriaId && !series[subcategoriaId]) {
+      fetchSeries(subcategoriaId);
     }
   };
 
+  // Handle serie change
   const handleSerieChange = async (index: number, serieId: number) => {
+    const subcategoriaId = encuentros[index].subcategoriaId;
     const updatedEncuentros = [...encuentros];
     updatedEncuentros[index] = {
       ...updatedEncuentros[index],
@@ -216,221 +234,59 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
     };
     setEncuentros(updatedEncuentros);
 
-    // Si ya tenemos los equipos de esta serie, no hacemos nada
-    if (equipos[serieId]) return;
-
-    try {
-      // Actualizar el estado de carga para esta serie
-      setLoadingEquipos((prev) => ({
-        ...prev,
-        [serieId]: true,
-      }));
-
-      // Obtener los equipos de la serie seleccionada
-      const response = await teamService.getTeamsBySerie(serieId);
-
-      // Actualizar el estado de los equipos
-      setEquipos((prev) => ({
-        ...prev,
-        [serieId]: response.data || [],
-      }));
-    } catch (error) {
-      console.error("Error al cargar los equipos:", error);
-      // Mostrar mensaje de error al usuario
-      setSnackbar({
-        open: true,
-        message: "Error al cargar los equipos de la serie",
-        severity: "error",
-      });
-    } finally {
-      // Actualizar el estado de carga
-      setLoadingEquipos((prev) => ({
-        ...prev,
-        [serieId]: false,
-      }));
+    if (subcategoriaId && serieId) {
+      await fetchEquipos(subcategoriaId, serieId);
     }
   };
 
-  const handleCloseSnackbar = (
-    _event?: React.SyntheticEvent | Event,
-    reason?: string
-  ) => {
-    if (reason === "clickaway") {
-      return;
-    }
-    setSnackbar((prev) => ({ ...prev, open: false }));
+  // Add new encuentro
+  const handleAddEncuentro = () => {
+    setEncuentros([...encuentros, { ...defaultEncuentro }]);
   };
 
-  const validateEncuentros = (): boolean => {
-    // Check if there's at least one encounter
-    if (encuentros.length === 0) {
-      setSnackbar({
-        open: true,
-        message: "Debe agregar al menos un encuentro",
-        severity: "error",
-      });
-      return false;
-    }
-
-    // Validate each encounter
-    for (let i = 0; i < encuentros.length; i++) {
-      const encuentro = encuentros[i];
-
-      if (!encuentro.fecha) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: La fecha es requerida`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (!encuentro.hora) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: La hora es requerida`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (!encuentro.estadioLugar.trim()) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: El estadio o lugar es requerido`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (!encuentro.subcategoriaId) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: Debe seleccionar una categoría`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (!encuentro.serieId) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: Debe seleccionar una serie`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (!encuentro.equipoLocalId) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: Debe seleccionar el equipo local`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (!encuentro.equipoVisitanteId) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${i + 1}: Debe seleccionar el equipo visitante`,
-          severity: "error",
-        });
-        return false;
-      }
-
-      if (encuentro.equipoLocalId === encuentro.equipoVisitanteId) {
-        setSnackbar({
-          open: true,
-          message: `Encuentro ${
-            i + 1
-          }: El equipo local y visitante no pueden ser iguales`,
-          severity: "error",
-        });
-        return false;
-      }
-    }
-
-    return true;
+  // Remove encuentro
+  const handleRemoveEncuentro = (index: number) => {
+    if (encuentros.length <= 1) return;
+    setEncuentros(encuentros.filter((_, i) => i !== index));
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate form
-    if (!validateEncuentros()) {
-      return;
-    }
-
-    if (!token) {
-      setSnackbar({
-        open: true,
-        message: "No se encontró el token de autenticación",
-        severity: "error",
-      });
-      return;
-    }
-
-    if (!validateEncuentros()) {
-      return;
-    }
+    if (!token) return;
 
     try {
       setLoading(true);
 
-      // Prepare data for bulk creation
-      const encuentrosToSubmit = encuentros.map((encuentro) => ({
-        fechaHora: new Date(
-          encuentro.fecha.getFullYear(),
-          encuentro.fecha.getMonth(),
-          encuentro.fecha.getDate(),
-          encuentro.hora.getHours(),
-          encuentro.hora.getMinutes()
-        ).toISOString(),
-        estado: "PENDIENTE" as EstadoEncuentro,
-        estadioLugar: encuentro.estadioLugar,
-        subcategoriaId: encuentro.subcategoriaId,
-        serieId: encuentro.serieId,
-        equipoLocalId: encuentro.equipoLocalId,
-        equipoVisitanteId: encuentro.equipoVisitanteId,
-      }));
+      // Prepare data for API
+      const requestData = {
+        subcategoriaId: encuentros[0].subcategoriaId,
+        tipoGeneracion: "MANUAL",
+        encuentrosManuales: encuentros.map((encuentro) => ({
+          equipoLocalId: encuentro.equipoLocalId,
+          equipoVisitanteId: encuentro.equipoVisitanteId,
+          fecha: encuentro.fecha,
+          hora: encuentro.hora,
+          estadio: encuentro.estadio,
+        })),
+      };
 
-      // Submit all encuentros in a single request
-      await encuentroService.createMultipleEncuentros({
-        encuentros: encuentrosToSubmit,
-      });
+      await encuentroService.createMultipleEncuentros(requestData);
 
       setSnackbar({
         open: true,
-        message: "Encuentros registrados exitosamente",
+        message: "Encuentros creados exitosamente",
         severity: "success",
       });
 
-      // Notify parent component and close the modal after a short delay
       onSuccess();
-
-      // Reset form after a short delay to show success message
-      setTimeout(() => {
-        setEncuentros([
-          {
-            fecha: new Date(),
-            hora: new Date(),
-            estado: "PENDIENTE",
-            estadioLugar: "",
-            subcategoriaId: 0,
-            serieId: 0,
-            equipoLocalId: 0,
-            equipoVisitanteId: 0,
-          },
-        ]);
-        onClose();
-      }, 1000);
-    } catch (error: any) {
-      console.error("Error al registrar los encuentros:", error);
+      onClose();
+      setEncuentros([{ ...defaultEncuentro }]);
+    } catch (error) {
+      console.error("Error creating encuentros:", error);
       setSnackbar({
         open: true,
-        message:
-          error.response?.data?.message || "Error al registrar los encuentros",
+        message: "Error al crear los encuentros",
         severity: "error",
       });
     } finally {
@@ -438,487 +294,326 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
     }
   };
 
-  // Reset form when closing
+  // Close snackbar
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  // Reset form on close
   const handleClose = () => {
-    setEncuentros([
-      {
-        fecha: new Date(),
-        hora: new Date(),
-        estado: "PENDIENTE",
-        estadioLugar: "",
-        subcategoriaId: 0,
-        serieId: 0,
-        equipoLocalId: 0,
-        equipoVisitanteId: 0,
-      },
-    ]);
+    setEncuentros([{ ...defaultEncuentro }]);
     onClose();
   };
 
   return (
-    <>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      maxWidth="md"
+      fullWidth
+      aria-labelledby="form-dialog-title"
+    >
+      <DialogTitle>
+        <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Typography variant="h6">Registrar Encuentros</Typography>
+          <IconButton onClick={handleClose} size="small">
+            <CloseIcon />
+          </IconButton>
+        </Box>
+      </DialogTitle>
+
+      <form onSubmit={handleSubmit}>
+        <DialogContent>
+          {encuentros.map((encuentro, index) => (
+            <Paper
+              key={index}
+              variant="outlined"
+              sx={{
+                p: 2,
+                mb: 2,
+                position: "relative",
+                "&:hover .remove-button": {
+                  opacity: 1,
+                },
+              }}
+            >
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+                mb={2}
+              >
+                <Typography variant="subtitle1">
+                  Encuentro {index + 1}
+                </Typography>
+                {encuentros.length > 1 && (
+                  <IconButton
+                    className="remove-button"
+                    onClick={() => handleRemoveEncuentro(index)}
+                    size="small"
+                    sx={{
+                      position: "absolute",
+                      top: 8,
+                      right: 8,
+                      opacity: 0.7,
+                      transition: "opacity 0.2s",
+                      "&:hover": {
+                        color: "error.main",
+                        opacity: 1,
+                      },
+                    }}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                )}
+              </Box>
+
+              <Box
+                display="grid"
+                gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))"
+                gap={2}
+              >
+                {/* Fecha */}
+                <LocalizationProvider
+                  dateAdapter={AdapterDateFns}
+                  adapterLocale={es}
+                >
+                  <DatePicker
+                    label="Fecha"
+                    value={encuentro.fecha ? parseISO(encuentro.fecha) : null}
+                    onChange={(date) => {
+                      handleInputChange(
+                        index,
+                        "fecha",
+                        date ? format(date, "yyyy-MM-dd") : ""
+                      );
+                    }}
+                    slotProps={{
+                      textField: { fullWidth: true, required: true },
+                    }}
+                  />
+                </LocalizationProvider>
+
+                {/* Hora */}
+                <LocalizationProvider
+                  dateAdapter={AdapterDateFns}
+                  adapterLocale={es}
+                >
+                  <TimePicker
+                    label="Hora"
+                    value={
+                      encuentro.hora
+                        ? parseISO(`1970-01-01T${encuentro.hora}`)
+                        : null
+                    }
+                    onChange={(time) => {
+                      handleInputChange(
+                        index,
+                        "hora",
+                        time ? format(time, "HH:mm") : ""
+                      );
+                    }}
+                    slotProps={{
+                      textField: { fullWidth: true, required: true },
+                    }}
+                  />
+                </LocalizationProvider>
+
+                {/* Estadio */}
+                <TextField
+                  label="Estadio/Lugar"
+                  value={encuentro.estadio}
+                  onChange={(e) =>
+                    handleInputChange(index, "estadio", e.target.value)
+                  }
+                  fullWidth
+                  required
+                />
+
+                {/* Subcategoría */}
+                <FormControl fullWidth required>
+                  <InputLabel>Subcategoría</InputLabel>
+                  <Select
+                    value={encuentro.subcategoriaId || ""}
+                    onChange={(e) =>
+                      handleSubcategoriaChange(index, Number(e.target.value))
+                    }
+                    label="Subcategoría"
+                  >
+                    <MenuItem value="" disabled>
+                      {loadingSubcategorias
+                        ? "Cargando..."
+                        : "Seleccione una subcategoría"}
+                    </MenuItem>
+                    {subcategorias.map((subcategoria) => (
+                      <MenuItem
+                        key={subcategoria.subcategoriaId}
+                        value={subcategoria.subcategoriaId}
+                      >
+                        {subcategoria.nombre}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Serie */}
+                <FormControl
+                  fullWidth
+                  required
+                  disabled={!encuentro.subcategoriaId}
+                >
+                  <InputLabel>Serie</InputLabel>
+                  <Select
+                    value={encuentro.serieId || ""}
+                    onChange={(e) =>
+                      handleSerieChange(index, Number(e.target.value))
+                    }
+                    label="Serie"
+                  >
+                    <MenuItem value="" disabled>
+                      {loadingSeries[encuentro.subcategoriaId]
+                        ? "Cargando..."
+                        : "Seleccione una serie"}
+                    </MenuItem>
+                    {series[encuentro.subcategoriaId]?.map((serie) => (
+                      <MenuItem key={serie.serieId} value={serie.serieId}>
+                        {serie.nombreSerie}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Equipo Local */}
+                <FormControl
+                  fullWidth
+                  required
+                  disabled={
+                    !encuentro.serieId || !encuentros[index].subcategoriaId
+                  }
+                >
+                  <InputLabel>Equipo Local</InputLabel>
+                  <Select
+                    value={encuentro.equipoLocalId || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        index,
+                        "equipoLocalId",
+                        Number(e.target.value)
+                      )
+                    }
+                    label="Equipo Local"
+                  >
+                    <MenuItem value="" disabled>
+                      {loadingEquipos[
+                        `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                      ]
+                        ? "Cargando..."
+                        : "Seleccione equipo local"}
+                    </MenuItem>
+                    {equipos[
+                      `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                    ]?.map((equipo) => (
+                      <MenuItem
+                        key={`local-${equipo.equipoId}`}
+                        value={equipo.equipoId}
+                        disabled={
+                          equipo.equipoId === encuentro.equipoVisitanteId
+                        }
+                      >
+                        {equipo.nombre}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                {/* Equipo Visitante */}
+                <FormControl
+                  fullWidth
+                  required
+                  disabled={
+                    !encuentro.serieId || !encuentros[index].subcategoriaId
+                  }
+                >
+                  <InputLabel>Equipo Visitante</InputLabel>
+                  <Select
+                    value={encuentro.equipoVisitanteId || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        index,
+                        "equipoVisitanteId",
+                        Number(e.target.value)
+                      )
+                    }
+                    label="Equipo Visitante"
+                  >
+                    <MenuItem value="" disabled>
+                      {loadingEquipos[
+                        `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                      ]
+                        ? "Cargando..."
+                        : "Seleccione equipo visitante"}
+                    </MenuItem>
+                    {equipos[
+                      `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                    ]?.map((equipo) => (
+                      <MenuItem
+                        key={`visitante-${equipo.equipoId}`}
+                        value={equipo.equipoId}
+                        disabled={equipo.equipoId === encuentro.equipoLocalId}
+                      >
+                        {equipo.nombre}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            </Paper>
+          ))}
+
+          <Box mt={2}>
+            <Button
+              onClick={handleAddEncuentro}
+              startIcon={<AddIcon />}
+              variant="outlined"
+              fullWidth
+            >
+              Agregar Otro Encuentro
+            </Button>
+          </Box>
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, justifyContent: "space-between" }}>
+          <Button onClick={handleClose} color="inherit">
+            Cancelar
+          </Button>
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={loading}
+            startIcon={loading ? <CircularProgress size={20} /> : null}
+          >
+            {loading ? "Guardando..." : "Guardar Encuentros"}
+          </Button>
+        </DialogActions>
+      </form>
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
-        <Alert
+        <MuiAlert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: "100%" }}
+          elevation={6}
+          variant="filled"
         >
           {snackbar.message}
-        </Alert>
+        </MuiAlert>
       </Snackbar>
-
-      <Dialog
-        open={open}
-        onClose={!loading ? handleClose : undefined}
-        maxWidth="md"
-        fullWidth
-        PaperProps={{
-          sx: {
-            borderRadius: 3,
-          },
-        }}
-      >
-        <form onSubmit={handleSubmit} id="encuentro-form">
-          <DialogTitle>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Typography variant="h6">Registro de Encuentros</Typography>
-              <IconButton onClick={handleClose} size="small" disabled={loading}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <Divider />
-          <DialogContent>
-            {encuentros.map((encuentro, index) => (
-              <Paper
-                key={index}
-                elevation={0}
-                sx={{
-                  p: 3,
-                  border: "1px solid",
-                  borderColor: "divider",
-                  borderRadius: 2,
-                  position: "relative",
-                  overflow: "visible",
-                  transition: "all 0.2s ease",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                    "& .delete-button": {
-                      opacity: 1,
-                      visibility: "visible",
-                      transform: "scale(1.1)",
-                    },
-                  },
-                }}
-              >
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={2}
-                >
-                  <Box display="flex" alignItems="center" color="primary.main">
-                    <StadiumIcon sx={{ mr: 1 }} />
-                    <Typography variant="subtitle1" fontWeight="medium">
-                      Información del Encuentro {index + 1}
-                    </Typography>
-                  </Box>
-                  {encuentros.length > 1 && (
-                    <IconButton
-                      className="delete-button"
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRemoveEncuentro(index);
-                      }}
-                      sx={{
-                        position: "absolute",
-                        right: -12,
-                        top: -12,
-                        color: "white",
-                        backgroundColor: "error.main",
-                        opacity: 0,
-                        visibility: "hidden",
-                        transition: "all 0.2s ease",
-                        zIndex: 1,
-                        "&:hover": {
-                          backgroundColor: "error.dark",
-                          transform: "scale(1.1)",
-                        },
-                      }}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  )}
-                </Box>
-                <Box
-                  display="grid"
-                  gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr 1fr" }}
-                  gap={2}
-                  mb={2}
-                >
-                  <LocalizationProvider
-                    dateAdapter={AdapterDateFns}
-                    adapterLocale={es}
-                  >
-                    <DatePicker
-                      label="Fecha"
-                      value={encuentro.fecha}
-                      onChange={(newValue) =>
-                        handleEncuentroChange(
-                          index,
-                          "fecha",
-                          newValue || new Date()
-                        )
-                      }
-                      disabled={loading}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          required: true,
-                          InputProps: {
-                            startAdornment: (
-                              <EventIcon
-                                sx={{ mr: 1, color: "action.active" }}
-                              />
-                            ),
-                          },
-                        },
-                      }}
-                    />
-                  </LocalizationProvider>
-
-                  <LocalizationProvider
-                    dateAdapter={AdapterDateFns}
-                    adapterLocale={es}
-                  >
-                    <TimePicker
-                      label="Hora"
-                      value={encuentro.hora}
-                      onChange={(newValue) =>
-                        handleEncuentroChange(
-                          index,
-                          "hora",
-                          newValue || new Date()
-                        )
-                      }
-                      disabled={loading}
-                      slotProps={{
-                        textField: {
-                          fullWidth: true,
-                          size: "small",
-                          required: true,
-                          InputProps: {
-                            startAdornment: (
-                              <AccessTimeIcon
-                                sx={{ mr: 1, color: "action.active" }}
-                              />
-                            ),
-                          },
-                        },
-                      }}
-                    />
-                  </LocalizationProvider>
-
-                  <TextField
-                    fullWidth
-                    size="small"
-                    label="Estadio/Lugar"
-                    value={encuentro.estadioLugar}
-                    onChange={(e) =>
-                      handleEncuentroChange(
-                        index,
-                        "estadioLugar",
-                        e.target.value
-                      )
-                    }
-                    required
-                    disabled={loading}
-                    InputProps={{
-                      startAdornment: (
-                        <StadiumIcon sx={{ mr: 1, color: "action.active" }} />
-                      ),
-                    }}
-                  />
-                </Box>
-
-                <Box
-                  display="grid"
-                  gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
-                  gap={2}
-                  mb={2}
-                >
-                  <FormControl fullWidth size="small" required>
-                    <InputLabel id={`subcategoria-label-${index}`}>
-                      Subcategoría
-                    </InputLabel>
-                    <Select
-                      labelId={`subcategoria-label-${index}`}
-                      value={encuentro.subcategoriaId || ""}
-                      label="Subcategoría"
-                      onChange={(e) =>
-                        handleEncuentroChange(
-                          index,
-                          "subcategoriaId",
-                          Number(e.target.value)
-                        )
-                      }
-                      disabled={loading || loadingSubcategorias}
-                      sx={{
-                        "& .MuiSelect-select": {
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          py: 1.5,
-                        },
-                      }}
-                    >
-                      {loadingSubcategorias ? (
-                        <MenuItem value="">
-                          <CircularProgress size={24} />
-                        </MenuItem>
-                      ) : subcategorias.length > 0 ? (
-                        subcategorias.map((subcategoria) => (
-                          <MenuItem
-                            key={subcategoria.subcategoriaId}
-                            value={subcategoria.subcategoriaId}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <FilterListIcon fontSize="small" />
-                            {subcategoria.nombre}
-                          </MenuItem>
-                        ))
-                      ) : (
-                        <MenuItem value="" disabled>
-                          No hay subcategorías disponibles
-                        </MenuItem>
-                      )}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth size="small" required>
-                    <InputLabel id={`serie-label-${index}`}>Serie</InputLabel>
-                    <Select
-                      labelId={`serie-label-${index}`}
-                      value={encuentro.serieId || ""}
-                      label="Serie"
-                      onChange={(e) => {
-                        const serieId = Number(e.target.value);
-                        handleSerieChange(index, serieId);
-                      }}
-                      disabled={
-                        loading ||
-                        loadingSeries[encuentro.subcategoriaId] ||
-                        !encuentro.subcategoriaId
-                      }
-                      sx={{
-                        "& .MuiSelect-select": {
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          py: 1.5,
-                        },
-                      }}
-                    >
-                      {loadingSeries[encuentro.subcategoriaId] ? (
-                        <MenuItem value="">
-                          <CircularProgress size={24} />
-                        </MenuItem>
-                      ) : series[encuentro.subcategoriaId]?.length > 0 ? (
-                        series[encuentro.subcategoriaId].map((serie) => (
-                          <MenuItem
-                            key={serie.serieId}
-                            value={serie.serieId}
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <EmojiEventsIcon fontSize="small" />
-                            {serie.nombreSerie}
-                          </MenuItem>
-                        ))
-                      ) : (
-                        <MenuItem value="" disabled>
-                          {encuentro.subcategoriaId
-                            ? "No hay series disponibles"
-                            : "Seleccione una subcategoría"}
-                        </MenuItem>
-                      )}
-                    </Select>
-                  </FormControl>
-                </Box>
-                <Box
-                  display="grid"
-                  gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
-                  gap={2}
-                  mb={2}
-                >
-                  <FormControl fullWidth size="small" required>
-                    <InputLabel id={`local-label-${index}`}>
-                      Equipo Local
-                    </InputLabel>
-                    <Select
-                      labelId={`local-label-${index}`}
-                      value={encuentro.equipoLocalId}
-                      label="Equipo Local"
-                      onChange={(e) =>
-                        handleEncuentroChange(
-                          index,
-                          "equipoLocalId",
-                          Number(e.target.value)
-                        )
-                      }
-                      disabled={
-                        !encuentro.serieId || loadingEquipos[encuentro.serieId]
-                      }
-                      sx={{
-                        "& .MuiSelect-select": {
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          py: 1.5,
-                        },
-                      }}
-                    >
-                      <MenuItem value={0} disabled>
-                        {loadingEquipos[encuentro.serieId] ? (
-                          <CircularProgress size={24} />
-                        ) : equipos[encuentro.serieId]?.length > 0 ? (
-                          "Seleccione equipo local"
-                        ) : (
-                          "No hay equipos disponibles"
-                        )}
-                      </MenuItem>
-                      {equipos[encuentro.serieId]?.map((equipo) => (
-                        <MenuItem
-                          key={`local-${equipo.equipoId}`}
-                          value={equipo.equipoId}
-                          disabled={
-                            equipo.equipoId === encuentro.equipoVisitanteId
-                          }
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <GroupIcon fontSize="small" />
-                          {equipo.nombre}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl fullWidth size="small" required>
-                    <InputLabel id={`visitante-label-${index}`}>
-                      Equipo Visitante
-                    </InputLabel>
-                    <Select
-                      labelId={`visitante-label-${index}`}
-                      value={encuentro.equipoVisitanteId}
-                      label="Equipo Visitante"
-                      onChange={(e) =>
-                        handleEncuentroChange(
-                          index,
-                          "equipoVisitanteId",
-                          Number(e.target.value)
-                        )
-                      }
-                      disabled={
-                        !encuentro.serieId || loadingEquipos[encuentro.serieId]
-                      }
-                      sx={{
-                        "& .MuiSelect-select": {
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          py: 1.5,
-                        },
-                      }}
-                    >
-                      <MenuItem value={0} disabled>
-                        {loadingEquipos[encuentro.serieId] ? (
-                          <CircularProgress size={24} />
-                        ) : equipos[encuentro.serieId]?.length > 0 ? (
-                          "Seleccione equipo visitante"
-                        ) : (
-                          "No hay equipos disponibles"
-                        )}
-                      </MenuItem>
-                      {equipos[encuentro.serieId]?.map((equipo) => (
-                        <MenuItem
-                          key={`visitante-${equipo.equipoId}`}
-                          value={equipo.equipoId}
-                          disabled={equipo.equipoId === encuentro.equipoLocalId}
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
-                          <GroupIcon fontSize="small" />
-                          {equipo.nombre}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Box>
-              </Paper>
-            ))}
-            <Box
-              sx={{
-                mt: 4,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <Button
-                startIcon={<AddIcon />}
-                onClick={handleAddEncuentro}
-                disabled={loading}
-                variant="outlined"
-                size="small"
-                sx={{ minWidth: "180px" }}
-              >
-                Agregar Encuentro
-              </Button>
-
-              <Box sx={{ display: "flex", gap: 2 }}>
-                <Button
-                  onClick={handleClose}
-                  disabled={loading}
-                  variant="outlined"
-                  color="inherit"
-                  size="small"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  disabled={loading}
-                  startIcon={loading ? <CircularProgress size={20} /> : null}
-                  size="small"
-                >
-                  {loading ? "Guardando..." : "Guardar"}
-                </Button>
-              </Box>
-            </Box>
-          </DialogContent>
-        </form>
-      </Dialog>
-    </>
+    </Dialog>
   );
 };
 

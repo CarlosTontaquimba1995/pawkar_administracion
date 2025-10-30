@@ -400,7 +400,7 @@ const EncuentrosPage: React.FC = () => {
                 <MenuItem value="">
                   <em>Todos los estados</em>
                 </MenuItem>
-                <MenuItem value="PENDIENTE">Pendiente</MenuItem>
+                <MenuItem value="PROGRAMADO">Programado</MenuItem>
                 <MenuItem value="EN_JUEGO">En juego</MenuItem>
                 <MenuItem value="FINALIZADO">Finalizado</MenuItem>
                 <MenuItem value="CANCELADO">Cancelado</MenuItem>

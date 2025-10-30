@@ -107,7 +107,7 @@ const Events = () => {
   const [selectedEvent, setSelectedEvent] = useState<number | null>(null);
   const navigate = useNavigate();
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: string) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
     setTabValue(newValue);
   };
 

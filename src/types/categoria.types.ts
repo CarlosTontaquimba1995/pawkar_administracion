@@ -3,7 +3,7 @@
 export interface Categoria {
   categoriaId: number;
   nombre: string;
-  estado: boolean;
+  estado?: boolean;
 }
 
 export interface CategoriaListResponse {

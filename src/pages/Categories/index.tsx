@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 import CategoriaRegisterForm from "./components/Categorias/CategoriaRegisterForm";
 import {
@@ -61,7 +60,6 @@ function a11yProps(index: number) {
 
 const CategoriesPage: React.FC = () => {
   const { token } = useAuth();
-  const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
 
@@ -73,7 +71,7 @@ const CategoriesPage: React.FC = () => {
   const [subcategories, setSubcategories] = useState<Subcategoria[]>([]);
   const [series, setSeries] = useState<Serie[]>([]);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 

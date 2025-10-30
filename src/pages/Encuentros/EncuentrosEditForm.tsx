@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { SelectChangeEvent } from "@mui/material/Select";
 import {
   Dialog,
   DialogTitle,
@@ -10,7 +11,6 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  FormHelperText,
   Box,
   CircularProgress,
 } from "@mui/material";
@@ -19,7 +19,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { es } from "date-fns/locale";
-import { Encuentro, EstadoEncuentro } from "@/types/encuentro.types";
+import { EstadoEncuentro } from "@/types/encuentro.types";
 import encuentroService from "@/api/encuentroService";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -39,16 +39,16 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fecha, setFecha] = useState<Date | null>(new Date());
+  const [hora, setHora] = useState<Date | null>(new Date());
   const [formData, setFormData] = useState<{
-    fechaHora: Date | null;
     estado: EstadoEncuentro;
     estadioLugar: string;
     subcategoriaId: number;
     equipoLocalId: number;
     equipoVisitanteId: number;
   }>({
-    fechaHora: new Date(),
-    estado: "PENDIENTE",
+    estado: "PROGRAMADO",
     estadioLugar: "",
     subcategoriaId: 0,
     equipoLocalId: 0,
@@ -60,9 +60,11 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
       fetchEncuentro();
     } else {
       // Reset form when opening for new encounter
+      const now = new Date();
+      setFecha(now);
+      setHora(now);
       setFormData({
-        fechaHora: new Date(),
-        estado: "PENDIENTE",
+        estado: "PROGRAMADO",
         estadioLugar: "",
         subcategoriaId: 0,
         equipoLocalId: 0,
@@ -76,10 +78,21 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
     try {
       setLoading(true);
       const response = await encuentroService.getEncuentroById(encuentroId);
-      if (response.success && response.data) {
+      if (response.data) {
         const encuentro = response.data;
+        // Parse the date string directly to handle timezone correctly
+        const [datePart, timePart] = encuentro.fechaHora.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        
+        // Create date objects in local timezone
+        const localDate = new Date(year, month - 1, day);
+        const localTime = new Date(0);
+        localTime.setHours(hours, minutes);
+        
+        setFecha(localDate);
+        setHora(localTime);
         setFormData({
-          fechaHora: new Date(encuentro.fechaHora),
           estado: encuentro.estado,
           estadioLugar: encuentro.estadioLugar,
           subcategoriaId: encuentro.subcategoriaId,
@@ -97,30 +110,34 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token || !fecha || !hora) return;
 
     try {
       setLoading(true);
       setError(null);
 
+      // Format the date and time from the component state
+      const fechaStr = fecha.toISOString().split('T')[0];
+      const horaStr = hora.toTimeString().slice(0, 5);
+
       const data = {
-        ...formData,
-        fechaHora:
-          formData.fechaHora?.toISOString() || new Date().toISOString(),
+        equipoLocalId: formData.equipoLocalId,
+        equipoVisitanteId: formData.equipoVisitanteId,
+        fecha: fechaStr,
+        hora: horaStr,
+        estadio: formData.estadioLugar,
+        estado: formData.estado,
+        subcategoriaId: formData.subcategoriaId
       };
 
       let response;
       if (encuentroId > 0) {
-        response = await encuentroService.updateEncuentro(
-          encuentroId,
-          data,
-          token
-        );
+        response = await encuentroService.updateEncuentro(encuentroId, data);
       } else {
-        response = await encuentroService.createEncuentro(data, token);
+        response = await encuentroService.createEncuentro(data);
       }
 
-      if (response.success) {
+      if (response.data) {
         onSuccess();
         onClose();
       } else {
@@ -137,7 +154,9 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
   };
 
   const handleChange = (
-    e: React.ChangeEvent<{ name?: string; value: unknown }>
+    e:
+      | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+      | SelectChangeEvent
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
@@ -146,11 +165,12 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
     }));
   };
 
-  const handleDateChange = (date: Date | null) => {
-    setFormData((prev) => ({
-      ...prev,
-      fechaHora: date,
-    }));
+  const handleDateChange = (newDate: Date | null) => {
+    setFecha(newDate);
+  };
+
+  const handleTimeChange = (newTime: Date | null) => {
+    setHora(newTime);
   };
 
   return (
@@ -176,21 +196,29 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
             <Box mb={2}>
               <DatePicker
                 label="Fecha del encuentro"
-                value={formData.fechaHora}
+                value={fecha}
                 onChange={handleDateChange}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth margin="normal" required />
-                )}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal",
+                    required: true,
+                  },
+                }}
               />
             </Box>
             <Box mb={2}>
               <TimePicker
                 label="Hora del encuentro"
-                value={formData.fechaHora}
-                onChange={handleDateChange}
-                renderInput={(params) => (
-                  <TextField {...params} fullWidth margin="normal" required />
-                )}
+                value={hora}
+                onChange={handleTimeChange}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    margin: "normal",
+                    required: true,
+                  },
+                }}
               />
             </Box>
           </LocalizationProvider>
@@ -213,10 +241,10 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
               label="Estado"
               onChange={handleChange}
             >
-              <MenuItem value="PENDIENTE">Pendiente</MenuItem>
               <MenuItem value="EN_JUEGO">En Juego</MenuItem>
               <MenuItem value="FINALIZADO">Finalizado</MenuItem>
               <MenuItem value="CANCELADO">Cancelado</MenuItem>
+              <MenuItem value="PROGRAMADO">Programado</MenuItem>
             </Select>
           </FormControl>
 

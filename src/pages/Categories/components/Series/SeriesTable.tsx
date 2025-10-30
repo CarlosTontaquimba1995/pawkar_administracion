@@ -34,7 +34,6 @@ import {
 import { Serie } from "@/types/serie.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import serieService from "@/api/serieService";
-import { log } from "console";
 
 interface SeriesTableProps {
   series: Serie[];

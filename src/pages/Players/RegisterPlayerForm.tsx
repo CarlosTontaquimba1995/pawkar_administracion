@@ -118,8 +118,15 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
             await subcategoriaRolesService.getRolesPorSubcategoriaId(
               selectedSubcategoria
             );
-          // The response has a data property that contains the array of roles
-          const roles = response?.data || [];
+
+          // Transform the API response to match the Role type
+          const roles = (response?.data || []).map((role) => ({
+            id: role.rolId || role.id || 0,
+            name: role.rolName || role.nombre || "",
+            detail: role.rolDetail || "",
+            estado: true, // Default to true if not provided
+          }));
+
           setAllRoles(roles);
           // Reset selected roles when subcategoria changes
           setSelectedRoleIds(
@@ -224,7 +231,14 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       try {
         const rolesData =
           await subcategoriaRolesService.getRolesPorSubcategoriaId(value);
-        setAllRoles(rolesData.data);
+        // Transform the API response to match the Role type
+        const transformedRoles = rolesData.data.map((role: any) => ({
+          id: role.rolId || role.id || 0,
+          name: role.rolName || role.nombre || "",
+          detail: role.rolDetail || "",
+          estado: true, // Set a default value or get it from the API if available
+        }));
+        setAllRoles(transformedRoles);
         setSelectedRoleIds([]); // Reset selected roles when subcategoria changes
       } catch (error) {
         console.error("Error fetching roles:", error);
@@ -334,14 +348,14 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     setSelectedRoleIds(newSelectedRoleIds);
 
     // Find the selected role from allRoles
-    const foundRole = allRoles.find((role) => role.rolId === value);
+    const foundRole = allRoles.find((role) => role.id === value);
 
     // Update players
     const newPlayers = [...players];
     newPlayers[index] = {
       ...newPlayers[index],
       rolId: value || undefined,
-      nombreRol: foundRole?.rolDetail || "",
+      nombreRol: foundRole?.detail || "",
     };
     setPlayers(newPlayers);
   };
@@ -921,13 +935,13 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                             allRoles
                               .filter(
                                 (role) =>
-                                  !selectedRoleIds.includes(role.rolId) ||
-                                  players[index]?.rolId === role.rolId
+                                  !selectedRoleIds.includes(role.id) ||
+                                  players[index]?.rolId === role.id
                               )
                               .map((role) => (
-                                <MenuItem key={role.rolId} value={role.rolId}>
+                                <MenuItem key={role.id} value={role.id}>
                                   <Typography variant="body1">
-                                    {role.rolDetail}
+                                    {role.detail}
                                   </Typography>
                                 </MenuItem>
                               ))

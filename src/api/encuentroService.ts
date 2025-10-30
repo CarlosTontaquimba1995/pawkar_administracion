@@ -75,18 +75,18 @@ const encuentroService = {
      * Obtiene un encuentro por su ID
      * @param id ID del encuentro
      */
-    async getEncuentroById(id: number): Promise<Encuentro> {
+    async getEncuentroById(id: number): Promise<EncuentroResponse> {
         const response = await api.get<EncuentroResponse>(`/${id}`);
-        return response.data.data;
+        return response.data;
     },
 
     /**
      * Crea un nuevo encuentro
      * @param encuentroData Datos del encuentro a crear
      */
-    async createEncuentro(encuentroData: CreateEncuentroRequest): Promise<Encuentro> {
+    async createEncuentro(encuentroData: CreateEncuentroRequest): Promise<EncuentroResponse> {
         const response = await api.post<EncuentroResponse>('', encuentroData);
-        return response.data.data;
+        return response.data;
     },
 
     /**
@@ -103,9 +103,9 @@ const encuentroService = {
      * @param id ID del encuentro a actualizar
      * @param encuentroData Datos actualizados del encuentro
      */
-    async updateEncuentro(id: number, encuentroData: UpdateEncuentroRequest): Promise<Encuentro> {
+    async updateEncuentro(id: number, encuentroData: UpdateEncuentroRequest): Promise<EncuentroResponse> {
         const response = await api.put<EncuentroResponse>(`/${id}`, encuentroData);
-        return response.data.data;
+        return response.data;
     },
 
     /**

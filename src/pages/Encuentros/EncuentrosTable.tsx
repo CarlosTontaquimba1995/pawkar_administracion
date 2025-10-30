@@ -85,14 +85,21 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         return "warning";
       case "CANCELADO":
         return "error";
-      case "PENDIENTE":
+      case "PROGRAMADO":
       default:
         return "info";
     }
   };
 
   const handleDelete = async () => {
-    if (!encuentroToDelete) return;
+    if (!encuentroToDelete || encuentroToDelete.id === undefined) {
+      setSnackbar({
+        open: true,
+        message: "No se puede eliminar el encuentro: ID no válido",
+        severity: "error",
+      });
+      return;
+    }
 
     try {
       setIsDeleting(true);
@@ -222,15 +229,21 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
                     <IconButton
                       size="small"
                       onClick={() => {
-                        setEditingEncuentroId(encuentro.id);
-                        setEditDialogOpen(true);
+                        if (encuentro.id) {
+                          setEditingEncuentroId(encuentro.id);
+                          setEditDialogOpen(true);
+                        }
                       }}
                     >
                       <EditIcon />
                     </IconButton>
                     <IconButton
                       size="small"
-                      onClick={() => setEncuentroToDelete(encuentro)}
+                      onClick={() => {
+                        if (encuentro) {
+                          setEncuentroToDelete(encuentro);
+                        }
+                      }}
                       color="error"
                     >
                       <DeleteIcon />

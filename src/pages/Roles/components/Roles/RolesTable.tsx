@@ -49,7 +49,6 @@ const RolesTable: React.FC<RolesTableProps> = ({
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRoleId, setEditingRoleId] = useState<number | null>(null);
-  const [filteredRoles, setFilteredRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -59,14 +58,13 @@ const RolesTable: React.FC<RolesTableProps> = ({
 
   useEffect(() => {
     setRoles(initialRoles);
-    setFilteredRoles(initialRoles);
   }, [initialRoles]);
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const handleChangePage = (event: unknown, newPage: number) => {
+  const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
   };
 
@@ -96,6 +94,7 @@ const RolesTable: React.FC<RolesTableProps> = ({
 
     try {
       setIsDeleting(true);
+      setIsLoading(true);
       const response = await roleService.deleteRole(roleToDelete.id);
 
       if (response.success) {
@@ -127,6 +126,7 @@ const RolesTable: React.FC<RolesTableProps> = ({
     } finally {
       setRoleToDelete(null);
       setIsDeleting(false);
+      setIsLoading(false);
     }
   };
 

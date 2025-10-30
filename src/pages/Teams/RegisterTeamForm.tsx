@@ -314,6 +314,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                 <FormControl fullWidth size="small" required>
                   <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
                   <Select
+                    labelId="subcategoria-label"
                     value={teams[0]?.subcategoriaId || ""}
                     onChange={(e) => {
                       const subcategoriaId = Number(e.target.value);
@@ -322,16 +323,38 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                       setTeams(newTeams);
                       fetchSeriesForSubcategoria(subcategoriaId);
                     }}
+                    label="Subcategoría"
                     disabled={loadingSubcategorias}
+                    variant="outlined"
+                    sx={{
+                      "& .MuiSelect-select": {
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        py: 1.5,
+                      },
+                    }}
                   >
-                    {subcategorias.map((sub) => (
-                      <MenuItem
-                        key={sub.subcategoriaId}
-                        value={sub.subcategoriaId}
-                      >
-                        {sub.nombre}
+                    {loadingSubcategorias ? (
+                      <MenuItem value="">
+                        <CircularProgress size={24} />
                       </MenuItem>
-                    ))}
+                    ) : subcategorias.length > 0 ? (
+                      subcategorias.map((sub) => (
+                        <MenuItem
+                          key={sub.subcategoriaId}
+                          value={sub.subcategoriaId}
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <FilterListIcon fontSize="small" />
+                          {sub.nombre}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem value="" disabled>
+                        No hay subcategorías disponibles
+                      </MenuItem>
+                    )}
                   </Select>
                   {subcategoriaError && (
                     <Typography color="error" variant="caption">
