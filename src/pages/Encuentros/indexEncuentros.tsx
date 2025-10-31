@@ -80,8 +80,8 @@ const EncuentrosPage: React.FC = () => {
       };
 
       if (searchParams.fechaInicio)
-        cleanParams.fechaInicio = searchParams.fechaInicio;
-      if (searchParams.fechaFin) cleanParams.fechaFin = searchParams.fechaFin;
+        cleanParams.fechaInicio = `${searchParams.fechaInicio}T00:00:00`;
+      if (searchParams.fechaFin) cleanParams.fechaFin = `${searchParams.fechaFin}T23:59:59`;
       if (searchParams.subcategoriaId)
         cleanParams.subcategoriaId = searchParams.subcategoriaId;
       if (searchParams.equipoId) cleanParams.equipoId = searchParams.equipoId;
@@ -127,7 +127,7 @@ const EncuentrosPage: React.FC = () => {
                 serieNombre: team.serieNombre,
                 fundacion: team.fundacion,
                 jugadoresCount: team.jugadoresCount,
-                estado: "activo", // Default value for estado as it's required
+                estado: "activo",
               }))
             : [];
 
@@ -245,11 +245,11 @@ const EncuentrosPage: React.FC = () => {
     });
   };
 
-  const handleSuccess = () => {
+  const handleSuccess = (message = "Operación realizada con éxito") => {
     fetchEncuentros();
     setSnackbar({
       open: true,
-      message: "Operación realizada con éxito",
+      message,
       severity: "success",
     });
   };
@@ -453,10 +453,7 @@ const EncuentrosPage: React.FC = () => {
       <EncuentrosRegisterForm
         open={showAddForm}
         onClose={() => setShowAddForm(false)}
-        onSuccess={() => {
-          handleSuccess();
-          setShowAddForm(false);
-        }}
+        onSuccess={(message) => handleSuccess(message)}
       />
 
       <Snackbar
