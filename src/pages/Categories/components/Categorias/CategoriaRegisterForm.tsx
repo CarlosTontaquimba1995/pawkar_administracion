@@ -170,6 +170,13 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                   startIcon={<AddIcon />}
                   onClick={handleAddCategoria}
                   disabled={loading}
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: "primary.main",
+                      color: "white",
+                      borderColor: "primary.main",
+                    },
+                  }}
                 >
                   Agregar otra
                 </Button>
@@ -179,7 +186,7 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                 <Box
                   key={categoria.categoriaId}
                   sx={{
-                    position: "relative",
+                    position: "outlined",
                     mb: 2,
                     "&:hover .delete-button": {
                       opacity: 1,

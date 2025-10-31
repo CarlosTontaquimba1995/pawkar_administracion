@@ -13,12 +13,15 @@ import {
   Select,
   MenuItem,
   TablePagination,
-  Snackbar,
-  Alert,
   InputAdornment,
 } from "@mui/material";
-import { Add as AddIcon, Clear as ClearIcon } from "@mui/icons-material";
+import {
+  Place as PlaceIcon,
+  Add as AddIcon,
+  Clear as ClearIcon,
+} from "@mui/icons-material";
 import { Encuentro } from "@/types/encuentro.types";
+import { Estadio } from "@/types/estadio.types";
 import EncuentrosTable from "./EncuentrosTable";
 import EncuentrosRegisterForm from "./EncuentrosRegisterForm";
 import encuentroService from "@/api/encuentroService";
@@ -26,8 +29,6 @@ import subcategoriaService from "@/api/subcategoriaService";
 import teamService from "@/api/teamService";
 import estadioService from "@/api/estadioService";
 import { Team } from "@/types/team.types";
-import { Estadio } from "@/types/estadio.types";
-import PlaceIcon from "@mui/icons-material/Place";
 
 interface SearchParams {
   fechaInicio: string;
@@ -53,11 +54,6 @@ const EncuentrosPage: React.FC = () => {
   const [teams, setTeams] = useState<Team[]>([]);
   const [estadios, setEstadios] = useState<Estadio[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info" | "warning",
-  });
 
   // Search and pagination state
   const [searchParams, setSearchParams] = useState<SearchParams>({
@@ -99,11 +95,6 @@ const EncuentrosPage: React.FC = () => {
       setTotalElements(response.totalElements);
     } catch (error) {
       console.error("Error fetching encuentros:", error);
-      setSnackbar({
-        open: true,
-        message: "Error al cargar los encuentros",
-        severity: "error",
-      });
     } finally {
       setLoading(false);
     }
@@ -171,14 +162,9 @@ const EncuentrosPage: React.FC = () => {
   const fetchEstadios = useCallback(async () => {
     try {
       const data = await estadioService.getAllEstadios();
-      setEstadios(data);
+      setEstadios(data.data);
     } catch (error) {
       console.error("Error fetching estadios:", error);
-      setSnackbar({
-        open: true,
-        message: "Error al cargar los estadios",
-        severity: "error",
-      });
     }
   }, []);
 
@@ -270,19 +256,6 @@ const EncuentrosPage: React.FC = () => {
 
       return { ...prev, ...updates };
     });
-  };
-
-  const handleSuccess = (message = "Operación realizada con éxito") => {
-    fetchEncuentros();
-    setSnackbar({
-      open: true,
-      message,
-      severity: "success",
-    });
-  };
-
-  const handleSnackbarClose = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
   // Handle clear filters
@@ -405,22 +378,35 @@ const EncuentrosPage: React.FC = () => {
             </FormControl>
 
             {/* Estadio/Lugar */}
-            <TextField
-              name="estadioLugar"
-              label="Estadio/Lugar"
-              value={searchParams.estadioLugar || ""}
-              onChange={handleFilterChange}
-              size="small"
-              sx={{ minWidth: 200 }}
-              placeholder="Filtrar por estadio/lugar"
-              InputProps={{
-                startAdornment: (
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Estadio/Lugar</InputLabel>
+              <Select
+                name="estadioLugar"
+                value={searchParams.estadioLugar || ""}
+                onChange={(e) => {
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    estadioLugar: e.target.value as string,
+                    page: 0, // Reset to first page
+                  }));
+                }}
+                label="Estadio/Lugar"
+                startAdornment={
                   <InputAdornment position="start">
                     <PlaceIcon fontSize="small" />
                   </InputAdornment>
-                ),
-              }}
-            />
+                }
+              >
+                <MenuItem value="">
+                  <em>Todos los estadios</em>
+                </MenuItem>
+                {estadios.map((estadio) => (
+                  <MenuItem key={estadio.id} value={estadio.nombre}>
+                    {estadio.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
 
             {/* Estado */}
             <FormControl size="small" sx={{ minWidth: 150 }}>
@@ -496,27 +482,12 @@ const EncuentrosPage: React.FC = () => {
       <EncuentrosRegisterForm
         open={showAddForm}
         onClose={() => setShowAddForm(false)}
-        onSuccess={(message) => {
-          fetchEstadios(); // Refresh estadios list after successful operation
-          handleSuccess(message);
+        onSuccess={() => {
+          fetchEstadios(); 
+          fetchEncuentros(); 
         }}
         estadios={estadios}
       />
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
-      >
-        <Alert
-          onClose={handleSnackbarClose}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
   );
 };

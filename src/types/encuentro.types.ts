@@ -2,16 +2,14 @@ export type EstadoEncuentro = 'PROGRAMADO' | 'EN_JUEGO' | 'FINALIZADO' | 'SUSPEN
 
 export interface Encuentro {
   id?: number;
-  fechaHora: string;
-  estadioLugar: string;
-  estado: EstadoEncuentro;
   subcategoriaId: number;
-  equipoLocalId: number;
-  equipoVisitanteId: number;
-  equipoLocalNombre?: string;
-  equipoVisitanteNombre?: string;
-  subcategoriaNombre?: string;
-  titulo?: string;
+  subcategoriaNombre: string;
+  titulo: string;
+  fechaHora: string;
+  estadioNombre: string;
+  estadioId: number;
+  estado: EstadoEncuentro;
+  activo: boolean;
 }
 
 export interface CreateEncuentroRequest {
@@ -19,7 +17,7 @@ export interface CreateEncuentroRequest {
   equipoVisitanteId: number,
   fecha: string,
   hora: string,
-  estadio: string
+  estadioId: number
 }
 
 export interface CreateMultipleEncuentrosRequest {
@@ -30,7 +28,7 @@ export interface CreateMultipleEncuentrosRequest {
 
 export interface UpdateEncuentroRequest {
   fechaHora?: string;
-  estadioLugar?: string;
+  estadioId?: number;
   estado?: EstadoEncuentro;
   subcategoriaId?: number;
   equipoLocalId?: number;

@@ -167,10 +167,17 @@ const CategoriesPage: React.FC = () => {
                 : "Series"}
             </Typography>
             <Button
-              variant="contained"
+              variant="outlined"
               color="primary"
               startIcon={<AddIcon />}
               onClick={handleAddNew}
+              sx={{
+                "&:hover": {
+                  backgroundColor: "primary.main",
+                  color: "white",
+                  borderColor: "primary.main",
+                },
+              }}
             >
               Agregar{" "}
               {tabValue === 0

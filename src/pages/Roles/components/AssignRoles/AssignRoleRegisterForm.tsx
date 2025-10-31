@@ -348,7 +348,13 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
                     size="small"
                     startIcon={<AddIcon />}
                     disabled={roleLoading || loading}
-                    sx={{ textTransform: "none" }}
+                    sx={{
+                      "&:hover": {
+                        backgroundColor: "primary.main",
+                        color: "white",
+                        borderColor: "primary.main",
+                      },
+                    }}
                   >
                     Agregar Rol
                   </Button>

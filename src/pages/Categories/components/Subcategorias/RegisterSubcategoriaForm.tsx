@@ -260,6 +260,13 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
                   startIcon={<AddIcon />}
                   onClick={handleAddSubcategoria}
                   disabled={loading}
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: "primary.main",
+                      color: "white",
+                      borderColor: "primary.main",
+                    },
+                  }}
                 >
                   Agregar otra
                 </Button>

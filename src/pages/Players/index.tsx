@@ -222,18 +222,16 @@ const Players: React.FC = () => {
           />
         </Box>
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
           startIcon={<AddIcon />}
           onClick={() => setIsRegisterDialogOpen(true)}
           sx={{
-            boxShadow: theme.shadows[3],
             "&:hover": {
-              boxShadow: theme.shadows[6],
-              transform: "translateY(-2px)",
+              backgroundColor: "primary.main",
+              color: "white",
+              borderColor: "primary.main",
             },
-            transition: "all 0.3s ease",
-            whiteSpace: "nowrap",
           }}
         >
           Inscribir Jugadores

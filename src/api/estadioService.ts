@@ -1,15 +1,16 @@
-import axios, { AxiosResponse } from 'axios';
+import axios from 'axios';
 import {
-    Estadio,
     CreateEstadioRequest,
     UpdateEstadioRequest,
     CreateBulkEstadiosRequest,
     EstadioResponse,
-    ErrorResponse
-} from '@/types/estadio.types';
+    EstadioListResponse,
+    DeleteEstadioResponse,
+} from '../types/estadio.types';
 
 const API_URL = 'http://localhost:8080/api/estadios';
 
+// Create axios instance with default config
 const api = axios.create({
     baseURL: API_URL,
     headers: {
@@ -17,7 +18,7 @@ const api = axios.create({
     },
 });
 
-// Interceptor para agregar el token de autenticación
+// Add request interceptor to include auth token in headers
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -31,108 +32,93 @@ api.interceptors.request.use(
     }
 );
 
-/**
- * Obtiene todos los estadios
- */
-const getAllEstadios = async (): Promise<Estadio[]> => {
-    try {
-        const response: AxiosResponse<EstadioResponse> = await api.get('');
-        return Array.isArray(response.data.data) ? response.data.data : [];
-    } catch (error) {
-        handleError(error);
-        throw error;
+// Add response interceptor to handle errors
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response) {
+            // Handle different HTTP status codes
+            switch (error.response.status) {
+                case 401:
+                    // Handle unauthorized access
+                    console.error('No autorizado: Por favor inicie sesión nuevamente');
+                    break;
+                case 403:
+                    // Handle forbidden access
+                    console.error('Acceso denegado: No tiene permisos para realizar esta acción');
+                    break;
+                case 404:
+                    // Handle not found
+                    console.error('Recurso no encontrado');
+                    break;
+                default:
+                    console.error('Error en la solicitud:', error.message);
+            }
+        } else if (error.request) {
+            // The request was made but no response was received
+            console.error('No se recibió respuesta del servidor');
+        } else {
+            // Something happened in setting up the request
+            console.error('Error al configurar la solicitud:', error.message);
+        }
+        return Promise.reject(error);
     }
-};
-
-/**
- * Obtiene un estadio por su ID
- * @param id ID del estadio
- */
-const getEstadioById = async (id: number): Promise<Estadio> => {
-    try {
-        const response: AxiosResponse<EstadioResponse> = await api.get(`/${id}`);
-        return response.data.data as Estadio;
-    } catch (error) {
-        handleError(error);
-        throw error;
-    }
-};
-
-/**
- * Crea un nuevo estadio
- * @param data Datos del estadio a crear
- */
-const createEstadio = async (data: CreateEstadioRequest): Promise<Estadio> => {
-    try {
-        const response: AxiosResponse<EstadioResponse> = await api.post('', data);
-        return response.data.data as Estadio;
-    } catch (error) {
-        handleError(error);
-        throw error;
-    }
-};
-
-/**
- * Actualiza un estadio existente
- * @param id ID del estadio a actualizar
- * @param data Datos a actualizar
- */
-const updateEstadio = async (id: number, data: UpdateEstadioRequest): Promise<Estadio> => {
-    try {
-        const response: AxiosResponse<EstadioResponse> = await api.put(`/${id}`, data);
-        return response.data.data as Estadio;
-    } catch (error) {
-        handleError(error);
-        throw error;
-    }
-};
-
-/**
- * Elimina un estadio (eliminación lógica)
- * @param id ID del estadio a eliminar
- */
-const deleteEstadio = async (id: number): Promise<void> => {
-    try {
-        await api.delete(`/${id}`);
-    } catch (error) {
-        handleError(error);
-        throw error;
-    }
-};
-
-/**
- * Crea múltiples estadios en una sola operación
- * @param data Datos de los estadios a crear
- */
-const createBulkEstadios = async (data: CreateBulkEstadiosRequest): Promise<Estadio[]> => {
-    try {
-        const response: AxiosResponse<EstadioResponse> = await api.post('/bulk', data);
-        return response.data.data as Estadio[];
-    } catch (error) {
-        handleError(error);
-        throw error;
-    }
-};
-
-/**
- * Maneja los errores de la API
- */
-const handleError = (error: unknown): void => {
-    if (axios.isAxiosError(error)) {
-        const errorData = error.response?.data as ErrorResponse;
-        const errorMessage = errorData?.message || 'Error en la solicitud';
-        throw new Error(errorMessage);
-    }
-    throw new Error('Error desconocido');
-};
+);
 
 const estadioService = {
-    getAllEstadios,
-    getEstadioById,
-    createEstadio,
-    updateEstadio,
-    deleteEstadio,
-    createBulkEstadios,
+    /**
+     * Obtiene todos los estadios
+     */
+    async getAllEstadios(): Promise<EstadioListResponse> {
+        const response = await api.get<EstadioListResponse>('');
+        return response.data;
+    },
+
+    /**
+     * Obtiene un estadio por su ID
+     * @param id ID del estadio
+     */
+    async getEstadioById(id: number): Promise<EstadioResponse> {
+        const response = await api.get<EstadioResponse>(`/${id}`);
+        return response.data;
+    },
+
+  /**
+   * Crea un nuevo estadio
+   * @param estadioData Datos del estadio a crear
+   */
+    async createEstadio(estadioData: CreateEstadioRequest): Promise<EstadioResponse> {
+        const response = await api.post<EstadioResponse>('', estadioData);
+        return response.data;
+    },
+
+  /**
+   * Actualiza un estadio existente
+   * @param id ID del estadio a actualizar
+   * @param estadioData Datos actualizados del estadio
+   */
+    async updateEstadio(id: number, estadioData: UpdateEstadioRequest): Promise<EstadioResponse> {
+        const response = await api.put<EstadioResponse>(`/${id}`, estadioData);
+        return response.data;
+    },
+
+  /**
+   * Elimina un estadio
+   * @param id ID del estadio a eliminar
+   */
+    async deleteEstadio(id: number): Promise<DeleteEstadioResponse> {
+        const response = await api.delete<DeleteEstadioResponse>(`/${id}`);
+        return response.data;
+    },
+
+    /**
+     * Crea múltiples estadios en una sola operación
+     * @param data Datos de los estadios a crear
+     */
+    async createBulkEstadios(data: CreateBulkEstadiosRequest): Promise<EstadioListResponse> {
+        const response = await api.post<EstadioListResponse>('/bulk', data);
+        return response.data;
+    }
 };
 
 export default estadioService;

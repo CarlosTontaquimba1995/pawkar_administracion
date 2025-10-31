@@ -267,6 +267,13 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
                   startIcon={<AddIcon />}
                   onClick={handleAddSerie}
                   disabled={loading}
+                  sx={{
+                    "&:hover": {
+                      backgroundColor: "primary.main",
+                      color: "white",
+                      borderColor: "primary.main",
+                    },
+                  }}
                 >
                   Agregar otra
                 </Button>

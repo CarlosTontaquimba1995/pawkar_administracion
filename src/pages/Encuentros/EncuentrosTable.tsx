@@ -217,7 +217,7 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
                 <TableRow key={encuentro.id}>
                   <TableCell>{encuentro.titulo}</TableCell>
                   <TableCell>{formatFechaHora(encuentro.fechaHora)}</TableCell>
-                  <TableCell>{encuentro.estadioLugar}</TableCell>
+                  <TableCell>{encuentro.estadioNombre}</TableCell>
                   <TableCell>
                     <Chip
                       label={encuentro.estado}
@@ -262,11 +262,6 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         onSuccess={async () => {
           await onRefresh();
           setEditDialogOpen(false);
-          setSnackbar({
-            open: true,
-            message: "Encuentro actualizado correctamente",
-            severity: "success",
-          });
         }}
         encuentroId={editingEncuentroId || 0}
       />

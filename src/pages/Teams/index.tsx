@@ -466,17 +466,16 @@ const Teams = () => {
           />
         </Box>
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
           startIcon={<AddIcon />}
           onClick={() => setIsRegisterDialogOpen(true)}
           sx={{
-            boxShadow: theme.custom.colors.shadows.primary,
             "&:hover": {
-              boxShadow: theme.custom.colors.shadows.medium,
-              transform: "translateY(-2px)",
+              backgroundColor: "primary.main",
+              color: "white",
+              borderColor: "primary.main",
             },
-            transition: "all 0.3s ease",
           }}
         >
           Inscribir Equipos

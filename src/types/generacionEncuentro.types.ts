@@ -17,7 +17,7 @@ export interface EncuentroManual {
   equipoVisitanteId: number;
   fecha: string;
   hora: string;
-  estadio: string;
+  estadioId: number;
 }
 
 export interface GenerarEncuentrosRequest {
