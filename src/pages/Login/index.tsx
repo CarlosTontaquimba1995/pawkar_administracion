@@ -60,7 +60,7 @@ const Login = () => {
         console.log('✅ Login exitoso');
         
         // Guardar token y datos de usuario en el contexto
-        login(response.data.token, {
+        login(response.data.accessToken, {
           id: response.data.id,
           username: response.data.username,
           email: response.data.email,

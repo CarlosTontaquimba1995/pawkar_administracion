@@ -36,7 +36,7 @@ export const authService = {
     try {
       const response = await api.post<LoginResponse>('/signin', credentials);
       if (response.data.success && response.data.data) {
-        localStorage.setItem('token', response.data.data.token);
+        localStorage.setItem('token', response.data.data.accessToken);
         localStorage.setItem('refreshToken', response.data.data.refreshToken);
       }
       return response.data;
@@ -67,7 +67,7 @@ export const authService = {
       });
 
       if (response.data.success && response.data.data) {
-        localStorage.setItem('token', response.data.data.token);
+        localStorage.setItem('token', response.data.data.accessToken);
         localStorage.setItem('refreshToken', response.data.data.refreshToken);
       }
 
