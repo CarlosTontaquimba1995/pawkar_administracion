@@ -175,17 +175,13 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
       }));
 
       // Create all subcategories in a single request
-      await subcategoriaService.createMultipleSubcategorias({
+      const response = await subcategoriaService.createMultipleSubcategorias({
         subcategorias: subcategoriasToCreate,
       });
 
       setSnackbar({
         open: true,
-        message: `Se ${subcategorias.length > 1 ? "agregaron" : "agregó"} ${
-          subcategorias.length
-        } ${
-          subcategorias.length > 1 ? "subcategorías" : "subcategoría"
-        } exitosamente`,
+        message: response.message || "Subcategorías registradas exitosamente",
         severity: "success",
       });
 
@@ -201,14 +197,15 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
       ]);
 
       // Notify parent component
-      onSuccess();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 800);
     } catch (error: any) {
-      console.error("Error al crear subcategorías:", error);
-      const errorMessage =
-        error.response?.data?.message || "Error al crear las subcategorías";
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message:
+          error.response?.data?.message || "Error al registrar subcategorias",
         severity: "error",
       });
     } finally {
@@ -455,7 +452,6 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}

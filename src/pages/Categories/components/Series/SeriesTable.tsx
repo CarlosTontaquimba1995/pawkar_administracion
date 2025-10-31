@@ -25,6 +25,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -63,6 +65,11 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
   const [filteredSeries, setFilteredSeries] = useState<Serie[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -95,9 +102,32 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
 
     try {
       setIsDeleting(true);
-      await onRefresh();
+      // Call the delete service
+      const response = await serieService.deleteSerie(serieToDelete);
+
+      if (response.success) {
+        // Refresh the data
+        await onRefresh();
+        // Show success message
+        setSnackbar({
+          open: true,
+          message: response.message || "Serie eliminada",
+          severity: "success",
+        });
+      } else {
+        setSnackbar({
+          open: true,
+          message: response.message || "Error al eliminar la serie",
+          severity: "error",
+        });
+      }
     } catch (error) {
       console.error("Error deleting series:", error);
+      setSnackbar({
+        open: true,
+        message: "Error inesperado al eliminar la serie",
+        severity: "error",
+      });
     } finally {
       setSerieToDelete(null);
       setIsDeleting(false);
@@ -310,15 +340,15 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
 
       {/* Delete Confirmation Dialog */}
       <Dialog
-        open={serieToDelete !== null}
+        open={!!serieToDelete}
         onClose={handleDeleteCancel}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">¿Eliminar serie?</DialogTitle>
+        <DialogTitle>Confirmar eliminación</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            ¿Está seguro de que desea eliminar esta serie? Esta acción no se
+          <DialogContentText>
+            ¿Estás seguro de que deseas eliminar esta serie? Esta acción no se
             puede deshacer.
           </DialogContentText>
         </DialogContent>
@@ -329,14 +359,31 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
           <Button
             onClick={handleDeleteConfirm}
             color="error"
-            autoFocus
             disabled={isDeleting}
-            startIcon={isDeleting ? <CircularProgress size={20} /> : null}
+            startIcon={
+              isDeleting ? <CircularProgress size={20} /> : <DeleteIcon />
+            }
           >
             {isDeleting ? "Eliminando..." : "Eliminar"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
 
       <TablePagination
         rowsPerPageOptions={[5, 10, 25]}

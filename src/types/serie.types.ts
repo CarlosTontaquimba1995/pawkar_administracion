@@ -18,10 +18,9 @@ export interface CreateMultipleSeriesRequest {
 }
 
 export interface UpdateSerieRequest {
-    nombre?: string;
+    nombreSerie?: string;
     descripcion?: string;
     subcategoriaId?: number;
-    estado?: boolean;
 }
 
 export interface SerieResponse {

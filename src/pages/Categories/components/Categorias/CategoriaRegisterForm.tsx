@@ -95,30 +95,27 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
       }));
 
       // Create all categories in a single request
-      await categoriaService.createCategoriasBulk({
+      const response = await categoriaService.createCategoriasBulk({
         categorias: categoriasToCreate,
       });
 
       setSnackbar({
         open: true,
-        message: `Se ${categorias.length > 1 ? "agregaron" : "agregó"} ${
-          categorias.length
-        } ${categorias.length > 1 ? "categorías" : "categoría"} exitosamente`,
+        message: response.message || "Categorías registradas exitosamente",
         severity: "success",
       });
-
       // Reset form
       setCategorias([{ categoriaId: Date.now(), nombre: "" }]);
 
-      // Notify parent component
-      onSuccess();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 800);
     } catch (error: any) {
-      console.error("Error al registrar las categorías:", error);
-      const errorMessage =
-        error.response?.data?.message || "Error al registrar las categorías";
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message:
+          error.response?.data?.message || "Error al registrar categorias",
         severity: "error",
       });
     } finally {
@@ -290,7 +287,6 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}

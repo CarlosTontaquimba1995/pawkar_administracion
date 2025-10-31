@@ -35,7 +35,7 @@ interface SearchParams {
   fechaFin: string;
   subcategoriaId: number;
   equipoId: number;
-  estadioLugar: string;
+  estadioId: number;
   estado: string;
   page: number;
   size: number;
@@ -61,7 +61,7 @@ const EncuentrosPage: React.FC = () => {
     fechaFin: "",
     subcategoriaId: 0,
     equipoId: 0,
-    estadioLugar: "",
+    estadioId: 0,
     estado: "",
     page: 0,
     size: 10,
@@ -84,8 +84,7 @@ const EncuentrosPage: React.FC = () => {
       if (searchParams.subcategoriaId)
         cleanParams.subcategoriaId = searchParams.subcategoriaId;
       if (searchParams.equipoId) cleanParams.equipoId = searchParams.equipoId;
-      if (searchParams.estadioLugar)
-        cleanParams.estadioLugar = searchParams.estadioLugar;
+      if (searchParams.estadioId) cleanParams.estadioId = searchParams.estadioId;
       if (searchParams.estado) cleanParams.estado = searchParams.estado;
 
       const response = await encuentroService.searchEncuentrosByQuery(
@@ -265,7 +264,7 @@ const EncuentrosPage: React.FC = () => {
       fechaFin: "",
       subcategoriaId: 0,
       equipoId: 0,
-      estadioLugar: "",
+      estadioId: 0,
       estado: "",
       page: 0,
       size: searchParams.size,
@@ -377,31 +376,31 @@ const EncuentrosPage: React.FC = () => {
               </Select>
             </FormControl>
 
-            {/* Estadio/Lugar */}
+            {/* Estadio */}
             <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Estadio/Lugar</InputLabel>
+              <InputLabel>Estadio</InputLabel>
               <Select
-                name="estadioLugar"
-                value={searchParams.estadioLugar || ""}
+                name="estadioId"
+                value={searchParams.estadioId || 0}
                 onChange={(e) => {
-                  setSearchParams((prev) => ({
+                  setSearchParams((prev) => ({  
                     ...prev,
-                    estadioLugar: e.target.value as string,
+                    estadioId: Number(e.target.value),
                     page: 0, // Reset to first page
                   }));
                 }}
-                label="Estadio/Lugar"
+                label="Estadio"
                 startAdornment={
                   <InputAdornment position="start">
                     <PlaceIcon fontSize="small" />
                   </InputAdornment>
                 }
               >
-                <MenuItem value="">
+                <MenuItem value={0}>
                   <em>Todos los estadios</em>
                 </MenuItem>
                 {estadios.map((estadio) => (
-                  <MenuItem key={estadio.id} value={estadio.nombre}>
+                  <MenuItem key={estadio.id} value={estadio.id}>
                     {estadio.nombre}
                   </MenuItem>
                 ))}

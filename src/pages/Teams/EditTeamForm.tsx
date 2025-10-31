@@ -245,32 +245,33 @@ const EditTeam: React.FC<EditTeamProps> = ({
         serieId: team.serieId,
       };
 
-      await teamService.updateTeam(teamId, teamData);
+      const response = await teamService.updateTeam(teamId, teamData);
 
       setSnackbar({
         open: true,
-        message: "Equipo actualizado exitosamente",
+        message: response.message || "Equipo actualizado exitosamente",
         severity: "success",
       });
 
       // Notify parent component and close the dialog
-      onSuccess();
-      onClose();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 100);
     } catch (error: any) {
-      console.error("Error al actualizar el equipo:", error);
-
-      let errorMessage = "Error al actualizar el equipo";
       if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
+        setSnackbar({
+          open: true,
+          message: error.response.data.message,
+          severity: "error",
+        });
       } else if (error.message) {
-        errorMessage = error.message;
+        setSnackbar({
+          open: true,
+          message: error.message,
+          severity: "error",
+        });
       }
-
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
     } finally {
       setLoading(false);
     }

@@ -133,31 +133,32 @@ const EditPlayer: React.FC<EditPlayerProps> = ({
       };
 
       // Update existing player
-      await playerService.updatePlayer(playerId, playerData);
+      const response = await playerService.updatePlayer(playerId, playerData);
       setSnackbar({
         open: true,
-        message: "Jugador actualizado exitosamente",
+        message: response.message || "Jugador actualizado exitosamente",
         severity: "success",
       });
 
       // Notify parent component and close the dialog
-      onSuccess();
-      onClose();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 1000);
     } catch (error: any) {
-      console.error("Error al actualizar el jugador:", error);
-
-      let errorMessage = "Error al actualizar el jugador";
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
+       if (error.response?.data?.message) {
+         setSnackbar({
+           open: true,
+           message: error.response.data.message,
+           severity: "error",
+         });
+       } else if (error.message) {
+         setSnackbar({
+           open: true,
+           message: error.message,
+           severity: "error",
+         });
+       }
     } finally {
       setLoading(false);
     }

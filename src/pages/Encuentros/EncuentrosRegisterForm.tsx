@@ -365,7 +365,7 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
       setTimeout(() => {
         onSuccess();
         onClose();
-      }, 800);
+      }, 100);
     } catch (error: any) {
       console.error("Error al guardar los encuentros:", error);
       setSnackbar({

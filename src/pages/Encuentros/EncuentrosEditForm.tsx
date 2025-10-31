@@ -176,17 +176,24 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
         setTimeout(() => {
           onSuccess();
           onClose();
-        }, 500);  
+        }, 1000);  
       } else {
         throw new Error(response.message || "Error al guardar el encuentro");
       }
     } catch (error: any) {
-      console.error("Error saving encuentro:", error);
-      const errorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        "Error al guardar el encuentro";
-      showSnackbar(errorMessage, "error");
+      if (error.response?.data?.message) {
+        setSnackbar({
+          open: true,
+          message: error.response.data.message,
+          severity: "error",
+        });
+      } else if (error.message) {
+        setSnackbar({
+          open: true,
+          message: error.message,
+          severity: "error",
+        });
+      }
     } finally {
       setLoading(false);
     }

@@ -142,13 +142,11 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
         roleService.createOrUpdateRole(role)
       );
 
-      await Promise.all(createPromises);
+      const response = await Promise.all(createPromises);
 
       setSnackbar({
         open: true,
-        message: `Se ${roles.length > 1 ? "agregaron" : "agregó"} ${
-          roles.length
-        } ${roles.length > 1 ? "roles" : "rol"} exitosamente`,
+        message: response[0].message || "Roles registrados exitosamente",
         severity: "success",
       });
 
@@ -161,16 +159,16 @@ const RoleRegisterForm: React.FC<RoleRegisterFormProps> = ({
       setRoles([initialRoleState]);
 
       // Notify parent component
-      onSuccess();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 100);
     } catch (error: any) {
-      console.error("Error al crear roles:", error);
-      const errorMessage =
-        error.response?.data?.message || "Error al crear los roles";
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
+       setSnackbar({
+         open: true,
+         message: error.response?.data?.message || "Error al registrar roles",
+         severity: "error",
+       });
     } finally {
       setLoading(false);
     }

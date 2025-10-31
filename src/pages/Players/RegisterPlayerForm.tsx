@@ -418,7 +418,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         // Show success message
         setSnackbar({
           open: true,
-          message: "Jugadores registrados exitosamente",
+          message: response.message || "Jugadores registrados exitosamente",
           severity: "success",
         });
 
@@ -441,8 +441,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         setTeams([]);
         setAllRoles([]);
 
-        onSuccess();
-        setTimeout(() => onClose(), 1000);
+        setTimeout(() => {
+          onSuccess();
+          onClose();
+        }, 1000);
       } else {
         setSnackbar({
           open: true,
@@ -450,11 +452,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
           severity: "error",
         });
       }
-    } catch (error) {
-      console.error("Error registering players:", error);
-      setSnackbar({
+    } catch (error: any) {
+       setSnackbar({
         open: true,
-        message: "Error al conectar con el servidor",
+        message: error.response?.data?.message || "Error al registrar jugadores",
         severity: "error",
       });
     } finally {

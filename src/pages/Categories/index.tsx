@@ -24,6 +24,7 @@ import RegisterSubcategoriaForm from "./components/Subcategorias/RegisterSubcate
 import CategoriesTable from "./components/Categorias/CategoriesTable";
 import SeriesTable from "./components/Series/SeriesTable";
 import SerieRegisterForm from "./components/Series/SerieRegisterForm";
+import SerieEditForm from "./components/Series/SerieEditForm";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -107,6 +108,7 @@ const CategoriesPage: React.FC = () => {
   const [showAddForm, setShowAddForm] = useState(false);
   const [showAddSubcategoriaForm, setShowAddSubcategoriaForm] = useState(false);
   const [showAddSerieForm, setShowAddSerieForm] = useState(false);
+  const [editingSerieId, setEditingSerieId] = useState<number | null>(null);
 
   const handleAddNew = () => {
     if (tabValue === 0) {
@@ -205,6 +207,7 @@ const CategoriesPage: React.FC = () => {
               series={series}
               subcategorias={subcategories}
               onRefresh={fetchData}
+              onEdit={(id) => setEditingSerieId(id)}
             />
           </TabPanel>
         </CardContent>
@@ -226,6 +229,12 @@ const CategoriesPage: React.FC = () => {
         onClose={() => setShowAddSerieForm(false)}
         onSuccess={handleSuccess}
         subcategorias={subcategories}
+      />
+      <SerieEditForm
+        open={!!editingSerieId}
+        onClose={() => setEditingSerieId(null)}
+        onSuccess={handleSuccess}
+        serieId={editingSerieId || 0}
       />
     </Box>
   );

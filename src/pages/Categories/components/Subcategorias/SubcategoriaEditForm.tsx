@@ -158,19 +158,16 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
         throw new Error(response.message || "Error al actualizar la subcategoría");
       }
     } catch (error: any) {
-      console.error("Error updating subcategory:", error);
-
-      // Handle 400 Bad Request with custom message
       if (error.response?.data?.message) {
         setSnackbar({
           open: true,
           message: error.response.data.message,
           severity: "error",
         });
-      } else {
+      } else if (error.message) {
         setSnackbar({
           open: true,
-          message: error.message || "Error al actualizar la subcategoría",
+          message: error.message,
           severity: "error",
         });
       }

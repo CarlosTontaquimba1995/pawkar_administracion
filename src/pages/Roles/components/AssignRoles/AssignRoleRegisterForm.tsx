@@ -200,22 +200,29 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
       };
 
       // Make a single API call to assign all roles
-      await subcategoriaRolesService.asignarMultiplesRoles(bulkData);
-
-      showSnackbar(
-        "Roles asignados correctamente a la subcategoría",
-        "success"
+      const response = await subcategoriaRolesService.asignarMultiplesRoles(
+        bulkData
       );
+
+      setSnackbar({
+        open: true,
+        message:
+          response.message || "Roles asignados correctamente a la subcategoría",
+        severity: "success",
+      });
 
       // Reset form and trigger parent refresh
       setSelectedSubcategoria("");
-      onSuccess(); // Call the success callback to refresh parent data
-      handleClose();
+      setTimeout(() => {
+        onSuccess();
+        onClose();
+      }, 100);
     } catch (error: any) {
-      console.error("Error assigning roles:", error);
-      const errorMessage =
-        error.response?.data?.message || "Error al asignar los roles";
-      showSnackbar(errorMessage, "error");
+       setSnackbar({
+         open: true,
+         message: error.response?.data?.message || "Error al asignar roles",
+         severity: "error",
+       });
     } finally {
       setLoading(false);
     }

@@ -133,30 +133,26 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
 
     try {
       setLoading(true);
-      await teamService.createTeamsBulk({ equipos: teams });
+      const response = await teamService.createTeamsBulk({ equipos: teams });
 
       setSnackbar({
         open: true,
-        message: "Equipos registrados exitosamente",
+        message: response.message || "Equipos registrados exitosamente",
         severity: "success",
       });
 
       // Call onSuccess to notify parent component
-      onSuccess();
-
-      // Reset form and close the modal after a short delay
       setTimeout(() => {
+        onSuccess();
+        onClose();
         setTeams([
           { subcategoriaId: 5, serieId: 3, nombre: "", fundacion: "" },
         ]);
-      }, 1000);
+      }, 100);
     } catch (error: any) {
-      console.error("Error al registrar equipos:", error);
-      const errorMessage =
-        error.response?.data?.message || "Error al registrar los equipos";
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message: error.response?.data?.message || "Error al registrar equipos",
         severity: "error",
       });
     } finally {

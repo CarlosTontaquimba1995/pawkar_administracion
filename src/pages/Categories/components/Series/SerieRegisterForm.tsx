@@ -139,7 +139,7 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!token) {
       setSnackbar({
         open: true,
@@ -150,9 +150,7 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
     }
 
     // Validate all fields are filled
-    const hasEmptyFields = series.some(
-      (serie) => !serie.nombreSerie.trim()
-    );
+    const hasEmptyFields = series.some((serie) => !serie.nombreSerie.trim());
 
     if (hasEmptyFields) {
       setSnackbar({
@@ -165,7 +163,7 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
 
     try {
       setLoading(true);
-      
+
       // Prepare series data for bulk creation
       const seriesToCreate = series.map((s) => ({
         nombreSerie: s.nombreSerie.trim(),
@@ -173,41 +171,43 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
       }));
 
       // Create all series in a single request
-      await serieService.createMultipleSeries({
+      const response = await serieService.createMultipleSeries({
         series: seriesToCreate,
       });
 
+      // Show success message
       setSnackbar({
         open: true,
-        message: "Series registradas exitosamente",
+        message: response.message || "Series registradas exitosamente",
         severity: "success",
       });
 
-      // Call onSuccess to notify parent component
-      onSuccess();
-
-      // Reset form
-      const defaultSubcategoriaId = subcategoriaId || subcategorias[0]?.subcategoriaId || 0;
+      // Reset form state
+      const defaultSubcategoriaId =
+        subcategoriaId || subcategorias[0]?.subcategoriaId || 0;
       setSeries([
         {
           serieId: Date.now(),
           nombreSerie: "",
           subcategoriaId: defaultSubcategoriaId,
           subcategoriaNombre:
-            subcategorias.find((s) => s.subcategoriaId === defaultSubcategoriaId)?.nombre || "",
+            subcategorias.find(
+              (s) => s.subcategoriaId === defaultSubcategoriaId
+            )?.nombre || "",
         },
       ]);
-      
-      // Close the modal after a short delay
+
+      // Close the form and notify parent component
       setTimeout(() => {
+        onSuccess();
         onClose();
-      }, 1000);
+      }, 800);
     } catch (error: any) {
-      console.error("Error al crear las series:", error);
-      const errorMessage = error.response?.data?.message || "Error al crear las series";
+      console.error("Error creating series:", error);
       setSnackbar({
         open: true,
-        message: errorMessage,
+        message:
+          error.response?.data?.message || "Error al registrar las series",
         severity: "error",
       });
     } finally {
@@ -446,8 +446,6 @@ const SerieRegisterForm: React.FC<SerieRegisterFormProps> = ({
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: "100%" }}
-          variant="filled"
-          elevation={6}
         >
           {snackbar.message}
         </Alert>
