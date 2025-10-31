@@ -23,9 +23,10 @@ import EncuentrosTable from "./EncuentrosTable";
 import EncuentrosRegisterForm from "./EncuentrosRegisterForm";
 import encuentroService from "@/api/encuentroService";
 import subcategoriaService from "@/api/subcategoriaService";
-import { Subcategoria } from "@/types/subcategoria.types";
 import teamService from "@/api/teamService";
+import estadioService from "@/api/estadioService";
 import { Team } from "@/types/team.types";
+import { Estadio } from "@/types/estadio.types";
 import PlaceIcon from "@mui/icons-material/Place";
 
 interface SearchParams {
@@ -50,6 +51,7 @@ const EncuentrosPage: React.FC = () => {
     Array<{ id: number; nombre: string }>
   >([]);
   const [teams, setTeams] = useState<Team[]>([]);
+  const [estadios, setEstadios] = useState<Estadio[]>([]);
   const [loadingTeams, setLoadingTeams] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -81,7 +83,8 @@ const EncuentrosPage: React.FC = () => {
 
       if (searchParams.fechaInicio)
         cleanParams.fechaInicio = `${searchParams.fechaInicio}T00:00:00`;
-      if (searchParams.fechaFin) cleanParams.fechaFin = `${searchParams.fechaFin}T23:59:59`;
+      if (searchParams.fechaFin)
+        cleanParams.fechaFin = `${searchParams.fechaFin}T23:59:59`;
       if (searchParams.subcategoriaId)
         cleanParams.subcategoriaId = searchParams.subcategoriaId;
       if (searchParams.equipoId) cleanParams.equipoId = searchParams.equipoId;
@@ -146,23 +149,47 @@ const EncuentrosPage: React.FC = () => {
     loadTeams();
   }, [searchParams.subcategoriaId]);
 
-  // Load subcategories on mount
-  useEffect(() => {
-    const fetchSubcategorias = async () => {
-      try {
-        const response = await subcategoriaService.getSubcategorias();
-        const mappedSubcategorias = response.data.map((sub: Subcategoria) => ({
-          id: sub.subcategoriaId,
-          nombre: sub.nombre,
-        }));
-        setSubcategorias(mappedSubcategorias);
-      } catch (error) {
-        console.error("Error fetching subcategorias:", error);
-      }
-    };
-
-    fetchSubcategorias();
+  // Fetch subcategorias
+  const fetchSubcategorias = useCallback(async () => {
+    try {
+      const response = await subcategoriaService.getSubcategorias();
+      const mappedSubcategorias = Array.isArray(response.data)
+        ? response.data.map((sub: any) => ({
+            id: sub.subcategoriaId,
+            nombre: sub.nombre,
+          }))
+        : [];
+      setSubcategorias(mappedSubcategorias);
+      return mappedSubcategorias;
+    } catch (error) {
+      console.error("Error fetching subcategorias:", error);
+      return [];
+    }
   }, []);
+
+  // Fetch estadios
+  const fetchEstadios = useCallback(async () => {
+    try {
+      const data = await estadioService.getAllEstadios();
+      setEstadios(data);
+    } catch (error) {
+      console.error("Error fetching estadios:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al cargar los estadios",
+        severity: "error",
+      });
+    }
+  }, []);
+
+  // Initial data fetch
+  useEffect(() => {
+    const loadInitialData = async () => {
+      await fetchSubcategorias();
+      await fetchEstadios();
+    };
+    loadInitialData();
+  }, [fetchEstadios, fetchSubcategorias]);
 
   // Fetch encuentros when search params change
   useEffect(() => {
@@ -354,8 +381,15 @@ const EncuentrosPage: React.FC = () => {
               <InputLabel>Equipo</InputLabel>
               <Select
                 name="equipoId"
-                value={searchParams.equipoId}
-                onChange={handleSelectChange}
+                value={searchParams.equipoId ?? 0}
+                onChange={(e) => {
+                  const equipoId = Number(e.target.value) || 0;
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    equipoId,
+                    page: 0, // Reset to first page
+                  }));
+                }}
                 label="Equipo"
                 disabled={!searchParams.subcategoriaId || loadingTeams}
               >
@@ -393,11 +427,20 @@ const EncuentrosPage: React.FC = () => {
               <InputLabel>Estado</InputLabel>
               <Select
                 name="estado"
-                value={searchParams.estado}
-                onChange={handleSelectChange}
+                value={searchParams.estado || "TODOS"}
+                onChange={(e) => {
+                  setSearchParams((prev) => ({
+                    ...prev,
+                    estado:
+                      e.target.value === "TODOS"
+                        ? ""
+                        : (e.target.value as string),
+                    page: 0, // Reset to first page
+                  }));
+                }}
                 label="Estado"
               >
-                <MenuItem value="">
+                <MenuItem value="TODOS">
                   <em>Todos los estados</em>
                 </MenuItem>
                 <MenuItem value="PROGRAMADO">Programado</MenuItem>
@@ -453,7 +496,11 @@ const EncuentrosPage: React.FC = () => {
       <EncuentrosRegisterForm
         open={showAddForm}
         onClose={() => setShowAddForm(false)}
-        onSuccess={(message) => handleSuccess(message)}
+        onSuccess={(message) => {
+          fetchEstadios(); // Refresh estadios list after successful operation
+          handleSuccess(message);
+        }}
+        estadios={estadios}
       />
 
       <Snackbar

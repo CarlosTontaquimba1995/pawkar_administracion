@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
   DialogActions,
   Button,
@@ -16,15 +15,14 @@ import {
   Alert as MuiAlert,
   IconButton,
   Paper,
-  Typography,
+  FormHelperText,
 } from "@mui/material";
 import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
-import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { format, parseISO, parse } from "date-fns";
 
 // Services
 import { useAuth } from "@/contexts/AuthContext";
@@ -42,11 +40,13 @@ import { Serie } from "@/types/serie.types";
 import { Team } from "@/types/team.types";
 import { generacionEncuentroService } from "@/api/generacionEncuentroService";
 import { GenerarEncuentrosRequest } from "@/types/generacionEncuentro.types";
+import { Estadio } from "@/types/estadio.types";
 
 interface EncuentrosRegisterFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: (message?: string) => void;
+  estadios: Estadio[];
 }
 
 interface EncuentroFormData
@@ -70,10 +70,12 @@ const defaultEncuentro: EncuentroFormData = {
   serieId: 0,
   estado: "PROGRAMADO",
 };
+
 const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
   open,
   onClose,
   onSuccess,
+  estadios = []
 }) => {
   const { token } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -87,15 +89,9 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [series, setSeries] = useState<Record<number, Serie[]>>({});
   const [equipos, setEquipos] = useState<Record<string, Team[]>>({});
-
-  // Loading states
+  const [loadingEquipos, setLoadingEquipos] = useState<Record<string, boolean>>({});
+  const [loadingSeries, setLoadingSeries] = useState<Record<number, boolean>>({});
   const [loadingSubcategorias, setLoadingSubcategorias] = useState(false);
-  const [loadingSeries, setLoadingSeries] = useState<Record<number, boolean>>(
-    {}
-  );
-  const [loadingEquipos, setLoadingEquipos] = useState<Record<string, boolean>>(
-    {}
-  );
 
   // Form state
   const [encuentros, setEncuentros] = useState<EncuentroFormData[]>([
@@ -310,293 +306,230 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
       fullWidth
       aria-labelledby="form-dialog-title"
     >
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Registrar Encuentros</Typography>
-          <IconButton onClick={handleClose} size="small">
-            <CloseIcon />
-          </IconButton>
-        </Box>
-      </DialogTitle>
-
       <form onSubmit={handleSubmit}>
         <DialogContent>
-          {encuentros.map((encuentro, index) => (
-            <Box
-              key={index}
-              sx={{
-                position: "relative",
-                mb: 3,
-                "&:hover .delete-button": {
-                  opacity: 1,
-                  visibility: "visible",
-                  transform: "translate(4px, -4px)",
-                },
-                transition: "all 0.2s ease",
-              }}
-            >
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {encuentros.map((encuentro, index) => (
               <Paper
+                key={index}
                 variant="outlined"
                 sx={{
                   p: 3,
-                  display: "flex",
-                  flexDirection: "column",
+                  display: 'flex',
+                  flexDirection: 'column',
                   gap: 2,
-                  position: "relative",
-                  overflow: "visible",
-                  "&:hover": {
-                    borderColor: "primary.main",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  position: 'relative',
+                  '&:hover': {
+                    borderColor: 'primary.main',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                    '& .delete-button': {
+                      opacity: 1,
+                      visibility: 'visible',
+                    },
                   },
                 }}
               >
-                <Box
-                  display="flex"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  mb={2}
-                >
-                  <Typography variant="subtitle1">
-                    Encuentro {index + 1}
-                  </Typography>
-                </Box>
-
-                <Box
-                  display="grid"
-                  gridTemplateColumns="repeat(auto-fill, minmax(250px, 1fr))"
-                  gap={2}
-                >
-                  {/* Fecha */}
-                  <LocalizationProvider
-                    dateAdapter={AdapterDateFns}
-                    adapterLocale={es}
-                  >
-                    <DatePicker
-                      label="Fecha"
-                      value={encuentro.fecha ? parseISO(encuentro.fecha) : null}
-                      onChange={(date) => {
-                        handleInputChange(
-                          index,
-                          "fecha",
-                          date ? format(date, "yyyy-MM-dd") : ""
-                        );
-                      }}
-                      slotProps={{
-                        textField: { fullWidth: true, required: true },
-                      }}
-                    />
-                  </LocalizationProvider>
-
-                  {/* Hora */}
-                  <LocalizationProvider
-                    dateAdapter={AdapterDateFns}
-                    adapterLocale={es}
-                  >
-                    <TimePicker
-                      label="Hora"
-                      value={
-                        encuentro.hora
-                          ? parseISO(`1970-01-01T${encuentro.hora}`)
-                          : null
-                      }
-                      onChange={(time) => {
-                        handleInputChange(
-                          index,
-                          "hora",
-                          time ? format(time, "HH:mm") : ""
-                        );
-                      }}
-                      slotProps={{
-                        textField: { fullWidth: true, required: true },
-                      }}
-                    />
-                  </LocalizationProvider>
-
-                  {/* Estadio */}
-                  <TextField
-                    label="Estadio/Lugar"
-                    value={encuentro.estadio}
-                    onChange={(e) =>
-                      handleInputChange(index, "estadio", e.target.value)
-                    }
-                    fullWidth
-                    required
-                  />
-
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                   {/* Subcategoría */}
-                  <FormControl fullWidth required>
-                    <InputLabel>Subcategoría</InputLabel>
-                    <Select
-                      value={encuentro.subcategoriaId || ""}
-                      onChange={(e) =>
-                        handleSubcategoriaChange(index, Number(e.target.value))
-                      }
-                      label="Subcategoría"
-                    >
-                      <MenuItem value="" disabled>
-                        {loadingSubcategorias
-                          ? "Cargando..."
-                          : "Seleccione una subcategoría"}
-                      </MenuItem>
-                      {subcategorias.map((subcategoria) => (
-                        <MenuItem
-                          key={subcategoria.subcategoriaId}
-                          value={subcategoria.subcategoriaId}
-                        >
-                          {subcategoria.nombre}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl fullWidth required>
+                      <InputLabel>Subcategoría</InputLabel>
+                      <Select
+                        value={encuentro.subcategoriaId || ''}
+                        onChange={(e) =>
+                          handleSubcategoriaChange(index, Number(e.target.value))
+                        }
+                        label="Subcategoría"
+                      >
+                        {subcategorias.map((subcategoria) => (
+                          <MenuItem key={subcategoria.subcategoriaId} value={subcategoria.subcategoriaId}>
+                            {subcategoria.nombre}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
 
                   {/* Serie */}
-                  <FormControl
-                    fullWidth
-                    required
-                    disabled={!encuentro.subcategoriaId}
-                  >
-                    <InputLabel>Serie</InputLabel>
-                    <Select
-                      value={encuentro.serieId || ""}
-                      onChange={(e) =>
-                        handleSerieChange(index, Number(e.target.value))
-                      }
-                      label="Serie"
-                    >
-                      <MenuItem value="" disabled>
-                        {loadingSeries[encuentro.subcategoriaId]
-                          ? "Cargando..."
-                          : "Seleccione una serie"}
-                      </MenuItem>
-                      {series[encuentro.subcategoriaId]?.map((serie) => (
-                        <MenuItem key={serie.serieId} value={serie.serieId}>
-                          {serie.nombreSerie}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl fullWidth required>
+                      <InputLabel>Serie</InputLabel>
+                      <Select
+                        value={encuentro.serieId || ''}
+                        onChange={(e) =>
+                          handleSerieChange(index, Number(e.target.value))
+                        }
+                        label="Serie"
+                        disabled={!encuentro.subcategoriaId}
+                      >
+                        {series[encuentro.subcategoriaId]?.map((serie) => (
+                          <MenuItem key={serie.serieId} value={serie.serieId}>
+                            {serie.nombreSerie}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
 
                   {/* Equipo Local */}
-                  <FormControl
-                    fullWidth
-                    required
-                    disabled={
-                      !encuentro.serieId || !encuentros[index].subcategoriaId
-                    }
-                  >
-                    <InputLabel>Equipo Local</InputLabel>
-                    <Select
-                      value={encuentro.equipoLocalId || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          index,
-                          "equipoLocalId",
-                          Number(e.target.value)
-                        )
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl
+                      fullWidth
+                      required
+                      disabled={
+                        !encuentro.serieId || !encuentros[index].subcategoriaId
                       }
-                      label="Equipo Local"
                     >
-                      <MenuItem value="" disabled>
-                        {loadingEquipos[
-                          `${encuentro.subcategoriaId}-${encuentro.serieId}`
-                        ]
-                          ? "Cargando..."
-                          : "Seleccione equipo local"}
-                      </MenuItem>
-                      {equipos[
-                        `${encuentro.subcategoriaId}-${encuentro.serieId}`
-                      ]?.map((equipo) => (
-                        <MenuItem
-                          key={`local-${equipo.equipoId}`}
-                          value={equipo.equipoId}
-                          disabled={
-                            equipo.equipoId === encuentro.equipoVisitanteId
-                          }
-                        >
-                          {equipo.nombre}
+                      <InputLabel>Equipo Local</InputLabel>
+                      <Select
+                        value={encuentro.equipoLocalId || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            index,
+                            "equipoLocalId",
+                            Number(e.target.value)
+                          )
+                        }
+                        label="Equipo Local"
+                      >
+                        <MenuItem value="" disabled>
+                          {loadingEquipos[
+                            `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                          ]
+                            ? "Cargando..."
+                            : "Seleccione equipo local"}
                         </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                        {equipos[
+                          `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                        ]?.map((equipo) => (
+                          <MenuItem
+                            key={`local-${equipo.equipoId}`}
+                            value={equipo.equipoId}
+                            disabled={
+                              equipo.equipoId === encuentro.equipoVisitanteId
+                            }
+                          >
+                            {equipo.nombre}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
 
                   {/* Equipo Visitante */}
-                  <FormControl
-                    fullWidth
-                    required
-                    disabled={
-                      !encuentro.serieId || !encuentros[index].subcategoriaId
-                    }
-                  >
-                    <InputLabel>Equipo Visitante</InputLabel>
-                    <Select
-                      value={encuentro.equipoVisitanteId || ""}
-                      onChange={(e) =>
-                        handleInputChange(
-                          index,
-                          "equipoVisitanteId",
-                          Number(e.target.value)
-                        )
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl
+                      fullWidth
+                      required
+                      disabled={
+                        !encuentro.serieId || !encuentros[index].subcategoriaId
                       }
-                      label="Equipo Visitante"
                     >
-                      <MenuItem value="" disabled>
-                        {loadingEquipos[
-                          `${encuentro.subcategoriaId}-${encuentro.serieId}`
-                        ]
-                          ? "Cargando..."
-                          : "Seleccione equipo visitante"}
-                      </MenuItem>
-                      {equipos[
-                        `${encuentro.subcategoriaId}-${encuentro.serieId}`
-                      ]?.map((equipo) => (
-                        <MenuItem
-                          key={`visitante-${equipo.equipoId}`}
-                          value={equipo.equipoId}
-                          disabled={equipo.equipoId === encuentro.equipoLocalId}
-                        >
-                          {equipo.nombre}
+                      <InputLabel>Equipo Visitante</InputLabel>
+                      <Select
+                        value={encuentro.equipoVisitanteId || ""}
+                        onChange={(e) =>
+                          handleInputChange(
+                            index,
+                            "equipoVisitanteId",
+                            Number(e.target.value)
+                          )
+                        }
+                        label="Equipo Visitante"
+                      >
+                        <MenuItem value="" disabled>
+                          {loadingEquipos[
+                            `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                          ]
+                            ? "Cargando..."
+                            : "Seleccione equipo visitante"}
                         </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                        {equipos[
+                          `${encuentro.subcategoriaId}-${encuentro.serieId}`
+                        ]?.map((equipo) => (
+                          <MenuItem
+                            key={`visitante-${equipo.equipoId}`}
+                            value={equipo.equipoId}
+                            disabled={equipo.equipoId === encuentro.equipoLocalId}
+                          >
+                            {equipo.nombre}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
+
+                  {/* Fecha */}
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl fullWidth required>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <DatePicker
+                          label="Fecha"
+                          value={encuentro.fecha ? parse(encuentro.fecha, 'yyyy-MM-dd', new Date()) : null}
+                          onChange={(date) =>
+                            handleInputChange(
+                              index,
+                              "fecha",
+                              date ? format(date, "yyyy-MM-dd") : ""
+                            )
+                          }
+                        />
+                      </LocalizationProvider>
+                    </FormControl>
+                  </Box>
+
+                  {/* Hora */}
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl fullWidth required>
+                      <LocalizationProvider dateAdapter={AdapterDateFns}>
+                        <TimePicker
+                          label="Hora"
+                          value={encuentro.hora ? parse(encuentro.hora, 'HH:mm', new Date()) : null}
+                          onChange={(time) =>
+                            handleInputChange(
+                              index,
+                              "hora",
+                              time ? format(time, "HH:mm") : ""
+                            )
+                          }
+                        />
+                      </LocalizationProvider>
+                    </FormControl>
+                  </Box>
+
+                  {/* Estadio */}
+                  <Box sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)' } }}>
+                    <FormControl fullWidth required>
+                      <InputLabel>Estadio/Lugar</InputLabel>
+                      <Select
+                        value={encuentro.estadio || ""}
+                        onChange={(e) =>
+                          handleInputChange(index, "estadio", e.target.value)
+                        }
+                        label="Estadio/Lugar"
+                      >
+                        {estadios.map((estadio) => (
+                          <MenuItem key={estadio.id} value={estadio.nombre}>
+                            {estadio.nombre}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
                 </Box>
               </Paper>
-              {encuentros.length > 1 && (
-                <IconButton
-                  className="delete-button"
-                  size="small"
-                  onClick={() => handleRemoveEncuentro(index)}
-                  sx={{
-                    position: "absolute",
-                    right: -12,
-                    top: -12,
-                    color: "white",
-                    backgroundColor: "error.main",
-                    opacity: 0,
-                    visibility: "hidden",
-                    transition: "all 0.2s ease",
-                    zIndex: 1,
-                    "&:hover": {
-                      backgroundColor: "error.dark",
-                      transform: "scale(1.1)",
-                    },
-                  }}
-                >
-                  <CloseIcon fontSize="small" />
-                </IconButton>
-              )}
-            </Box>
-          ))}
+            ))}
 
-          <Box mt={2}>
-            <Button
-              onClick={handleAddEncuentro}
-              startIcon={<AddIcon />}
-              variant="outlined"
-              fullWidth
-            >
-              Agregar Otro Encuentro
-            </Button>
+            <Box mt={2}>
+              <Button
+                onClick={handleAddEncuentro}
+                startIcon={<AddIcon />}
+                variant="outlined"
+                fullWidth
+              >
+                Agregar Otro Encuentro
+              </Button>
+            </Box>
           </Box>
         </DialogContent>
 
