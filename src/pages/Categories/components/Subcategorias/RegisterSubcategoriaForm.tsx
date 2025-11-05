@@ -353,6 +353,23 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
                         }
                         size="small"
                         disabled={loading}
+                        sx={{ mb: 2 }}
+                      />
+                      <TextField
+                        fullWidth
+                        label="Descripción"
+                        value={subcategoria.descripcion || ''}
+                        onChange={(e) =>
+                          handleSubcategoriaChange(
+                            subcategoria.subcategoriaId,
+                            "descripcion",
+                            e.target.value
+                          )
+                        }
+                        size="small"
+                        disabled={loading}
+                        multiline
+                        rows={2}
                       />
                     </Box>
                   </Paper>

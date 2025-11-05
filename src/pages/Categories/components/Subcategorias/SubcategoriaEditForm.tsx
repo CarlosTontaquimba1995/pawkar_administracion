@@ -42,10 +42,12 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
     subcategoriaId: number;
     nombre: string;
     categoriaId: number;
+    descripcion: string;
   }>({
     subcategoriaId: 0,
     nombre: "",
     categoriaId: 0,
+    descripcion: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -59,21 +61,19 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
 
   // Fetch subcategory data when component mounts or subcategoriaId changes
   useEffect(() => {
-    const fetchSubcategoriaData = async () => {
-      if (!token || !open) return;
+    const fetchSubcategoria = async () => {
+      if (!subcategoriaId) return;
 
       try {
         setLoading(true);
-        const response = await subcategoriaService.getSubcategoriaById(subcategoriaId);
-
-        if (!response?.data) {
-          throw new Error("No se encontraron datos de la subcategoría");
-        }
-
+        const response = await subcategoriaService.getSubcategoriaById(
+          subcategoriaId
+        );
         setSubcategoria({
           subcategoriaId: response.data.subcategoriaId,
           nombre: response.data.nombre,
           categoriaId: response.data.categoriaId,
+          descripcion: response.data.descripcion || "",
         });
       } catch (error) {
         console.error("Error fetching subcategory data:", error);
@@ -92,7 +92,7 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
     };
 
     if (open) {
-      fetchSubcategoriaData();
+      fetchSubcategoria();
     }
   }, [token, subcategoriaId, open]);
 
@@ -113,19 +113,10 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!subcategoria.nombre.trim()) {
+    if (!subcategoria.nombre || !subcategoria.categoriaId) {
       setSnackbar({
         open: true,
-        message: "El nombre es requerido",
-        severity: "error",
-      });
-      return;
-    }
-
-    if (!subcategoria.categoriaId) {
-      setSnackbar({
-        open: true,
-        message: "Debe seleccionar una categoría",
+        message: "Por favor complete todos los campos requeridos",
         severity: "error",
       });
       return;
@@ -135,10 +126,11 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
       setLoading(true);
 
       const response = await subcategoriaService.updateSubcategoria(
-        subcategoria.subcategoriaId,
+        subcategoriaId,
         {
           nombre: subcategoria.nombre,
           categoriaId: subcategoria.categoriaId,
+          descripcion: subcategoria.descripcion || "",
         }
       );
 
@@ -155,7 +147,9 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
           onClose();
         }, 1000);
       } else {
-        throw new Error(response.message || "Error al actualizar la subcategoría");
+        throw new Error(
+          response.message || "Error al actualizar la subcategoría"
+        );
       }
     } catch (error: any) {
       if (error.response?.data?.message) {
@@ -184,7 +178,11 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
     <>
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
         <DialogTitle>
-          <Box display="flex" justifyContent="space-between" alignItems="center">
+          <Box
+            display="flex"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <Typography variant="h6">Editar Subcategoría</Typography>
             <IconButton
               edge="end"
@@ -215,7 +213,7 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
                 autoFocus
                 sx={{ mt: 2 }}
               />
-              
+
               <FormControl fullWidth margin="normal" required>
                 <InputLabel id="categoria-select-label">Categoría</InputLabel>
                 <Select
@@ -223,19 +221,43 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
                   id="categoria-select"
                   value={subcategoria.categoriaId}
                   label="Categoría"
-                  onChange={(e) => handleCategoriaChange(Number(e.target.value))}
+                  onChange={(e) =>
+                    handleCategoriaChange(Number(e.target.value))
+                  }
                   disabled={loading}
+                  sx={{ mb: 2 }}
                 >
                   <MenuItem value={0} disabled>
                     Seleccione una categoría
                   </MenuItem>
                   {categorias.map((categoria) => (
-                    <MenuItem key={categoria.categoriaId} value={categoria.categoriaId}>
+                    <MenuItem
+                      key={categoria.categoriaId}
+                      value={categoria.categoriaId}
+                    >
                       {categoria.nombre}
                     </MenuItem>
                   ))}
                 </Select>
               </FormControl>
+
+              <TextField
+                label="Descripción"
+                variant="outlined"
+                fullWidth
+                margin="normal"
+                value={subcategoria.descripcion}
+                onChange={(e) =>
+                  setSubcategoria((prev) => ({
+                    ...prev,
+                    descripcion: e.target.value,
+                  }))
+                }
+                disabled={loading}
+                multiline
+                rows={3}
+                placeholder="Ingrese una descripción para la subcategoría (opcional)"
+              />
             </Box>
           </DialogContent>
 
