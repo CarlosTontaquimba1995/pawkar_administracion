@@ -131,7 +131,16 @@ export const categoriaService = {
             console.error('Error al verificar existencia de categorías:', error);
             return false;
         }
-    }
+    },
+
+    /**
+     * Obtiene una categoría por su nemonico
+     * @param nemonico Nemonico de la categoría (ej: "EVENTO", "EVENTOS", "DEPORTE", "DEPORTES")
+     */
+    async getCategoriaByNemonico(nemonico: string): Promise<CategoriaResponse> {
+        const response = await api.get<CategoriaResponse>(`/nemonico/${nemonico}`);
+        return response.data;
+    },
 };
 
 export default categoriaService;
