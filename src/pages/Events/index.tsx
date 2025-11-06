@@ -694,7 +694,7 @@ const Events = () => {
           disabled={isLoading}
         >
           <ListItemIcon>
-            <DeleteIcon fontSize="small" />
+            <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
           </ListItemIcon>
           <ListItemText>Eliminar</ListItemText>
         </MenuItem>
