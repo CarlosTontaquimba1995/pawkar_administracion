@@ -110,7 +110,7 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
       setTimeout(() => {
         onSuccess();
         onClose();
-      }, 800);
+      }, 700);
     } catch (error: any) {
       setSnackbar({
         open: true,

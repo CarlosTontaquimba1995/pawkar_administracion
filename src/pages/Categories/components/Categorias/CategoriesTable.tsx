@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -38,9 +38,17 @@ interface CategoriesTableProps {
 }
 
 const CategoriesTable: React.FC<CategoriesTableProps> = ({
-  categories,
+  categories: initialCategories,
   onRefresh,
 }) => {
+  // Use local state for categories to enable optimistic updates
+  const [localCategories, setLocalCategories] =
+    useState<Categoria[]>(initialCategories);
+
+  // Update local categories when props change
+  useEffect(() => {
+    setLocalCategories(initialCategories);
+  }, [initialCategories]);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,15 +58,17 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
     null
   );
 
-  const [snackbar, setSnackbar] = useState({
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error" | "warning";
+    autoHideDuration?: number;
+    onClose?: () => void;
+  }>({
     open: false,
     message: "",
-    severity: "success" as "success" | "error" | "warning",
+    severity: "success",
   });
-
-  const handleCloseSnackbar = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
-  };
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -87,20 +97,37 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   const handleDeleteConfirm = async () => {
     if (!categoryToDelete) return;
 
+    // Optimistically update the UI
+    const previousCategories = [...localCategories];
+    const updatedCategories = localCategories.filter(
+      (cat) => cat.categoriaId !== categoryToDelete
+    );
+    setLocalCategories(updatedCategories);
+
+    // Close the delete confirmation dialog
+    setCategoryToDelete(null);
+
     try {
       setIsDeleting(true);
       const response = await categoriaService.deleteCategoria(categoryToDelete);
 
-      if (response.success) {
-        setSnackbar({
-          open: true,
-          message: response.message,
-          severity: "success",
-        });
-        await onRefresh();
-      } else {
+      if (!response.success) {
+        // If the API call fails, revert the UI and show error
+        setLocalCategories(previousCategories);
         throw new Error(response.message || "Error al eliminar la categoría");
       }
+
+      // Show success message
+      setSnackbar({
+        open: true,
+        message: response.message || "Categoría eliminada exitosamente",
+        severity: "success",
+      });
+
+      // Refresh data in the background
+      onRefresh().catch((error) => {
+        console.error("Error al actualizar las categorías:", error);
+      });
     } catch (error: any) {
       console.error("Error al eliminar la categoría:", error);
 
@@ -132,7 +159,7 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
   };
 
   // Filter categories based on search term
-  const filteredCategories = categories.filter((category) =>
+  const filteredCategories = localCategories.filter((category) =>
     category.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -309,14 +336,18 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
           categoriaId={editingCategoryId || 0}
         />
       )}
+
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        autoHideDuration={snackbar.autoHideDuration || 5000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
-          onClose={handleCloseSnackbar}
+          onClose={() => {
+            setSnackbar((prev) => ({ ...prev, open: false }));
+            snackbar.onClose?.();
+          }}
           severity={snackbar.severity}
           sx={{ width: "100%" }}
         >
