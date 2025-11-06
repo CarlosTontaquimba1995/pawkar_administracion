@@ -20,6 +20,7 @@ import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
 import roleService from "@/api/roleService";
 import subcategoriaService from "@/api/subcategoriaService";
 import subcategoriaRolesService from "@/api/subcategoriaRolesService";
+import categoriaService from "@/api/categoriaService";
 import RolesTable from "./components/Roles/RolesTable";
 import RoleRegisterForm from "./components/Roles/RoleRegisterForm";
 import AssignRolesTable from "./components/AssignRoles/AssignRolesTable";
@@ -81,16 +82,25 @@ const RolesPage = () => {
 
   const fetchSubcategorias = async () => {
     try {
-      const response = await subcategoriaService.getSubcategorias();
-      if (response.success && response.data) {
-        setSubcategorias(response.data);
-        // Only set the first subcategory if this is the initial load
-        if (isInitialLoad && response.data.length > 0) {
-          const firstSubcategoria = response.data[0].nombre;
-          setSelectedSubcategoria(firstSubcategoria);
-          // Mark initial load as complete
-          setIsInitialLoad(false);
+      const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+        "DEPORTES"
+      );
+      console.log("Categoria response:", categoriaResponse);
+      if (categoriaResponse.success && categoriaResponse.data) {
+        const response = await subcategoriaService.getSubcategoriasByCategoria(
+          categoriaResponse.data.categoriaId
+        );
+
+        if (response.success && response.data) {
+          setSubcategorias(response.data);
+          if (isInitialLoad && response.data.length > 0) {
+            const firstSubcategoria = response.data[0].nombre;
+            setSelectedSubcategoria(firstSubcategoria);
+            setIsInitialLoad(false);
+          }
         }
+      } else {
+        throw new Error("No se pudo obtener la categoría DEPORTES");
       }
     } catch (error) {
       console.error("Error fetching subcategories:", error);
@@ -105,7 +115,6 @@ const RolesPage = () => {
   const fetchRoles = async () => {
     try {
       setLoading(true);
-      // Fetch all roles
       const rolesResponse = await roleService.getAllRoles();
       setRoles(rolesResponse.data);
     } catch (error) {

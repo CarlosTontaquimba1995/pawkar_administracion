@@ -27,6 +27,7 @@ import { Subcategoria } from "@/types/subcategoria.types";
 import { Role } from "@/types/role.types";
 import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
 import subcategoriaService from "@/api/subcategoriaService";
+import categoriaService from "@/api/categoriaService";
 
 interface AssignRoleRegisterFormProps {
   open: boolean;
@@ -93,8 +94,17 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
 
   const fetchSubcategorias = async (): Promise<void> => {
     try {
-      const response = await subcategoriaService.getSubcategorias();
-      setSubcategorias(response.data);
+      const categoriaResponse = await categoriaService.getCategoriaByNemonico("DEPORTES");
+      if (categoriaResponse.success && categoriaResponse.data) {
+        const response = await subcategoriaService.getSubcategoriasByCategoria(
+          categoriaResponse.data.categoriaId
+        );
+        if (response.success && response.data) {
+          setSubcategorias(response.data);
+        }
+      } else {
+        throw new Error("No se pudo obtener la categoría DEPORTES");
+      }
     } catch (error) {
       console.error("Error fetching subcategorias:", error);
       throw error;

@@ -42,6 +42,10 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
       categoriaId: categoriaId || 0,
       descripcion: "",
       categoriaNombre: "",
+      fechaHora: "",
+      proximo: false,
+      estado: true,
+      ubicacion: "",
     },
   ]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -66,6 +70,10 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
           categoriaId: categoriaId || 0,
           descripcion: "",
           categoriaNombre: "",
+          fechaHora: "",
+          proximo: false,
+          estado: true,
+          ubicacion: "",
         },
       ]);
     }
@@ -99,6 +107,10 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
         categoriaId: categoriaId || 0,
         descripcion: "",
         categoriaNombre: "",
+        fechaHora: "",
+        proximo: false,
+        estado: true,
+        ubicacion: "",
       },
     ]);
   };
@@ -193,6 +205,10 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
           categoriaId: categoriaId || 0,
           descripcion: "",
           categoriaNombre: "",
+          fechaHora: "",
+          proximo: false,
+          estado: true,
+          ubicacion: "",
         },
       ]);
 
