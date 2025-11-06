@@ -247,15 +247,23 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
     }
   };
 
-  const resetForm = (): void => {
+  const resetForm = useCallback((): void => {
     setSelectedSubcategoria("");
     setRoleAssignments([]);
-  };
+    setLoading(false);
+  }, []);
 
-  const handleClose = (): void => {
+  const handleClose = useCallback((): void => {
     resetForm();
     onClose();
-  };
+  }, [onClose, resetForm]);
+
+  // Reset form when dialog is closed
+  useEffect(() => {
+    if (!open) {
+      resetForm();
+    }
+  }, [open, resetForm]);
 
   return (
     <>
