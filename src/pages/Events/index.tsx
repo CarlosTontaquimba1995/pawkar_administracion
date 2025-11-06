@@ -31,6 +31,7 @@ import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Subcategoria } from "../../types/subcategoria.types";
 import subcategoriaService from "@/api/subcategoriaService";
+import EventsRegisterForm from "./EventsRegisterForm";
 
 const formatEventDate = (dateString: string | null | undefined) => {
   if (!dateString)
@@ -62,46 +63,65 @@ const Events = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [proximosEventos, setProximosEventos] = useState<Subcategoria[]>([]);
   const [eventosPasados, setEventosPasados] = useState<Subcategoria[]>([]);
+  const [isRegisterFormOpen, setIsRegisterFormOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchEventos = async (isProximo: boolean) => {
-      try {
-        setIsLoading(true);
-        const response = isProximo
-          ? await subcategoriaService.getProximosEventos()
-          : await subcategoriaService.getEventosPasados();
+  const handleOpenRegisterForm = () => {
+    setIsRegisterFormOpen(true);
+  };
 
-        if (response.success && response.data) {
-          const eventos = response.data.map((event: any) => ({
-            subcategoriaId: event.id,
-            nombre: event.nombre,
-            descripcion: event.descripcion,
-            fechaHora: event.fechaHora,
-            proximo: event.proximo,
-            categoriaId: event.categoriaId,
-            categoriaNombre: event.categoriaNombre || "Sin categoría",
-            estado: event.estado || true,
-            ubicacion: event.ubicacion || "Sin ubicación",
-          })) as Subcategoria[];
+  const handleCloseRegisterForm = () => {
+    setIsRegisterFormOpen(false);
+  };
 
-          if (isProximo) {
-            setProximosEventos(eventos);
-          } else {
-            setEventosPasados(eventos);
-          }
-        }
-      } catch (err) {
-        console.error("Error al cargar los eventos:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
+  const handleRegisterSuccess = () => {
+    // Refresh the events list when a new event is successfully created
     if (tabValue === "upcoming" || tabValue === "all") {
       fetchEventos(true);
     }
+    if (tabValue === "completed" || tabValue === "all") {
+      fetchEventos(false);
+    }
+    handleCloseRegisterForm();
+  };
 
+  const fetchEventos = async (isProximo: boolean) => {
+    try {
+      setIsLoading(true);
+      const response = isProximo
+        ? await subcategoriaService.getProximosEventos()
+        : await subcategoriaService.getEventosPasados();
+
+      if (response.success && response.data) {
+        const eventos = response.data.map((event: any) => ({
+          subcategoriaId: event.id,
+          nombre: event.nombre,
+          descripcion: event.descripcion,
+          fechaHora: event.fechaHora,
+          proximo: event.proximo,
+          categoriaId: event.categoriaId,
+          categoriaNombre: event.categoriaNombre || "Sin categoría",
+          estado: event.estado || true,
+          ubicacion: event.ubicacion || "Sin ubicación",
+        })) as Subcategoria[];
+
+        if (isProximo) {
+          setProximosEventos(eventos);
+        } else {
+          setEventosPasados(eventos);
+        }
+      }
+    } catch (err) {
+      console.error("Error al cargar los eventos:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (tabValue === "upcoming" || tabValue === "all") {
+      fetchEventos(true);
+    }
     if (tabValue === "completed" || tabValue === "all") {
       fetchEventos(false);
     }
@@ -192,7 +212,7 @@ const Events = () => {
           variant="contained"
           color="primary"
           startIcon={<AddIcon />}
-          onClick={() => navigate("/events/new")}
+          onClick={handleOpenRegisterForm}
         >
           Nuevo Evento
         </Button>
@@ -296,7 +316,7 @@ const Events = () => {
                 variant="contained"
                 color="primary"
                 startIcon={<AddIcon />}
-                onClick={() => navigate("/events/new")}
+                onClick={handleOpenRegisterForm}
               >
                 Crear Evento
               </Button>
@@ -591,6 +611,13 @@ const Events = () => {
           Eliminar
         </MenuItem>
       </Menu>
+
+      {/* Events Register Form Dialog */}
+      <EventsRegisterForm
+        open={isRegisterFormOpen}
+        onClose={handleCloseRegisterForm}
+        onSuccess={handleRegisterSuccess}
+      />
     </Box>
   );
 };
