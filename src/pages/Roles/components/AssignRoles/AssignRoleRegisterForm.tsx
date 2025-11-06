@@ -230,12 +230,12 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
         severity: "success",
       });
 
-      // Reset form and trigger parent refresh
-      setSelectedSubcategoria("");
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 100);
+      // Reset form state
+      resetForm();
+
+      // Trigger parent refresh and close the dialog
+      onSuccess();
+      onClose();
     } catch (error: any) {
       setSnackbar({
         open: true,
