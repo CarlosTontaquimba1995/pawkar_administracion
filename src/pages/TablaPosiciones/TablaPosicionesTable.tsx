@@ -17,16 +17,25 @@ import {
   TextField,
   InputAdornment,
   Tooltip,
+  FormControl,
+  InputLabel,
+  MenuItem,
+  Select,
+  SelectChangeEvent,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
-  FilterList as FilterListIcon,
 } from "@mui/icons-material";
-import { TablaPosicion, SearchParams } from "@/types/tablaPosicion.types";
+import { TablaPosicion } from "@/types/tablaPosicion.types";
+import type { Serie } from "@/types/serie.types";
+import type { Subcategoria } from "@/types/subcategoria.types";
 import tablaPosicionService from "@/api/tablaPosicionService";
+import categoriaService from "@/api/categoriaService";
+import subcategoriaService from "@/api/subcategoriaService";
+import serieService from "@/api/serieService";
 
 interface TablaPosicionesTableProps {
   refreshKey: number;
@@ -40,18 +49,53 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
   onRefresh,
 }) => {
   const [posiciones, setPosiciones] = useState<TablaPosicion[]>([]);
-  const [filteredPosiciones, setFilteredPosiciones] = useState<TablaPosicion[]>(
-    []
-  );
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filters, setFilters] = useState<
-    Omit<SearchParams, "page" | "size" | "sort">
-  >({});
-  const [showFilters, setShowFilters] = useState(false);
+
+  // State for categories and series
+  const [categorias, setCategorias] = useState<
+    Array<{ subcategoriaId: number; nombre: string; categoriaId?: number }>
+  >([]);
+  const [categoriaSeleccionada, setCategoriaSeleccionada] =
+    useState<string>("");
+  const [series, setSeries] = useState<Serie[]>([]);
+  const [serieSeleccionada, setSerieSeleccionada] = useState<string>("");
+  const [isLoadingSeries, setIsLoadingSeries] = useState(false);
+
+  // Filter positions based on search term and filters
+  const filteredData = React.useMemo(() => {
+    return posiciones.filter((posicion) => {
+      const matchesSearch =
+        !searchTerm ||
+        (posicion.equipoNombre?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        ) ||
+        (posicion.serieNombre?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        ) ||
+        (posicion.categoriaNombre?.toLowerCase() || "").includes(
+          searchTerm.toLowerCase()
+        );
+
+      const matchesCategoria =
+        !categoriaSeleccionada ||
+        posicion.subcategoriaId?.toString() === categoriaSeleccionada;
+
+      const matchesSerie =
+        !serieSeleccionada ||
+        posicion.serieId?.toString() === serieSeleccionada;
+
+      return matchesSearch && matchesCategoria && matchesSerie;
+    });
+  }, [posiciones, searchTerm, categoriaSeleccionada, serieSeleccionada]);
+
+  // Get paginated data
+  const paginatedData = React.useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    return filteredData.slice(startIndex, startIndex + rowsPerPage);
+  }, [filteredData, page, rowsPerPage]);
 
   // Fetch data
   useEffect(() => {
@@ -59,21 +103,23 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
       try {
         setLoading(true);
         const response = await tablaPosicionService.search({
-          ...filters,
+          subcategoriaId: categoriaSeleccionada
+            ? parseInt(categoriaSeleccionada)
+            : undefined,
+          serieId: serieSeleccionada ? parseInt(serieSeleccionada) : undefined,
           page,
           size: rowsPerPage,
         });
-        console.log(response);
 
         if (Array.isArray(response)) {
           setPosiciones(response);
-          setFilteredPosiciones(response);
-          setTotalItems(response.length);
-        } else {
+        } else if (response && typeof response === "object") {
           // Handle paginated response
-          setPosiciones(response || []);
-          setFilteredPosiciones(response || []);
-          setTotalItems(response || 0);
+          const paginatedResponse = response as {
+            content: TablaPosicion[];
+            totalElements: number;
+          };
+          setPosiciones(paginatedResponse.content || []);
         }
       } catch (error) {
         console.error("Error al cargar posiciones:", error);
@@ -83,50 +129,133 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     };
 
     fetchData();
-  }, [refreshKey, filters, page, rowsPerPage]);
+  }, [refreshKey, page, rowsPerPage, categoriaSeleccionada, serieSeleccionada]);
+
+  // Fetch categories on mount
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        // First, get the category with nemonico 'DEPORTES'
+        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
+        );
+
+        if (categoriaResponse?.success && categoriaResponse.data) {
+          const categoriaId = categoriaResponse.data.categoriaId;
+
+          // Then get subcategories for this category
+          const subcategoriasResponse =
+            await subcategoriaService.getSubcategoriasByCategoria(categoriaId);
+
+          if (subcategoriasResponse?.success && subcategoriasResponse.data) {
+            // Map the response to match the expected format for categorias state
+            const categoriasData = subcategoriasResponse.data.map(
+              (subcat: Subcategoria) => ({
+                subcategoriaId: subcat.subcategoriaId,
+                nombre: subcat.nombre,
+                categoriaId: subcat.categoriaId,
+              })
+            );
+
+            setCategorias(categoriasData);
+          }
+        }
+      } catch (error) {
+        console.error("Error al cargar categorías:", error);
+        // You might want to show a user-friendly error message here
+      }
+    };
+
+    fetchCategorias();
+  }, [categoriaSeleccionada]);
+
+  // Fetch series when category changes
+  useEffect(() => {
+    const fetchSeries = async () => {
+      if (!categoriaSeleccionada) {
+        setSeries([]);
+        return;
+      }
+
+      try {
+        setIsLoadingSeries(true);
+        const response = await serieService.getSeriesBySubcategoria(
+          Number(categoriaSeleccionada)
+        );
+        if (response.success && response.data) {
+          setSeries(response.data);
+        } else {
+          setSeries([]);
+        }
+      } catch (error) {
+        console.error("Error al cargar series:", error);
+        setSeries([]);
+      } finally {
+        setIsLoadingSeries(false);
+      }
+    };
+
+    fetchSeries();
+  }, [categoriaSeleccionada]);
 
   // Handle search
-  const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value.toLowerCase();
+  const handleSearch = (value: string) => {
     setSearchTerm(value);
-
-    if (!value) {
-      setFilteredPosiciones(posiciones);
-      setTotalItems(posiciones.length);
-      setPage(0);
-      return;
-    }
-
-    const filtered = posiciones.filter(
-      (posicion) =>
-        (posicion.equipoNombre || "").toLowerCase().includes(value) ||
-        (posicion.serieNombre || "").toLowerCase().includes(value) ||
-        (posicion.categoriaNombre || "").toLowerCase().includes(value)
-    );
-
-    setFilteredPosiciones(filtered);
-    setTotalItems(filtered.length);
     setPage(0);
   };
 
-  // Handle filter changes
-  const handleFilterChange = (field: string, value: any) => {
-    setFilters((prev) => ({
-      ...prev,
-      [field]: value || undefined,
-    }));
-
-    // Reset to first page when filters change
-    if (page !== 0) {
-      setPage(0);
+  // Fetch series for a category
+  const fetchSeries = async (subcategoriaId: number) => {
+    try {
+      const response = await serieService.getSeriesBySubcategoria(
+        subcategoriaId
+      );
+      if (response.success && response.data) {
+        return response.data;
+      }
+      return [];
+    } catch (error) {
+      console.error("Error al cargar series:", error);
+    } finally {
+      setIsLoadingSeries(false);
     }
+  };
+
+  // Handle category change
+  const handleCategoriaChange = (event: SelectChangeEvent) => {
+    const value = event.target.value;
+    setCategoriaSeleccionada(value);
+    setPage(0); // Reset to first page when filters change
+
+    // Reset serie selection when category changes
+    setSerieSeleccionada("");
+
+    // Fetch series for the selected category
+    if (value) {
+      fetchSeries(parseInt(value));
+    } else {
+      setSeries([]);
+    }
+  };
+
+  // Handle series change
+  const handleSerieChange = (event: SelectChangeEvent) => {
+    setSerieSeleccionada(event.target.value);
+    setPage(0);
   };
 
   // Clear all filters
   const clearFilters = () => {
-    setFilters({});
+    setSearchTerm("");
+    setCategoriaSeleccionada("");
+    setSerieSeleccionada("");
     setPage(0);
   };
+
+  // Check if any filter is active
+  const isFilterActive = Boolean(
+    categoriaSeleccionada || serieSeleccionada || searchTerm
+  );
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -159,193 +288,115 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     );
   }
 
-  // Check if any filter is active
-  const isFilterActive = Object.values(filters).some(
-    (value) => value !== undefined && value !== ""
-  );
-
   return (
     <Box>
       {/* Search and Filter Bar */}
       <Box mb={3}>
-        <Box
-          sx={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 2,
-            alignItems: "center",
-          }}
-        >
-          <Box sx={{ flex: "1 1 300px", minWidth: 0 }}>
-            <TextField
-              fullWidth
-              variant="outlined"
-              placeholder="Buscar por nombre de equipo..."
-              value={searchTerm}
-              onChange={handleSearch}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon />
-                  </InputAdornment>
-                ),
-                endAdornment: searchTerm && (
-                  <InputAdornment position="end">
-                    <IconButton
-                      size="small"
-                      onClick={() => {
-                        setSearchTerm("");
-                        setFilteredPosiciones(posiciones);
-                        setTotalItems(posiciones.length);
-                      }}
-                      edge="end"
-                    >
-                      <ClearIcon fontSize="small" />
-                    </IconButton>
-                  </InputAdornment>
-                ),
+        <Box display="flex" gap={2} flexWrap="wrap">
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Buscar equipos..."
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton size="small" onClick={() => handleSearch("")}>
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+              sx: {
+                minWidth: 250,
+              },
+            }}
+          />
+          <FormControl size="small" sx={{ minWidth: 200 }} variant="outlined">
+            <InputLabel id="categoria-label">Categoría</InputLabel>
+            <Select
+              labelId="categoria-label"
+              id="categoria-select"
+              value={categoriaSeleccionada}
+              label="Categoría"
+              onChange={handleCategoriaChange}
+              sx={{
+                "& .MuiSelect-select": {
+                  padding: "8.5px 14px",
+                },
               }}
-            />
-          </Box>
-          <Box>
-            <Tooltip
-              title={showFilters ? "Ocultar filtros" : "Mostrar filtros"}
             >
-              <IconButton
-                onClick={() => setShowFilters(!showFilters)}
-                color={isFilterActive ? "primary" : "default"}
-              >
-                <FilterListIcon />
+              <MenuItem value="">
+                <em>Todas las categorías</em>
+              </MenuItem>
+              {categorias.map((categoria) => (
+                <MenuItem
+                  key={`cat-${categoria.subcategoriaId}`}
+                  value={categoria.subcategoriaId.toString()}
+                >
+                  {categoria.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size="small"
+            sx={{ minWidth: 200 }}
+            disabled={!categoriaSeleccionada || isLoadingSeries}
+          >
+            <InputLabel id="serie-label">Serie</InputLabel>
+            <Select
+              labelId="serie-label"
+              id="serie-select"
+              value={serieSeleccionada}
+              label="Serie"
+              onChange={handleSerieChange}
+              sx={{
+                "& .MuiSelect-select": {
+                  padding: "8.5px 14px",
+                },
+              }}
+            >
+              <MenuItem value="">
+                <em>Todas las series</em>
+              </MenuItem>
+              {series.map((serie) => (
+                <MenuItem
+                  key={`serie-${serie.serieId}`}
+                  value={serie.serieId.toString()}
+                >
+                  {serie.nombreSerie}
+                </MenuItem>
+              ))}
+            </Select>
+            {isLoadingSeries && (
+              <CircularProgress
+                size={24}
+                sx={{
+                  position: "absolute",
+                  right: "30px",
+                  top: "50%",
+                  marginTop: "-12px",
+                }}
+              />
+            )}
+          </FormControl>
+          {isFilterActive && (
+            <Tooltip title="Limpiar filtros">
+              <IconButton onClick={clearFilters} size="small">
+                <ClearIcon />
               </IconButton>
             </Tooltip>
-            {isFilterActive && (
-              <Tooltip title="Limpiar filtros">
-                <IconButton onClick={clearFilters} size="small">
-                  <ClearIcon />
-                </IconButton>
-              </Tooltip>
-            )}
-          </Box>
+          )}
         </Box>
-
-        {/* Advanced Filters */}
-        {showFilters && (
-          <Box mt={2} p={2} bgcolor="action.hover" borderRadius={1}>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
-              <Box sx={{ flex: "1 1 200px", minWidth: 0 }}>
-                <TextField
-                  fullWidth
-                  label="ID de Categoría"
-                  type="number"
-                  value={filters.categoriaId || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "categoriaId",
-                      e.target.value ? Number(e.target.value) : ""
-                    )
-                  }
-                  InputProps={{
-                    endAdornment: filters.categoriaId && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleFilterChange("categoriaId", "")}
-                          edge="end"
-                        >
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 200px", minWidth: 0 }}>
-                <TextField
-                  fullWidth
-                  label="ID de Subcategoría"
-                  type="number"
-                  value={filters.subcategoriaId || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "subcategoriaId",
-                      e.target.value ? Number(e.target.value) : ""
-                    )
-                  }
-                  InputProps={{
-                    endAdornment: filters.subcategoriaId && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() =>
-                            handleFilterChange("subcategoriaId", "")
-                          }
-                          edge="end"
-                        >
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 200px", minWidth: 0 }}>
-                <TextField
-                  fullWidth
-                  label="ID de Equipo"
-                  type="number"
-                  value={filters.equipoId || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "equipoId",
-                      e.target.value ? Number(e.target.value) : ""
-                    )
-                  }
-                  InputProps={{
-                    endAdornment: filters.equipoId && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleFilterChange("equipoId", "")}
-                          edge="end"
-                        >
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-              <Box sx={{ flex: "1 1 200px", minWidth: 0 }}>
-                <TextField
-                  fullWidth
-                  label="ID de Serie"
-                  type="number"
-                  value={filters.serieId || ""}
-                  onChange={(e) =>
-                    handleFilterChange(
-                      "serieId",
-                      e.target.value ? Number(e.target.value) : ""
-                    )
-                  }
-                  InputProps={{
-                    endAdornment: filters.serieId && (
-                      <InputAdornment position="end">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleFilterChange("serieId", "")}
-                          edge="end"
-                        >
-                          <ClearIcon fontSize="small" />
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-              </Box>
-            </Box>
-          </Box>
-        )}
       </Box>
+
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -363,57 +414,50 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredPosiciones.length > 0 ? (
-              filteredPosiciones
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((posicion) => (
-                  <TableRow
-                    key={`${posicion.equipoId}-${posicion.subcategoriaId}`}
-                  >
-                    <TableCell>{posicion.equipoNombre}</TableCell>
-                    <TableCell align="center">
-                      {posicion.partidosJugados}
-                    </TableCell>
-                    <TableCell align="center">{posicion.victorias}</TableCell>
-                    <TableCell align="center">{posicion.empates}</TableCell>
-                    <TableCell align="center">{posicion.derrotas}</TableCell>
-                    <TableCell align="center">{posicion.golesAFavor}</TableCell>
-                    <TableCell align="center">
-                      {posicion.golesEnContra}
-                    </TableCell>
-                    <TableCell align="center">
-                      {posicion.diferenciaGoles}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip
-                        label={posicion.puntos}
-                        color="primary"
-                        variant="outlined"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        size="small"
-                        onClick={() => onEdit(posicion)}
-                        color="primary"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        onClick={() =>
-                          handleDelete(
-                            posicion.subcategoriaId,
-                            posicion.equipoId
-                          )
-                        }
-                        color="error"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
+            {filteredData.length > 0 ? (
+              paginatedData.map((posicion: TablaPosicion) => (
+                <TableRow
+                  key={`${posicion.equipoId}-${posicion.subcategoriaId}`}
+                >
+                  <TableCell>{posicion.equipoNombre}</TableCell>
+                  <TableCell align="center">
+                    {posicion.partidosJugados}
+                  </TableCell>
+                  <TableCell align="center">{posicion.victorias}</TableCell>
+                  <TableCell align="center">{posicion.empates}</TableCell>
+                  <TableCell align="center">{posicion.derrotas}</TableCell>
+                  <TableCell align="center">{posicion.golesAFavor}</TableCell>
+                  <TableCell align="center">{posicion.golesEnContra}</TableCell>
+                  <TableCell align="center">
+                    {posicion.diferenciaGoles}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={posicion.puntos}
+                      color="primary"
+                      variant="outlined"
+                    />
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={() => onEdit(posicion)}
+                      color="primary"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={() =>
+                        handleDelete(posicion.subcategoriaId, posicion.equipoId)
+                      }
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))
             ) : (
               <TableRow>
                 <TableCell colSpan={10} align="center">
@@ -429,12 +473,15 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
       <TablePagination
         rowsPerPageOptions={[10, 25, 50, 100]}
         component="div"
-        count={filteredPosiciones.length}
+        count={filteredData.length}
         rowsPerPage={rowsPerPage}
         page={page}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
         labelRowsPerPage="Filas por página:"
+        labelDisplayedRows={({ from, to, count }) =>
+          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
+        }
       />
     </Box>
   );
