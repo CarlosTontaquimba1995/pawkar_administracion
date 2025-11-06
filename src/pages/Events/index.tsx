@@ -25,7 +25,6 @@ import {
   Delete as DeleteIcon,
   Event as EventIcon,
   LocationOn as LocationOnIcon,
-  ArrowForward as ArrowForwardIcon,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -376,7 +375,7 @@ const Events = () => {
                         width: { xs: "100%", md: 200 },
                         minHeight: { xs: 140, md: "100%" },
                         background:
-                          "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+                          "linear-gradient(135deg, #473587 0%, #655d83ff 100%)",
                         color: "white",
                         display: "flex",
                         flexDirection: "column",
@@ -562,26 +561,6 @@ const Events = () => {
                               {event.estado ? "Activo" : "Inactivo"}
                             </Typography>
                           </Box>
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            endIcon={<ArrowForwardIcon />}
-                            onClick={() =>
-                              navigate(`/events/${event.subcategoriaId}`)
-                            }
-                            sx={{
-                              textTransform: "none",
-                              fontWeight: 500,
-                              borderRadius: 2,
-                              px: 2,
-                              "&:hover": {
-                                bgcolor: "primary.light",
-                                color: "primary.contrastText",
-                              },
-                            }}
-                          >
-                            Ver detalles
-                          </Button>
                         </Box>
                       </CardContent>
                     </Box>
