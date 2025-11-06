@@ -1,17 +1,26 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Alert,
   Box,
   Button,
   Card,
   CardContent,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
   Divider,
   IconButton,
   InputAdornment,
+  ListItemIcon,
+  ListItemText,
   Menu,
   MenuItem,
   Paper,
+  Snackbar,
   Tab,
   Tabs,
   TextField,
@@ -63,6 +72,13 @@ const Events = () => {
   const [proximosEventos, setProximosEventos] = useState<Subcategoria[]>([]);
   const [eventosPasados, setEventosPasados] = useState<Subcategoria[]>([]);
   const [isRegisterFormOpen, setIsRegisterFormOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info" | "warning",
+  });
   const navigate = useNavigate();
 
   const handleOpenRegisterForm = () => {
@@ -92,17 +108,24 @@ const Events = () => {
         : await subcategoriaService.getEventosPasados();
 
       if (response.success && response.data) {
-        const eventos = response.data.map((event: any) => ({
-          subcategoriaId: event.id,
-          nombre: event.nombre,
-          descripcion: event.descripcion,
-          fechaHora: event.fechaHora,
-          proximo: event.proximo,
-          categoriaId: event.categoriaId,
-          categoriaNombre: event.categoriaNombre || "Sin categoría",
-          estado: event.estado || true,
-          ubicacion: event.ubicacion || "Sin ubicación",
-        })) as Subcategoria[];
+        const eventos = response.data.map((event: any) => {
+          // Ensure subcategoriaId is always set, using id as fallback
+          const subcategoriaId = event.subcategoriaId || event.id;
+          if (!subcategoriaId) {
+            console.warn('Evento sin ID válido:', event);
+          }
+          return {
+            subcategoriaId,
+            nombre: event.nombre,
+            descripcion: event.descripcion,
+            fechaHora: event.fechaHora,
+            proximo: event.proximo,
+            categoriaId: event.categoriaId,
+            categoriaNombre: event.categoriaNombre || "Sin categoría",
+            estado: event.estado || true,
+            ubicacion: event.ubicacion || "Sin ubicación",
+          } as Subcategoria;
+        });
 
         if (isProximo) {
           setProximosEventos(eventos);
@@ -168,14 +191,64 @@ const Events = () => {
 
   const handleEdit = () => {
     if (selectedEvent) {
-      navigate(`/events/edit/${selectedEvent.subcategoriaId}`);
+      // Use optional chaining and provide a fallback
+      const eventId = selectedEvent?.subcategoriaId || (selectedEvent as any)?.id;
+      if (!eventId) {
+        console.error('No se pudo obtener el ID del evento para editar');
+        return;
+      }
+      navigate(`/events/edit/${eventId}`);
       handleMenuClose();
     }
   };
 
-  const handleDelete = () => {
-    console.log("Eliminar evento:", selectedEvent);
-    handleMenuClose();
+  const handleDeleteClick = (
+    event: React.MouseEvent<HTMLElement>,
+    eventItem: Subcategoria
+  ) => {
+    setSelectedEvent(eventItem);
+    setDeleteDialogOpen(true);
+    // Prevent event propagation to parent elements
+    event.stopPropagation();
+  };
+
+  const handleDelete = async () => {
+    if (!selectedEvent) return;
+
+    try {
+      console.log("Deleting event:", selectedEvent);
+      setIsDeleting(true);
+      // Use 'id' instead of 'subcategoriaId' since that's what's in the event object
+      const eventId = (selectedEvent as any).id || selectedEvent.subcategoriaId;
+      if (!eventId) {
+        throw new Error("No se pudo obtener el ID del evento");
+      }
+      await subcategoriaService.deleteSubcategoria(eventId);
+      setSnackbar({
+        open: true,
+        message: "Evento eliminado correctamente",
+        severity: "success",
+      });
+
+      // Refresh the events list
+      if (tabValue === "upcoming" || tabValue === "all") {
+        await fetchEventos(true);
+      }
+      if (tabValue === "completed" || tabValue === "all") {
+        await fetchEventos(false);
+      }
+    } catch (error) {
+      console.error("Error al eliminar el evento:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al eliminar el evento. Por favor, intente nuevamente.",
+        severity: "error",
+      });
+    } finally {
+      setIsDeleting(false);
+      setDeleteDialogOpen(false);
+      handleMenuClose();
+    }
   };
 
   if (isLoading) {
@@ -337,9 +410,9 @@ const Events = () => {
           </Box>
         ) : (
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-            {filteredEvents.map((event) => (
+            {filteredEvents.map((event, index) => (
               <Box
-                key={`event-${event.subcategoriaId}`}
+                key={`event-${event.subcategoriaId || "no-id"}-${index}`}
                 sx={{ width: { xs: "100%", md: "calc(100% - 16px)" } }}
               >
                 <Card
@@ -599,9 +672,18 @@ const Events = () => {
           Editar
         </MenuItem>
         <Divider />
-        <MenuItem onClick={handleDelete} sx={{ color: "error.main" }}>
-          <DeleteIcon fontSize="small" sx={{ mr: 1 }} />
-          Eliminar
+        <MenuItem
+          onClick={(e) => {
+            if (selectedEvent) {
+              handleDeleteClick(e, selectedEvent);
+            }
+          }}
+          disabled={isLoading}
+        >
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Eliminar</ListItemText>
         </MenuItem>
       </Menu>
 
@@ -611,6 +693,51 @@ const Events = () => {
         onClose={handleCloseRegisterForm}
         onSuccess={handleRegisterSuccess}
       />
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+      >
+        <Alert
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => !isDeleting && setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Confirmar eliminación</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            ¿Está seguro de que desea eliminar este evento? Esta acción no se
+            puede deshacer.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteDialogOpen(false)}
+            disabled={isDeleting}
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleDelete}
+            color="error"
+            disabled={isDeleting}
+            startIcon={isDeleting ? <CircularProgress size={20} /> : null}
+          >
+            {isDeleting ? "Eliminando..." : "Eliminar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

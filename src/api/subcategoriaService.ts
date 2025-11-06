@@ -137,11 +137,9 @@ const subcategoriaService = {
   },
 
   // Métodos legacy para mantener compatibilidad
-  async getCategories(token: string): Promise<SubcategoriaListResponse> {
+  async getCategories(): Promise<SubcategoriaListResponse> {
     try {
-      const response = await api.get<SubcategoriaListResponse>(API_URL, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get<SubcategoriaListResponse>(API_URL);
       return response.data;
     } catch (error) {
       console.error('Error fetching subcategories:', error);
@@ -168,11 +166,9 @@ const subcategoriaService = {
   },
 
   // Alias para mantener compatibilidad
-  createCategory: async (token: string, categoryData: any) => {
+  createCategory: async (categoryData: any) => {
     try {
-      const response = await api.post(API_URL, categoryData, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.post(API_URL, categoryData);
       return response.data;
     } catch (error) {
       console.error('Error creating category:', error);
@@ -181,11 +177,9 @@ const subcategoriaService = {
   },
 
   // Alias para mantener compatibilidad
-  updateCategory: async (token: string, id: number, categoryData: any) => {
+  updateCategory: async (id: number, categoryData: any) => {
     try {
-      const response = await api.put(`${API_URL}/${id}`, categoryData, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.put(`${API_URL}/${id}`, categoryData);
       return response.data;
     } catch (error) {
       console.error(`Error updating category with id ${id}:`, error);
@@ -194,11 +188,9 @@ const subcategoriaService = {
   },
 
   // Alias para mantener compatibilidad
-  deleteCategory: async (token: string, id: number) => {
+  deleteCategory: async (id: number) => {
     try {
-      const response = await api.delete(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.delete(`${API_URL}/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting category with id ${id}:`, error);
@@ -207,11 +199,9 @@ const subcategoriaService = {
   },
 
   // Alias para mantener compatibilidad
-  getCategoryById: async (token: string, id: number) => {
+  getCategoryById: async (id: number) => {
     try {
-      const response = await api.get(`${API_URL}/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get(`${API_URL}/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching category with id ${id}:`, error);
