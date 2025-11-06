@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useNavigate } from "react-router-dom";
+// useNavigate is no longer needed since we're using dialog for editing
 import {
   Alert,
   Box,
@@ -40,6 +40,7 @@ import { es } from "date-fns/locale";
 import { Subcategoria } from "../../types/subcategoria.types";
 import subcategoriaService from "@/api/subcategoriaService";
 import EventsRegisterForm from "./EventsRegisterForm";
+import EventsEditForm from "./EventsEditForm";
 
 const formatEventDate = (dateString: string | null | undefined) => {
   if (!dateString)
@@ -64,8 +65,11 @@ const formatEventDate = (dateString: string | null | undefined) => {
 };
 
 const Events = () => {
-  const [tabValue, setTabValue] = useState("upcoming");
+  const [tabValue, setTabValue] = useState<"upcoming" | "completed" | "all">(
+    "upcoming"
+  );
   const [searchTerm, setSearchTerm] = useState("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedEvent, setSelectedEvent] = useState<Subcategoria | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -79,7 +83,6 @@ const Events = () => {
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
-  const navigate = useNavigate();
 
   const handleOpenRegisterForm = () => {
     setIsRegisterFormOpen(true);
@@ -112,7 +115,7 @@ const Events = () => {
           // Ensure subcategoriaId is always set, using id as fallback
           const subcategoriaId = event.subcategoriaId || event.id;
           if (!subcategoriaId) {
-            console.warn('Evento sin ID válido:', event);
+            console.warn("Evento sin ID válido:", event);
           }
           return {
             subcategoriaId,
@@ -157,7 +160,7 @@ const Events = () => {
         ? eventosPasados
         : [...proximosEventos, ...eventosPasados];
 
-    if (!searchTerm) return events;
+    if (!searchTerm.trim()) return events;
 
     const searchLower = searchTerm.toLowerCase();
     return events.filter(
@@ -168,7 +171,10 @@ const Events = () => {
     );
   }, [proximosEventos, eventosPasados, tabValue, searchTerm]);
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
+  const handleTabChange = (
+    _: React.SyntheticEvent,
+    newValue: "upcoming" | "completed" | "all"
+  ) => {
     setTabValue(newValue);
   };
 
@@ -180,8 +186,9 @@ const Events = () => {
     event: React.MouseEvent<HTMLElement>,
     eventItem: Subcategoria
   ) => {
-    setAnchorEl(event.currentTarget);
+    event.stopPropagation(); // Prevent event bubbling
     setSelectedEvent(eventItem);
+    setAnchorEl(event.currentTarget);
   };
 
   const handleMenuClose = () => {
@@ -189,17 +196,23 @@ const Events = () => {
     setSelectedEvent(null);
   };
 
-  const handleEdit = () => {
+  const handleEdit = (event?: React.MouseEvent) => {
+    event?.stopPropagation(); // Prevent event bubbling
     if (selectedEvent) {
-      // Use optional chaining and provide a fallback
-      const eventId = selectedEvent?.subcategoriaId || (selectedEvent as any)?.id;
-      if (!eventId) {
-        console.error('No se pudo obtener el ID del evento para editar');
-        return;
-      }
-      navigate(`/events/edit/${eventId}`);
-      handleMenuClose();
+      setEditDialogOpen(true);
+      setAnchorEl(null); // Close the menu immediately
     }
+  };
+
+  const handleEditSuccess = () => {
+    // Refresh the events list after successful edit
+    if (tabValue === "upcoming" || tabValue === "all") {
+      fetchEventos(true);
+    }
+    if (tabValue === "completed" || tabValue === "all") {
+      fetchEventos(false);
+    }
+    setEditDialogOpen(false);
   };
 
   const handleDeleteClick = (
@@ -738,6 +751,16 @@ const Events = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Edit Event Dialog */}
+      {selectedEvent && (
+        <EventsEditForm
+          open={editDialogOpen}
+          onClose={() => setEditDialogOpen(false)}
+          onSuccess={handleEditSuccess}
+          event={selectedEvent}
+        />
+      )}
     </Box>
   );
 };
