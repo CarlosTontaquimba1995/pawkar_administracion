@@ -18,6 +18,7 @@ import {
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
+  EmojiEvents as EmojiEventsIcon,
   Category as CategoryIcon,
   Groups as TeamsIcon,
   People as PlayersIcon,
@@ -65,6 +66,7 @@ const menuItems = [
   { text: "Equipos", icon: <TeamsIcon />, path: "/teams" },
   { text: "Jugadores", icon: <PlayersIcon />, path: "/players" },
   { text: "Encuentros", icon: <MatchIcon />, path: "/encuentros" },
+  { text: "Posiciones", icon: <EmojiEventsIcon />, path: "/posiciones" },
   { text: "Eventos", icon: <EventsIcon />, path: "/events" },
 ];
 

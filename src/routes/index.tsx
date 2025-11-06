@@ -16,6 +16,9 @@ const EventsPage = lazy(() => import('@/pages/Events'));
 const CategoriesPage = lazy(() => import('@/pages/Categories'));
 const RolesPage = lazy(() => import('@/pages/Roles'));
 const EncuentrosPage = lazy(() => import("@/pages/Encuentros/indexEncuentros"));
+const TablaPosicionesPage = lazy(
+  () => import("@/pages/TablaPosiciones/indexTablaPosiciones")
+);
 const NotFoundPage = lazy(() => import("@/pages/NotFound"));
 
 const LoadingSpinner = () => (
@@ -64,6 +67,7 @@ const AppRoutes = () => {
           <Route path="categories" element={<CategoriesPage />} />
           <Route path="roles" element={<RolesPage />} />
           <Route path="encuentros" element={<EncuentrosPage />} />
+          <Route path="posiciones" element={<TablaPosicionesPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>
