@@ -24,6 +24,7 @@ interface Subcategoria {
   nombre: string;
   descripcion: string;
   fechaHora: string;
+  ubicacion: string;
   categoriaId?: number;
 }
 
@@ -43,6 +44,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       subcategoriaId: Date.now(),
       nombre: "",
       descripcion: "",
+      ubicacion: "",
       fechaHora: new Date().toISOString().slice(0, 16),
     },
   ]);
@@ -87,6 +89,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         subcategoriaId: Date.now() + subcategorias.length,
         nombre: "",
         descripcion: "",
+        ubicacion: "",
         fechaHora: new Date().toISOString().slice(0, 16),
       },
     ]);
@@ -135,8 +138,17 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
 
     // Validar campos requeridos
     const hasEmptyFields = subcategorias.some(
-      (sub) => !sub.nombre.trim() || !sub.descripcion.trim() || !sub.fechaHora
+      (sub) => !sub.nombre.trim() || !sub.descripcion.trim() || !sub.fechaHora || !sub.ubicacion.trim()
     );
+
+    if (hasEmptyFields) {
+      setSnackbar({
+        open: true,
+        message: "Por favor complete todos los campos requeridos, incluyendo la ubicación",
+        severity: "error",
+      });
+      return;
+    }
 
     if (hasEmptyFields) {
       setSnackbar({
@@ -154,6 +166,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       const subcategoriasToCreate = subcategorias.map((sub) => ({
         nombre: sub.nombre.trim(),
         descripcion: sub.descripcion.trim(),
+        ubicacion: sub.ubicacion.trim(),
         fechaHora: sub.fechaHora,
         categoriaId: categoriaId,
       }));
@@ -175,6 +188,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
           subcategoriaId: Date.now(),
           nombre: "",
           descripcion: "",
+          ubicacion: "",
           fechaHora: new Date().toISOString().slice(0, 16),
         },
       ]);
@@ -324,7 +338,12 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                     />
 
                     <TextField
+                      fullWidth
                       label="Descripción"
+                      variant="outlined"
+                      margin="normal"
+                      multiline
+                      rows={2}
                       value={subcategoria.descripcion}
                       onChange={(e) =>
                         handleSubcategoriaChange(
@@ -334,12 +353,26 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                         )
                       }
                       required
-                      fullWidth
-                      multiline
-                      rows={2}
-                      size="small"
-                      margin="normal"
                       disabled={loading}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label="Ubicación del evento"
+                      variant="outlined"
+                      margin="normal"
+                      value={subcategoria.ubicacion}
+                      onChange={(e) =>
+                        handleSubcategoriaChange(
+                          subcategoria.subcategoriaId,
+                          "ubicacion",
+                          e.target.value
+                        )
+                      }
+                      required
+                      disabled={loading}
+                      placeholder="Ej: Estadio Olímpico, Calle Principal #123"
+                      helperText="Ingrese la dirección exacta del evento"
                     />
 
                     <TextField
