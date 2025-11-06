@@ -11,6 +11,8 @@ import PerformanceChart from './components/PerformanceChart';
 import teamService from '../../api/teamService';
 import { useAuth } from '@/contexts/AuthContext';
 import playerService from "@/api/playerService";
+import categoriaService from "@/api/categoriaService";
+import subcategoriaService from "@/api/subcategoriaService";
 
 const StatCard = ({
   title,
@@ -67,13 +69,21 @@ const Dashboard = () => {
   const { token } = useAuth();
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
   const [teamsCount, setTeamsCount] = useState<number | null>(null);
+  const [activeEventsCount, setActiveEventsCount] = useState<number | null>(
+    null
+  );
+  const [tournamentsCount, setTournamentsCount] = useState<number | null>(null);
   const [loading, setLoading] = useState({
     players: true,
     teams: true,
+    events: true,
+    tournaments: true,
   });
   const [error, setError] = useState({
     players: null as string | null,
     teams: null as string | null,
+    events: null as string | null,
+    tournaments: null as string | null,
   });
 
   useEffect(() => {
@@ -109,6 +119,69 @@ const Dashboard = () => {
       } finally {
         setLoading((prev) => ({ ...prev, teams: false }));
       }
+
+      // Fetch active events count
+      try {
+        setLoading((prev) => ({ ...prev, events: true }));
+
+        // 1. Get EVENTOS category by nemonico
+        const eventosResponse = await categoriaService.getCategoriaByNemonico(
+          "EVENTOS"
+        );
+        if (
+          eventosResponse &&
+          eventosResponse.data &&
+          eventosResponse.data.categoriaId
+        ) {
+          // 2. Get subcategories for EVENTOS
+          const subcategoriasResponse =
+            await subcategoriaService.getSubcategoriasByCategoria(
+              eventosResponse.data.categoriaId
+            );
+          // 3. Set the count of subcategories as active events
+          setActiveEventsCount(subcategoriasResponse.data.length);
+        } else {
+          setActiveEventsCount(0);
+        }
+      } catch (err) {
+        console.error("Error fetching active events count:", err);
+        setError((prev) => ({
+          ...prev,
+          events: "Error al cargar el total de eventos activos",
+        }));
+      } finally {
+        setLoading((prev) => ({ ...prev, events: false }));
+      }
+
+      // Fetch tournaments count
+      try {
+        setLoading((prev) => ({ ...prev, tournaments: true }));
+
+        // 1. Get DEPORTES category by nemonico
+        const deportesResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
+        );
+
+        if (deportesResponse?.success && deportesResponse.data?.categoriaId) {
+          // 2. Get subcategories for DEPORTES
+          const subcategoriasResponse =
+            await subcategoriaService.getSubcategoriasByCategoria(
+              deportesResponse.data.categoriaId
+            );
+          // 3. Set the count of subcategories as tournaments count
+          setTournamentsCount(subcategoriasResponse.data?.length || 0);
+        } else {
+          setTournamentsCount(0);
+        }
+      } catch (err) {
+        console.error("Error fetching tournaments count:", err);
+        setError((prev) => ({
+          ...prev,
+          tournaments: "Error al cargar el total de torneos",
+        }));
+      } finally {
+        setLoading((prev) => ({ ...prev, tournaments: false }));
+      }
     };
 
     fetchData();
@@ -142,7 +215,7 @@ const Dashboard = () => {
       >
         <Box>
           <StatCard
-            title="Jugadores Totales"
+            title="Jugadores Inscritos"
             value={
               loading.players ? (
                 <CircularProgress size={24} color="inherit" />
@@ -160,7 +233,7 @@ const Dashboard = () => {
         </Box>
         <Box>
           <StatCard
-            title="Equipos Activos"
+            title="Equipos Inscritos"
             value={
               loading.teams ? (
                 <CircularProgress size={24} color="inherit" />
@@ -179,15 +252,35 @@ const Dashboard = () => {
         <Box>
           <StatCard
             title="Eventos Activos"
-            value="12"
+            value={
+              loading.events ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : error.events ? (
+                <Typography variant="body2" color="error">
+                  Error
+                </Typography>
+              ) : (
+                formatNumber(activeEventsCount)
+              )
+            }
             icon={<EventIcon />}
             color={theme.palette.success.main}
           />
         </Box>
         <Box>
           <StatCard
-            title="Torneos"
-            value="8"
+            title="Torneos habilitados"
+            value={
+              loading.tournaments ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : error.tournaments ? (
+                <Typography variant="body2" color="error">
+                  Error
+                </Typography>
+              ) : (
+                formatNumber(tournamentsCount)
+              )
+            }
             icon={<TrophyIcon />}
             color={theme.palette.warning.main}
           />
