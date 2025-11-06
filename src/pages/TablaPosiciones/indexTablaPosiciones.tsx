@@ -1,4 +1,3 @@
-// src/pages/TablaPosiciones/index.tsx
 import React, { useState } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
@@ -39,10 +38,18 @@ const TablaPosiciones: React.FC = () => {
       >
         <Typography variant="h4">Tabla de Posiciones</Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleOpenRegister}
+          sx={{
+            "&:hover": {
+              backgroundColor: "primary.main",
+              color: "white",
+              borderColor: "primary.main",
+            },
+            textTransform: "none",
+          }}
         >
           Nueva Posición
         </Button>

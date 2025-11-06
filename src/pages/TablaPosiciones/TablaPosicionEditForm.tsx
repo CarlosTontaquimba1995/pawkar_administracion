@@ -1,4 +1,3 @@
-// src/pages/TablaPosiciones/TablaPosicionEditForm.tsx
 import React from "react";
 import {
   Dialog,

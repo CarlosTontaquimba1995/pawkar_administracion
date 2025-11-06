@@ -1,4 +1,3 @@
-// src/pages/TablaPosiciones/TablaPosicionRegisterForm.tsx
 import React, { useState, useEffect } from "react";
 import { SelectChangeEvent } from "@mui/material/Select";
 import {
@@ -120,14 +119,16 @@ const TablaPosicionRegisterForm: React.FC<TablaPosicionRegisterFormProps> = ({
         ...prev,
         [name]: Number(value),
       };
-      
+
       // If golesAFavor or golesEnContra changes, update diferenciaGoles
-      if (name === 'golesAFavor' || name === 'golesEnContra') {
-        const golesAFavor = name === 'golesAFavor' ? Number(value) : prev.golesAFavor;
-        const golesEnContra = name === 'golesEnContra' ? Number(value) : prev.golesEnContra;
+      if (name === "golesAFavor" || name === "golesEnContra") {
+        const golesAFavor =
+          name === "golesAFavor" ? Number(value) : prev.golesAFavor;
+        const golesEnContra =
+          name === "golesEnContra" ? Number(value) : prev.golesEnContra;
         newData.diferenciaGoles = golesAFavor - golesEnContra;
       }
-      
+
       return newData;
     });
   };

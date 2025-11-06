@@ -1,4 +1,3 @@
-// src/pages/TablaPosiciones/TablaPosicionesTable.tsx
 import React, { useState, useEffect } from "react";
 import {
   Box,
@@ -16,12 +15,12 @@ import {
   CircularProgress,
   TextField,
   InputAdornment,
-  Tooltip,
   FormControl,
   InputLabel,
   MenuItem,
   Select,
   SelectChangeEvent,
+  Button,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -36,6 +35,7 @@ import tablaPosicionService from "@/api/tablaPosicionService";
 import categoriaService from "@/api/categoriaService";
 import subcategoriaService from "@/api/subcategoriaService";
 import serieService from "@/api/serieService";
+import teamService from "@/api/teamService";
 
 interface TablaPosicionesTableProps {
   refreshKey: number;
@@ -48,23 +48,163 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
   onEdit,
   onRefresh,
 }) => {
+  // State for table data and pagination
   const [posiciones, setPosiciones] = useState<TablaPosicion[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // State for categories and series
+  // Filter states
   const [categorias, setCategorias] = useState<
-    Array<{ subcategoriaId: number; nombre: string; categoriaId?: number }>
+    Array<{
+      subcategoriaId: number;
+      nombre: string;
+      categoriaId?: number;
+    }>
   >([]);
   const [categoriaSeleccionada, setCategoriaSeleccionada] =
     useState<string>("");
+
   const [series, setSeries] = useState<Serie[]>([]);
   const [serieSeleccionada, setSerieSeleccionada] = useState<string>("");
   const [isLoadingSeries, setIsLoadingSeries] = useState(false);
 
-  // Filter positions based on search term and filters
+  const [teams, setTeams] = useState<
+    Array<{
+      equipoId: number;
+      nombre: string;
+    }>
+  >([]);
+  const [equipoSeleccionado, setEquipoSeleccionado] = useState<string>("");
+  const [isLoadingTeams, setIsLoadingTeams] = useState(false);
+
+  // Fetch positions data
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await tablaPosicionService.search({
+          subcategoriaId: categoriaSeleccionada
+            ? parseInt(categoriaSeleccionada)
+            : undefined,
+          serieId: serieSeleccionada ? parseInt(serieSeleccionada) : undefined,
+          page,
+          size: rowsPerPage,
+        });
+
+        if (Array.isArray(response)) {
+          setPosiciones(response);
+        } else if (response) {
+          setPosiciones(response);
+        }
+      } catch (error) {
+        console.error("Error loading positions:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [refreshKey, page, rowsPerPage, categoriaSeleccionada, serieSeleccionada]);
+
+  // Fetch categories
+  useEffect(() => {
+    const fetchCategorias = async () => {
+      try {
+        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
+        );
+        if (categoriaResponse?.success && categoriaResponse.data) {
+          const subcategoriasResponse =
+            await subcategoriaService.getSubcategoriasByCategoria(
+              categoriaResponse.data.categoriaId
+            );
+
+          if (subcategoriasResponse?.success && subcategoriasResponse.data) {
+            setCategorias(
+              subcategoriasResponse.data.map((subcat: Subcategoria) => ({
+                subcategoriaId: subcat.subcategoriaId,
+                nombre: subcat.nombre,
+                categoriaId: subcat.categoriaId,
+              }))
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Error loading categories:", error);
+      }
+    };
+
+    fetchCategorias();
+  }, []);
+
+  // Fetch series when category changes
+  useEffect(() => {
+    const fetchSeries = async () => {
+      if (!categoriaSeleccionada) {
+        setSeries([]);
+        return;
+      }
+
+      try {
+        setIsLoadingSeries(true);
+        const response = await serieService.getSeriesBySubcategoria(
+          Number(categoriaSeleccionada)
+        );
+
+        if (response.success && response.data) {
+          setSeries(response.data);
+        } else {
+          setSeries([]);
+        }
+      } catch (error) {
+        console.error("Error loading series:", error);
+        setSeries([]);
+      } finally {
+        setIsLoadingSeries(false);
+      }
+    };
+
+    fetchSeries();
+  }, [categoriaSeleccionada]);
+
+  // Fetch teams when series changes
+  useEffect(() => {
+    const fetchTeams = async () => {
+      if (!serieSeleccionada) {
+        setTeams([]);
+        setEquipoSeleccionado("");
+        return;
+      }
+
+      try {
+        setIsLoadingTeams(true);
+        const response = await teamService.getTeamsBySerie(
+          Number(serieSeleccionada)
+        );
+
+        if (response.success && response.data) {
+          const teamsData = response.data.map((team: any) => ({
+            equipoId: team.equipoId,
+            nombre: team.nombre,
+          }));
+          setTeams(teamsData);
+        } else {
+          setTeams([]);
+        }
+      } catch (error) {
+        console.error("Error loading teams:", error);
+        setTeams([]);
+      } finally {
+        setIsLoadingTeams(false);
+      }
+    };
+
+    fetchTeams();
+  }, [serieSeleccionada]);
+
+  // Filter data based on search term and filters
   const filteredData = React.useMemo(() => {
     return posiciones.filter((posicion) => {
       const matchesSearch =
@@ -87,9 +227,19 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
         !serieSeleccionada ||
         posicion.serieId?.toString() === serieSeleccionada;
 
-      return matchesSearch && matchesCategoria && matchesSerie;
+      const matchesEquipo =
+        !equipoSeleccionado ||
+        posicion.equipoId?.toString() === equipoSeleccionado;
+
+      return matchesSearch && matchesCategoria && matchesSerie && matchesEquipo;
     });
-  }, [posiciones, searchTerm, categoriaSeleccionada, serieSeleccionada]);
+  }, [
+    posiciones,
+    searchTerm,
+    categoriaSeleccionada,
+    serieSeleccionada,
+    equipoSeleccionado,
+  ]);
 
   // Get paginated data
   const paginatedData = React.useMemo(() => {
@@ -97,165 +247,47 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     return filteredData.slice(startIndex, startIndex + rowsPerPage);
   }, [filteredData, page, rowsPerPage]);
 
-  // Fetch data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await tablaPosicionService.search({
-          subcategoriaId: categoriaSeleccionada
-            ? parseInt(categoriaSeleccionada)
-            : undefined,
-          serieId: serieSeleccionada ? parseInt(serieSeleccionada) : undefined,
-          page,
-          size: rowsPerPage,
-        });
-
-        if (Array.isArray(response)) {
-          setPosiciones(response);
-        } else if (response && typeof response === "object") {
-          // Handle paginated response
-          const paginatedResponse = response as {
-            content: TablaPosicion[];
-            totalElements: number;
-          };
-          setPosiciones(paginatedResponse.content || []);
-        }
-      } catch (error) {
-        console.error("Error al cargar posiciones:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [refreshKey, page, rowsPerPage, categoriaSeleccionada, serieSeleccionada]);
-
-  // Fetch categories on mount
-  useEffect(() => {
-    const fetchCategorias = async () => {
-      try {
-        // First, get the category with nemonico 'DEPORTES'
-        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
-          "DEPORTES"
-        );
-
-        if (categoriaResponse?.success && categoriaResponse.data) {
-          const categoriaId = categoriaResponse.data.categoriaId;
-
-          // Then get subcategories for this category
-          const subcategoriasResponse =
-            await subcategoriaService.getSubcategoriasByCategoria(categoriaId);
-
-          if (subcategoriasResponse?.success && subcategoriasResponse.data) {
-            // Map the response to match the expected format for categorias state
-            const categoriasData = subcategoriasResponse.data.map(
-              (subcat: Subcategoria) => ({
-                subcategoriaId: subcat.subcategoriaId,
-                nombre: subcat.nombre,
-                categoriaId: subcat.categoriaId,
-              })
-            );
-
-            setCategorias(categoriasData);
-          }
-        }
-      } catch (error) {
-        console.error("Error al cargar categorías:", error);
-        // You might want to show a user-friendly error message here
-      }
-    };
-
-    fetchCategorias();
-  }, [categoriaSeleccionada]);
-
-  // Fetch series when category changes
-  useEffect(() => {
-    const fetchSeries = async () => {
-      if (!categoriaSeleccionada) {
-        setSeries([]);
-        return;
-      }
-
-      try {
-        setIsLoadingSeries(true);
-        const response = await serieService.getSeriesBySubcategoria(
-          Number(categoriaSeleccionada)
-        );
-        if (response.success && response.data) {
-          setSeries(response.data);
-        } else {
-          setSeries([]);
-        }
-      } catch (error) {
-        console.error("Error al cargar series:", error);
-        setSeries([]);
-      } finally {
-        setIsLoadingSeries(false);
-      }
-    };
-
-    fetchSeries();
-  }, [categoriaSeleccionada]);
-
-  // Handle search
+  // Event handlers
   const handleSearch = (value: string) => {
     setSearchTerm(value);
     setPage(0);
   };
 
-  // Fetch series for a category
-  const fetchSeries = async (subcategoriaId: number) => {
-    try {
-      const response = await serieService.getSeriesBySubcategoria(
-        subcategoriaId
-      );
-      if (response.success && response.data) {
-        return response.data;
-      }
-      return [];
-    } catch (error) {
-      console.error("Error al cargar series:", error);
-    } finally {
-      setIsLoadingSeries(false);
-    }
-  };
-
-  // Handle category change
   const handleCategoriaChange = (event: SelectChangeEvent) => {
     const value = event.target.value;
     setCategoriaSeleccionada(value);
-    setPage(0); // Reset to first page when filters change
-
-    // Reset serie selection when category changes
     setSerieSeleccionada("");
-
-    // Fetch series for the selected category
-    if (value) {
-      fetchSeries(parseInt(value));
-    } else {
-      setSeries([]);
-    }
+    setEquipoSeleccionado("");
+    setPage(0);
   };
 
-  // Handle series change
   const handleSerieChange = (event: SelectChangeEvent) => {
     setSerieSeleccionada(event.target.value);
+    setEquipoSeleccionado("");
     setPage(0);
   };
 
-  // Clear all filters
+  const handleEquipoChange = (event: SelectChangeEvent) => {
+    setEquipoSeleccionado(event.target.value);
+    setPage(0);
+  };
+
   const clearFilters = () => {
-    setSearchTerm("");
     setCategoriaSeleccionada("");
     setSerieSeleccionada("");
+    setEquipoSeleccionado("");
+    setSearchTerm("");
     setPage(0);
   };
 
-  // Check if any filter is active
-  const isFilterActive = Boolean(
-    categoriaSeleccionada || serieSeleccionada || searchTerm
-  );
+  const isFilterActive = () => {
+    return (
+      !!categoriaSeleccionada ||
+      !!serieSeleccionada ||
+      !!equipoSeleccionado ||
+      !!searchTerm
+    );
+  };
 
   const handleChangePage = (_: unknown, newPage: number) => {
     setPage(newPage);
@@ -264,8 +296,7 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
   const handleChangeRowsPerPage = (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const newSize = parseInt(event.target.value, 10);
-    setRowsPerPage(newSize);
+    setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
   };
 
@@ -275,7 +306,7 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
         await tablaPosicionService.delete(subcategoriaId, equipoId);
         onRefresh();
       } catch (error) {
-        console.error("Error al eliminar la posición:", error);
+        console.error("Error deleting position:", error);
       }
     }
   };
@@ -292,7 +323,7 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     <Box>
       {/* Search and Filter Bar */}
       <Box mb={3}>
-        <Box display="flex" gap={2} flexWrap="wrap">
+        <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
           <TextField
             variant="outlined"
             size="small"
@@ -312,12 +343,12 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
                   </IconButton>
                 </InputAdornment>
               ),
-              sx: {
-                minWidth: 250,
-              },
+              sx: { minWidth: 250 },
             }}
           />
-          <FormControl size="small" sx={{ minWidth: 200 }} variant="outlined">
+
+          {/* Category Filter */}
+          <FormControl size="small" sx={{ minWidth: 200 }}>
             <InputLabel id="categoria-label">Categoría</InputLabel>
             <Select
               labelId="categoria-label"
@@ -325,11 +356,7 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
               value={categoriaSeleccionada}
               label="Categoría"
               onChange={handleCategoriaChange}
-              sx={{
-                "& .MuiSelect-select": {
-                  padding: "8.5px 14px",
-                },
-              }}
+              sx={{ "& .MuiSelect-select": { padding: "8.5px 14px" } }}
             >
               <MenuItem value="">
                 <em>Todas las categorías</em>
@@ -345,23 +372,22 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
             </Select>
           </FormControl>
 
+          {/* Series Filter */}
           <FormControl
             size="small"
             sx={{ minWidth: 200 }}
             disabled={!categoriaSeleccionada || isLoadingSeries}
           >
-            <InputLabel id="serie-label">Serie</InputLabel>
+            <InputLabel id="serie-label">
+              {isLoadingSeries ? "Cargando series..." : "Serie"}
+            </InputLabel>
             <Select
               labelId="serie-label"
               id="serie-select"
               value={serieSeleccionada}
-              label="Serie"
+              label={isLoadingSeries ? "Cargando series..." : "Serie"}
               onChange={handleSerieChange}
-              sx={{
-                "& .MuiSelect-select": {
-                  padding: "8.5px 14px",
-                },
-              }}
+              sx={{ "& .MuiSelect-select": { padding: "8.5px 14px" } }}
             >
               <MenuItem value="">
                 <em>Todas las series</em>
@@ -387,16 +413,72 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
               />
             )}
           </FormControl>
-          {isFilterActive && (
-            <Tooltip title="Limpiar filtros">
-              <IconButton onClick={clearFilters} size="small">
-                <ClearIcon />
-              </IconButton>
-            </Tooltip>
+
+          {/* Team Filter */}
+          <FormControl
+            size="small"
+            sx={{ minWidth: 200 }}
+            disabled={!serieSeleccionada || isLoadingTeams}
+          >
+            <InputLabel id="equipo-label">
+              {isLoadingTeams ? "Cargando equipos..." : "Equipo"}
+            </InputLabel>
+            <Select
+              labelId="equipo-label"
+              id="equipo-select"
+              value={equipoSeleccionado}
+              label={isLoadingTeams ? "Cargando equipos..." : "Equipo"}
+              onChange={handleEquipoChange}
+              sx={{ "& .MuiSelect-select": { padding: "8.5px 14px" } }}
+            >
+              <MenuItem value="">
+                <em>Todos los equipos</em>
+              </MenuItem>
+              {teams.map((team) => (
+                <MenuItem
+                  key={`team-${team.equipoId}`}
+                  value={team.equipoId.toString()}
+                >
+                  {team.nombre}
+                </MenuItem>
+              ))}
+            </Select>
+            {isLoadingTeams && (
+              <CircularProgress
+                size={24}
+                sx={{
+                  position: "absolute",
+                  right: "30px",
+                  top: "50%",
+                  marginTop: "-12px",
+                }}
+              />
+            )}
+          </FormControl>
+
+          {/* Clear Filters Button */}
+          {isFilterActive() && (
+            <Button
+              variant="outlined"
+              color="primary"
+              size="small"
+              startIcon={<ClearIcon />}
+              onClick={clearFilters}
+              sx={{
+                textTransform: "none",
+                height: "40px",
+                whiteSpace: "nowrap",
+                alignSelf: "flex-end",
+                mb: 1,
+              }}
+            >
+              Limpiar filtros
+            </Button>
           )}
         </Box>
       </Box>
 
+      {/* Data Table */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -415,7 +497,7 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
           </TableHead>
           <TableBody>
             {filteredData.length > 0 ? (
-              paginatedData.map((posicion: TablaPosicion) => (
+              paginatedData.map((posicion) => (
                 <TableRow
                   key={`${posicion.equipoId}-${posicion.subcategoriaId}`}
                 >
@@ -470,6 +552,8 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Pagination */}
       <TablePagination
         rowsPerPageOptions={[10, 25, 50, 100]}
         component="div"
