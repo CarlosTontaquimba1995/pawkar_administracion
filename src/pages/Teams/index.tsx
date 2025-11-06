@@ -145,7 +145,7 @@ const Teams = () => {
 
     const fetchCategorias = async () => {
       try {
-        const response = await subcategoriaService.getCategories(token);
+        const response = await subcategoriaService.getCategories();
         if (response.success) {
           setCategorias(response.data || []);
         }
