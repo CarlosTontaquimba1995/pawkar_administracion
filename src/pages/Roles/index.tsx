@@ -170,12 +170,6 @@ const RolesPage = () => {
       // Fetch the updated roles for the current subcategory
       await fetchRolesBySubcategoria(selectedSubcategoria);
     }
-
-    setSnackbar({
-      open: true,
-      message: "Rol asignado correctamente",
-      severity: "success",
-    });
   };
 
   const fetchRolesBySubcategoria = async (subcategoriaNombre: string) => {

@@ -44,15 +44,7 @@ export interface BulkAsignarRolesResponse {
 export interface ObtenerRolesPorSubcategoriaResponse {
   success: boolean;
   message: string;
-  data: Array<{
-    id?: number;
-    rolId: number;
-    rolName?: string;
-    rolDetail?: string;
-    subcategoriaId: number;
-    subcategoriaName?: string;
-    nombre?: string; // For compatibility with different response formats
-  }>;
+  data: SubcategoriaRol[];
 }
 
 export interface EliminarRolResponse {

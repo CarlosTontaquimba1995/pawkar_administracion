@@ -150,8 +150,7 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
       if (response.success) {
         setSnackbar({
           open: true,
-          message:
-            response.message || "Rol eliminado exitosamente de la subcategoría",
+          message: response.message || "Rol eliminado exitosamente",
           severity: "success",
         });
 
@@ -385,7 +384,7 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
           onClose={handleCloseSnackbar}

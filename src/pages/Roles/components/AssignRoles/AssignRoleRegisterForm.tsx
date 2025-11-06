@@ -94,7 +94,9 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
 
   const fetchSubcategorias = async (): Promise<void> => {
     try {
-      const categoriaResponse = await categoriaService.getCategoriaByNemonico("DEPORTES");
+      const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+        "DEPORTES"
+      );
       if (categoriaResponse.success && categoriaResponse.data) {
         const response = await subcategoriaService.getSubcategoriasByCategoria(
           categoriaResponse.data.categoriaId
@@ -114,7 +116,15 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
   const fetchRoles = async (): Promise<void> => {
     try {
       const response = await roleService.getAllRoles();
-      setRoles(response.data);
+      // Filter out ROLE_USER and ROLE_ADMIN from the roles list
+      const filteredRoles = response.data.filter(
+        (role: Role) =>
+          role.name !== "ROLE_USER" &&
+          role.name !== "ROLE_ADMIN" &&
+          role.name !== "USER" &&
+          role.name !== "ADMIN"
+      );
+      setRoles(filteredRoles);
     } catch (error) {
       console.error("Error fetching roles:", error);
       throw error;
@@ -216,8 +226,7 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
 
       setSnackbar({
         open: true,
-        message:
-          response.message || "Roles asignados correctamente a la subcategoría",
+        message: response.message || "Roles asignados correctamente",
         severity: "success",
       });
 
@@ -228,11 +237,11 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
         onClose();
       }, 100);
     } catch (error: any) {
-       setSnackbar({
-         open: true,
-         message: error.response?.data?.message || "Error al asignar roles",
-         severity: "error",
-       });
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Error al asignar roles",
+        severity: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -513,7 +522,7 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
