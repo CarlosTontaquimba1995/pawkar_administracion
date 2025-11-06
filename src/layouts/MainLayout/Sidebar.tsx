@@ -30,6 +30,7 @@ import {
   Watch as MatchIcon,
 } from "@mui/icons-material";
 import teamService from "../../api/teamService";
+import categoriaService from "../../api/categoriaService";
 
 const drawerWidth = 260;
 
@@ -67,7 +68,12 @@ const menuItems = [
   { text: "Jugadores", icon: <PlayersIcon />, path: "/players" },
   { text: "Encuentros", icon: <MatchIcon />, path: "/encuentros" },
   { text: "Posiciones", icon: <EmojiEventsIcon />, path: "/posiciones" },
-  { text: "Eventos", icon: <EventsIcon />, path: "/events" },
+  {
+    text: "Eventos",
+    icon: <EventsIcon />,
+    path: "/events",
+    requiresEventsCategory: true,
+  },
 ];
 
 const bottomMenuItems = [
@@ -80,6 +86,9 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const location = useLocation();
   const { token, logout } = useAuth();
   const [hasRequiredData, setHasRequiredData] = useState<boolean | null>(null);
+  const [hasEventsCategory, setHasEventsCategory] = useState<boolean | null>(
+    null
+  );
 
   useEffect(() => {
     const checkRequiredData = async () => {
@@ -95,6 +104,19 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     };
 
     checkRequiredData();
+
+    // Check if EVENTS category exists
+    const checkEventsCategory = async () => {
+      try {
+        await categoriaService.getCategoriaByNemonico("EVENTOS");
+        setHasEventsCategory(true);
+      } catch (error) {
+        console.log("Categoría EVENTOS no encontrada");
+        setHasEventsCategory(false);
+      }
+    };
+
+    checkEventsCategory();
   }, [token]);
 
   const handleNavigation = async (path: string) => {
@@ -117,6 +139,18 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       } catch (error) {
         console.error("Error verificando datos requeridos:", error);
         alert("Error al verificar los datos requeridos");
+        return;
+      }
+    }
+
+    // Check if trying to access Events module
+    if (path === "/events") {
+      try {
+        await categoriaService.getCategoriaByNemonico("EVENTOS");
+      } catch (error) {
+        toast.error(
+          "No se encontró la categoría 'EVENTOS'. Por favor, regístrela primero."
+        );
         return;
       }
     }
@@ -162,9 +196,12 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
       <List>
         {menuItems.map((item) => {
-          // Disable Teams menu item if no required data exists
+          // Handle disabled states
           const isTeamsItem = item.path === "/teams";
-          const isDisabled = isTeamsItem && hasRequiredData === false;
+          const isEventsItem = item.path === "/events";
+          const isDisabled =
+            (isTeamsItem && hasRequiredData === false) ||
+            (isEventsItem && hasEventsCategory === false);
 
           return (
             <ListItem
@@ -195,16 +232,37 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
                   primary={
                     <Box display="flex" alignItems="center">
                       {item.text}
-                      {(item.text === "Jugadores" || item.text === "Equipos") &&
-                        hasRequiredData === false && (
-                          <Tooltip title="Se requiere registrar Subcategorías y Series primero">
-                            <ErrorIcon
-                              color="warning"
-                              fontSize="small"
-                              sx={{ ml: 1 }}
-                            />
+                      {((item.text === "Jugadores" ||
+                        item.text === "Equipos") &&
+                        hasRequiredData === false) ||
+                      (item.text === "Eventos" &&
+                        hasEventsCategory === false) ? (
+                        <Box
+                          component="span"
+                          sx={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            ml: 1,
+                          }}
+                        >
+                          <Tooltip
+                            title={
+                              item.text === "Eventos"
+                                ? "Se requiere registrar la categoría 'EVENTOS' primero"
+                                : "Se requiere registrar Subcategorías y Series primero"
+                            }
+                            arrow
+                            placement="top"
+                          >
+                            <Box
+                              component="span"
+                              sx={{ display: "inline-flex" }}
+                            >
+                              <ErrorIcon color="warning" fontSize="small" />
+                            </Box>
                           </Tooltip>
-                        )}
+                        </Box>
+                      ) : null}
                     </Box>
                   }
                   primaryTypographyProps={{
