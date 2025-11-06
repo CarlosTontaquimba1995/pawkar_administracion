@@ -5,7 +5,7 @@ import {
   UpdateSubcategoriaRequest,
   SubcategoriaResponse,
   SubcategoriaListResponse,
-  DeleteSubcategoriaResponse
+  DeleteSubcategoriaResponse,
 } from '../types/subcategoria.types';
 
 const API_URL = 'http://localhost:8080/api/subcategorias';
@@ -137,9 +137,9 @@ const subcategoriaService = {
   },
 
   // Métodos legacy para mantener compatibilidad
-  async getCategories(token: string) {
+  async getCategories(token: string): Promise<SubcategoriaListResponse> {
     try {
-      const response = await api.get(API_URL, {
+      const response = await api.get<SubcategoriaListResponse>(API_URL, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       return response.data;
@@ -147,6 +147,24 @@ const subcategoriaService = {
       console.error('Error fetching subcategories:', error);
       throw error;
     }
+  },
+
+  /**
+   * Obtiene los próximos eventos (subcategorías con proximo = true) de la categoría de eventos
+   * @returns Lista de próximos eventos
+   */
+  async getProximosEventos(): Promise<SubcategoriaListResponse> {
+    const response = await api.get<SubcategoriaListResponse>('/eventos/proximos');
+    return response.data;
+  },
+
+  /**
+   * Obtiene los eventos pasados (subcategorías con proximo = false) de la categoría de eventos
+   * @returns Lista de eventos pasados
+   */
+  async getEventosPasados(): Promise<SubcategoriaListResponse> {
+    const response = await api.get<SubcategoriaListResponse>('/eventos/pasados');
+    return response.data;
   },
 
   // Alias para mantener compatibilidad

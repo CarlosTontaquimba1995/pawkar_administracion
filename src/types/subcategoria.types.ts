@@ -3,9 +3,13 @@ export interface Subcategoria {
   subcategoriaId: number;
   nombre: string;
   descripcion: string;
+  fechaHora: string | null;
+  proximo: boolean;
   categoriaId: number;
   categoriaNombre: string;
   estado?: boolean;
+  deporte?: string;
+  ubicacion?: string;
 }
 
 // Request interfaces
@@ -13,6 +17,7 @@ export interface CreateSubcategoriaRequest {
   nombre: string;
   descripcion: string;
   categoriaId: number;
+  fechaHora?: string;
 }
 
 export interface CreateMultipleSubcategoriasRequest {
