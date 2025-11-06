@@ -209,10 +209,17 @@ const Events = () => {
           </Typography>
         </Box>
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleOpenRegisterForm}
+          sx={{
+            "&:hover": {
+              backgroundColor: "primary.main",
+              color: "white",
+              borderColor: "primary.main",
+            },
+          }}
         >
           Nuevo Evento
         </Button>
@@ -313,10 +320,17 @@ const Events = () => {
             </Typography>
             {tabValue !== "completed" && (
               <Button
-                variant="contained"
+                variant="outlined"
                 color="primary"
                 startIcon={<AddIcon />}
                 onClick={handleOpenRegisterForm}
+                sx={{
+                  "&:hover": {
+                    backgroundColor: "primary.main",
+                    color: "white",
+                    borderColor: "primary.main",
+                  },
+                }}
               >
                 Crear Evento
               </Button>

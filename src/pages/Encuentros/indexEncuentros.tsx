@@ -286,10 +286,17 @@ const EncuentrosPage: React.FC = () => {
           Gestión de Encuentros
         </Typography>
         <Button
-          variant="contained"
+          variant="outlined"
           color="primary"
           startIcon={<AddIcon />}
           onClick={() => setShowAddForm(true)}
+          sx={{
+            "&:hover": {
+              backgroundColor: "primary.main",
+              color: "white",
+              borderColor: "primary.main",
+            },
+          }}
         >
           Nuevo Encuentro
         </Button>
@@ -383,7 +390,7 @@ const EncuentrosPage: React.FC = () => {
                 name="estadioId"
                 value={searchParams.estadioId || 0}
                 onChange={(e) => {
-                  setSearchParams((prev) => ({  
+                  setSearchParams((prev) => ({
                     ...prev,
                     estadioId: Number(e.target.value),
                     page: 0, // Reset to first page
@@ -482,8 +489,8 @@ const EncuentrosPage: React.FC = () => {
         open={showAddForm}
         onClose={() => setShowAddForm(false)}
         onSuccess={() => {
-          fetchEstadios(); 
-          fetchEncuentros(); 
+          fetchEstadios();
+          fetchEncuentros();
         }}
         estadios={estadios}
       />
