@@ -32,6 +32,7 @@ import teamService from '../../api/teamService';
 import { Serie } from "@/types/serie.types";
 import serieService from "@/api/serieService";
 import subcategoriaService from "@/api/subcategoriaService";
+import categoriaService from "@/api/categoriaService";
 
 interface Subcategoria {
   subcategoriaId: number;
@@ -215,7 +216,20 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
       setSubcategoriaError("");
 
       try {
-        const response = await subcategoriaService.getSubcategorias();
+        // First, get the DEPORTES category
+        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
+        );
+        const categoriaId = categoriaResponse.data?.categoriaId;
+
+        if (!categoriaId) {
+          throw new Error("No se pudo obtener el ID de la categoría DEPORTES");
+        }
+
+        // Then get subcategories for this category
+        const response = await subcategoriaService.getSubcategoriasByCategoria(
+          categoriaId
+        );
 
         if (response.success && Array.isArray(response.data)) {
           setSubcategorias(response.data);

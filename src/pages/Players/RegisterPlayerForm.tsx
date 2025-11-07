@@ -38,6 +38,7 @@ import { Player } from "@/types/player.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import { Serie } from "@/types/serie.types";
 import { Role } from "@/types/role.types";
+import categoriaService from "@/api/categoriaService";
 
 interface RegisterPlayerFormProps {
   open: boolean;
@@ -86,7 +87,19 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   useEffect(() => {
     const fetchSubcategorias = async () => {
       try {
-        const response = await subcategoriaService.getSubcategorias();
+        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
+        );
+        const categoriaId = categoriaResponse.data?.categoriaId;
+
+        if (!categoriaId) {
+          throw new Error("No se pudo obtener el ID de la categoría DEPORTES");
+        }
+
+        const response = await subcategoriaService.getSubcategoriasByCategoria(
+          categoriaId
+        );
+
         if (response && response.data) {
           setSubcategorias(response.data);
         }
@@ -117,16 +130,14 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
               selectedSubcategoria
             );
 
-          // Transform the API response to match the Role type
           const roles = (response?.data || []).map((role) => ({
             id: role.rolId || role.id || 0,
             name: role.rolName || role.nombre || "",
             detail: role.rolDetail || "",
-            estado: true, // Default to true if not provided
+            estado: true,
           }));
 
           setAllRoles(roles);
-          // Reset selected roles when subcategoria changes
           setSelectedRoleIds(
             players.map((p) => p.rolId).filter(Boolean) as number[]
           );
