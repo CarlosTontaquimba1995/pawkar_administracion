@@ -36,11 +36,15 @@ import {
 } from "@mui/icons-material";
 import { Encuentro } from "@/types/encuentro.types";
 import { Estadio } from "@/types/estadio.types";
-import { Team } from "@/types/team.types";
+import { Serie } from "@/types/serie.types";
 import encuentroService from "@/api/encuentroService";
 import subcategoriaService from "@/api/subcategoriaService";
-import teamService from "@/api/teamService";
 import estadioService from "@/api/estadioService";
+import serieService from "@/api/serieService";
+import { Subcategoria } from "@/types/subcategoria.types";
+import { Team } from "@/types/team.types";
+import teamService from "@/api/teamService";
+import categoriaService from "@/api/categoriaService";
 
 interface EncuentrosTableProps {
   refreshKey: number;
@@ -52,6 +56,7 @@ interface SearchParams {
   fechaInicio: string;
   fechaFin: string;
   subcategoriaId: number;
+  serieId: number;
   equipoId: number;
   estadioId: number;
   estado: string;
@@ -72,28 +77,29 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
     fechaInicio: "",
     fechaFin: "",
     subcategoriaId: 0,
+    serieId: 0,
     equipoId: 0,
     estadioId: 0,
     estado: "",
     page: 0,
     size: 10,
   });
-  
+
   // Helper function to format date for display in input field (YYYY-MM-DD)
   const formatDateForInput = (dateString: string) => {
-    if (!dateString) return '';
+    if (!dateString) return "";
     // If the date already includes time, extract just the date part
-    if (dateString.includes('T')) {
-      return dateString.split('T')[0];
+    if (dateString.includes("T")) {
+      return dateString.split("T")[0];
     }
     return dateString;
   };
-  const [subcategorias, setSubcategorias] = useState<
-    Array<{ id: number; nombre: string }>
-  >([]);
-  const [teams, setTeams] = useState<Team[]>([]);
+
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
+  const [series, setSeries] = useState<Serie[]>([]);
   const [estadios, setEstadios] = useState<Estadio[]>([]);
-  const [loadingTeams, setLoadingTeams] = useState(false);
+  const [_, setEquipos] = useState<Team[]>([]);
+  const [filteredEquipos, setFilteredEquipos] = useState<Team[]>([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [encuentroToDelete, setEncuentroToDelete] = useState<Encuentro | null>(
     null
@@ -112,6 +118,7 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
     if (params.fechaFin) cleanParams.fechaFin = params.fechaFin;
     if (params.subcategoriaId)
       cleanParams.subcategoriaId = params.subcategoriaId;
+    if (params.serieId) cleanParams.serieId = params.serieId;
     if (params.equipoId) cleanParams.equipoId = params.equipoId;
     if (params.estadioId) cleanParams.estadioId = params.estadioId;
     if (params.estado) cleanParams.estado = params.estado;
@@ -139,92 +146,125 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
     fetchEncuentros();
   }, [searchParams, refreshKey]);
 
-  // Fetch subcategorias
+  // Cargar datos iniciales
   useEffect(() => {
-    const fetchSubcategorias = async () => {
+    const fetchData = async () => {
       try {
-        const response = await subcategoriaService.getSubcategorias();
-        setSubcategorias(
-          response.data.map((sub: any) => ({
-            id: sub.subcategoriaId,
-            nombre: sub.nombre,
-          }))
+        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
         );
-      } catch (err) {
-        console.error("Error loading subcategorias:", err);
+        const categoriaId = categoriaResponse.data?.categoriaId;
+        if (categoriaId === undefined) {
+          throw new Error('No se pudo obtener el ID de la categoría DEPORTES');
+        }
+
+        const [subcategoriasRes, estadiosRes] = await Promise.all([
+          subcategoriaService.getSubcategoriasByCategoria(categoriaId),
+          estadioService.getAllEstadios(),
+        ]);
+
+        setSubcategorias(subcategoriasRes.data);
+        setEstadios(estadiosRes.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        // En caso de error, intentamos cargar todas las subcategorías como respaldo
+        try {
+          const subcategoriasRes = await subcategoriaService.getSubcategorias();
+          setSubcategorias(subcategoriasRes.data);
+        } catch (fallbackError) {
+          console.error("Error fetching all subcategories:", fallbackError);
+        }
       }
     };
 
-    fetchSubcategorias();
+    fetchData();
   }, []);
 
-  // Fetch teams when subcategoria changes
+  // Cargar series cuando se selecciona una subcategoría
   useEffect(() => {
-    const fetchTeams = async () => {
+    const fetchSeries = async () => {
       if (searchParams.subcategoriaId > 0) {
         try {
-          setLoadingTeams(true);
-          const response = await teamService.getTeamsBySubcategoria(
+          const seriesRes = await serieService.getSeriesBySubcategoria(
             searchParams.subcategoriaId
           );
-          setTeams(response.data || []);
-        } catch (err) {
-          console.error("Error loading teams:", err);
-          setTeams([]);
-        } finally {
-          setLoadingTeams(false);
+          setSeries(seriesRes.data);
+        } catch (error) {
+          console.error("Error fetching series:", error);
+          setSeries([]);
         }
       } else {
-        setTeams([]);
+        setSeries([]);
+        setFilteredEquipos([]);
+        setSearchParams((prev) => ({ ...prev, serieId: 0, equipoId: 0 }));
       }
     };
 
-    fetchTeams();
+    fetchSeries();
   }, [searchParams.subcategoriaId]);
 
-  // Fetch estadios
+  // Cargar equipos cuando se selecciona una serie
   useEffect(() => {
-    const fetchEstadios = async () => {
-      try {
-        const response = await estadioService.getAllEstadios();
-        setEstadios(response.data || []);
-      } catch (err) {
-        console.error("Error loading estadios:", err);
+    const fetchEquiposBySerie = async () => {
+      if (searchParams.serieId > 0) {
+        try {
+          const equiposRes = await teamService.getTeamsBySerie(
+            searchParams.serieId
+          );
+          setEquipos(equiposRes.data);
+          setFilteredEquipos(equiposRes.data);
+        } catch (error) {
+          console.error("Error fetching equipos:", error);
+          setFilteredEquipos([]);
+        }
+      } else {
+        setFilteredEquipos([]);
+        setSearchParams((prev) => ({ ...prev, equipoId: 0 }));
       }
     };
 
-    fetchEstadios();
-  }, []);
+    if (searchParams.serieId > 0) {
+      fetchEquiposBySerie();
+    } else {
+      setFilteredEquipos([]);
+    }
+  }, [searchParams.serieId]);
 
   const handleFilterChange = (
     e:
+      | SelectChangeEvent<number | string>
       | React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-      | SelectChangeEvent<string | number>
   ) => {
-    const { name, value } = e.target;
-    let formattedValue = value;
+    const { name, value } = e.target as {
+      name: string;
+      value: string | number;
+    };
 
-    // Handle date inputs
-    if ((name === "fechaInicio" || name === "fechaFin") && value) {
-      // For date inputs, append T00:00:00 for start date and T23:59:59 for end date
-      const timePart = name === "fechaInicio" ? "T00:00:00" : "T23:59:59";
-      formattedValue = `${value}${timePart}`;
-    }
+    setSearchParams((prev) => {
+      const newParams = { ...prev };
 
-    setSearchParams((prev) => ({
-      ...prev,
-      [name]: formattedValue,
-      page: 0,
-    }));
+      if (
+        name === "subcategoriaId" ||
+        name === "serieId" ||
+        name === "equipoId" ||
+        name === "estadioId"
+      ) {
+        newParams[name] = Number(value);
+        // Reset dependent fields if needed
+        if (name === "subcategoriaId") {
+          newParams.serieId = 0;
+          newParams.equipoId = 0;
+        } else if (name === "serieId") {
+          newParams.equipoId = 0;
+        }
+      } else if (name === "page" || name === "size") {
+        newParams[name] = Number(value);
+      } else {
+        newParams[name as keyof SearchParams] = String(value);
+      }
 
-    // Reset equipoId if subcategoria changes
-    if (name === "subcategoriaId") {
-      setSearchParams((prev) => ({
-        ...prev,
-        equipoId: 0,
-        page: 0,
-      }));
-    }
+      return newParams;
+    });
   };
 
   const handlePageChange = (_: any, newPage: number) => {
@@ -249,11 +289,12 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
       fechaInicio: "",
       fechaFin: "",
       subcategoriaId: 0,
+      serieId: 0,
       equipoId: 0,
       estadioId: 0,
       estado: "",
       page: 0,
-      size: searchParams.size,
+      size: 10,
     });
   };
 
@@ -289,6 +330,7 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
       searchParams.fechaInicio !== "" ||
       searchParams.fechaFin !== "" ||
       searchParams.subcategoriaId > 0 ||
+      searchParams.serieId > 0 ||
       searchParams.equipoId > 0 ||
       searchParams.estadioId > 0 ||
       searchParams.estado !== ""
@@ -328,17 +370,48 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
 
             {/* Subcategoría */}
             <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Subcategoría</InputLabel>
+              <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
               <Select
+                labelId="subcategoria-label"
                 name="subcategoriaId"
-                value={searchParams.subcategoriaId}
+                value={searchParams.subcategoriaId || 0}
                 onChange={handleFilterChange}
                 label="Subcategoría"
               >
-                <MenuItem value={0}>Todas</MenuItem>
-                {subcategorias.map((sub) => (
-                  <MenuItem key={sub.id} value={sub.id}>
-                    {sub.nombre}
+                <MenuItem value={0}>
+                  <em>Seleccione subcategoría</em>
+                </MenuItem>
+                {subcategorias.map((subcategoria) => (
+                  <MenuItem
+                    key={subcategoria.subcategoriaId}
+                    value={subcategoria.subcategoriaId}
+                  >
+                    {subcategoria.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Serie */}
+            <FormControl
+              size="small"
+              sx={{ minWidth: 200 }}
+              disabled={!searchParams.subcategoriaId}
+            >
+              <InputLabel id="serie-label">Serie</InputLabel>
+              <Select
+                labelId="serie-label"
+                name="serieId"
+                value={searchParams.serieId || 0}
+                onChange={handleFilterChange}
+                label="Serie"
+              >
+                <MenuItem value={0}>
+                  <em>Todas las series</em>
+                </MenuItem>
+                {series.map((serie) => (
+                  <MenuItem key={serie.serieId} value={serie.serieId}>
+                    {serie.nombreSerie}
                   </MenuItem>
                 ))}
               </Select>
@@ -348,19 +421,22 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
             <FormControl
               size="small"
               sx={{ minWidth: 200 }}
-              disabled={loadingTeams}
+              disabled={!searchParams.serieId}
             >
-              <InputLabel>Equipo</InputLabel>
+              <InputLabel id="equipo-label">Equipo</InputLabel>
               <Select
+                labelId="equipo-label"
                 name="equipoId"
-                value={searchParams.equipoId}
+                value={searchParams.equipoId || 0}
                 onChange={handleFilterChange}
                 label="Equipo"
               >
-                <MenuItem value={0}>Todos</MenuItem>
-                {teams.map((team) => (
-                  <MenuItem key={team.equipoId} value={team.equipoId}>
-                    {team.nombre}
+                <MenuItem value={0}>
+                  <em>Todos los equipos</em>
+                </MenuItem>
+                {filteredEquipos.map((equipo) => (
+                  <MenuItem key={equipo.equipoId} value={equipo.equipoId}>
+                    {equipo.nombre}
                   </MenuItem>
                 ))}
               </Select>
@@ -371,7 +447,7 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
               <InputLabel>Estadio</InputLabel>
               <Select
                 name="estadioId"
-                value={searchParams.estadioId}
+                value={searchParams.estadioId || 0}
                 onChange={handleFilterChange}
                 label="Estadio"
               >
