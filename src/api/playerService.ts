@@ -113,9 +113,10 @@ const playerService = {
    * Delete a player
    * @param id Player ID to delete
    */
-  async deletePlayer(id: number): Promise<void> {
+  async deletePlayer(id: number): Promise<PlayerResponse> {
     try {
-      await api.delete(`/${id}`);
+      const response = await api.delete<PlayerResponse>(`/${id}`);
+      return response.data;
     } catch (error) {
       const axiosError = error as AxiosError;
       console.error(`Error deleting player with id ${id}:`, axiosError.response?.data || axiosError.message);

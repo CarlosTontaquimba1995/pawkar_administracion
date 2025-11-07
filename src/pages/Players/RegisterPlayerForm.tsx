@@ -43,14 +43,12 @@ interface RegisterPlayerFormProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
-  token: string;
 }
 
 const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   open,
   onClose,
   onSuccess,
-  token,
 }) => {
   const [players, setPlayers] = useState<Player[]>([
     {
@@ -107,7 +105,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     if (open) {
       fetchSubcategorias();
     }
-  }, [open, token]);
+  }, [open]);
 
   // Fetch roles when subcategoria is selected
   useEffect(() => {
@@ -147,7 +145,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     };
 
     fetchRoles();
-  }, [selectedSubcategoria, token]);
+  }, [selectedSubcategoria]);
 
   // Fetch series when subcategoria is selected
   useEffect(() => {
@@ -172,7 +170,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     if (selectedSubcategoria) {
       fetchSeries();
     }
-  }, [selectedSubcategoria, token]);
+  }, [selectedSubcategoria]);
 
   // Fetch teams when both subcategoria and serie are selected
   useEffect(() => {
@@ -205,7 +203,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     if (selectedSubcategoria && selectedSerie) {
       fetchTeams();
     }
-  }, [selectedSubcategoria, selectedSerie, token]);
+  }, [selectedSubcategoria, selectedSerie]);
 
   const handleSubcategoriaChange = async (event: SelectChangeEvent<number>) => {
     const value = event.target.value as number;
@@ -453,9 +451,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         });
       }
     } catch (error: any) {
-       setSnackbar({
+      setSnackbar({
         open: true,
-        message: error.response?.data?.message || "Error al registrar jugadores",
+        message:
+          error.response?.data?.message || "Error al registrar jugadores",
         severity: "error",
       });
     } finally {

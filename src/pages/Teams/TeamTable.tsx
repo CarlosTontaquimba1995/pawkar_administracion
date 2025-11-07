@@ -23,6 +23,13 @@ import {
   Chip,
   Typography,
   Button,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Dialog,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -41,14 +48,13 @@ import { Subcategoria } from "@/types/subcategoria.types";
 interface TeamTableProps {
   refreshKey: number;
   onEdit: (team: Team) => void;
-  onDelete: (team: Team) => void;
   onRefresh: () => void;
 }
 
 const TeamTable: React.FC<TeamTableProps> = ({
   refreshKey,
   onEdit,
-  onDelete,
+  onRefresh,
 }) => {
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -63,6 +69,8 @@ const TeamTable: React.FC<TeamTableProps> = ({
 
   // Filter states
   const [categorias, setCategorias] = useState<Subcategoria[]>([]);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [categoriaSeleccionada, setCategoriaSeleccionada] =
     useState<string>("");
   const [series, setSeries] = useState<
@@ -70,6 +78,15 @@ const TeamTable: React.FC<TeamTableProps> = ({
   >([]);
   const [serieSeleccionada, setSerieSeleccionada] = useState<string>("");
   const [isLoadingSeries, setIsLoadingSeries] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({
+    open: false,
+    message: "",
+    severity: "success",
+  });
 
   // Check if any filter is active
   const isFilterActive = useMemo(() => {
@@ -232,6 +249,45 @@ const TeamTable: React.FC<TeamTableProps> = ({
     setSerieSeleccionada("");
     setSearchTerm("");
     setPage(0);
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleDeleteCancel = () => {
+    if (!isDeleting) {
+      setTeamToDelete(null);
+    }
+  };
+
+  const handleDeleteClick = (team: Team) => {
+      setTeamToDelete(team);
+    };
+
+  const handleDeleteConfirm = async () => {
+    if (!teamToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await teamService.deleteTeam(teamToDelete.equipoId || 0);
+      setSnackbar({
+        open: true,
+        message: response.message || "Equipo eliminado",
+        severity: "success",
+      });
+      onRefresh(); // Refresh the parent component
+    } catch (error) {
+      console.error("Error deleting team:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al eliminar el equipo",
+        severity: "error",
+      });
+    } finally {
+      setIsDeleting(false);
+      setTeamToDelete(null);
+    }
   };
 
   // Filter teams based on search term
@@ -479,10 +535,10 @@ const TeamTable: React.FC<TeamTableProps> = ({
                         <IconButton
                           size="small"
                           color="error"
-                          onClick={() => onDelete(team)}
+                          onClick={() => handleDeleteClick(team)}
                         >
                           <DeleteIcon fontSize="small" />
-                        </IconButton>
+                        </IconButton> 
                       </Tooltip>
                     </Box>
                   </TableCell>
@@ -513,6 +569,49 @@ const TeamTable: React.FC<TeamTableProps> = ({
           },
         }}
       />
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={teamToDelete !== null}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Eliminar Equipo</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            ¿Está seguro de que desea eliminar al equipo {teamToDelete?.nombre}?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            disabled={isDeleting}
+            autoFocus
+          >
+            {isDeleting ? "Eliminando..." : "Eliminar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
