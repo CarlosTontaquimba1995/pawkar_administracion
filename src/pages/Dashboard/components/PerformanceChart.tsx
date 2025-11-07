@@ -1,98 +1,134 @@
 import { useTheme } from '@mui/material/styles';
 import {
-  AreaChart,
-  Area,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from 'recharts';
 
-const data = [
-  { name: 'Ene', value: 4000 },
-  { name: 'Feb', value: 3000 },
-  { name: 'Mar', value: 5000 },
-  { name: 'Abr', value: 2780 },
-  { name: 'May', value: 1890 },
-  { name: 'Jun', value: 2390 },
-  { name: 'Jul', value: 3490 },
-  { name: 'Ago', value: 4000 },
-  { name: 'Sep', value: 5000 },
-  { name: 'Oct', value: 3890 },
-  { name: 'Nov', value: 4300 },
-  { name: 'Dic', value: 5100 },
-];
+interface PerformanceChartProps {
+  data: Array<{
+    name: string;
+    jugadores: number;
+    equipos: number;
+    total: number;
+  }>;
+  loading?: boolean;
+}
 
-const CustomTooltip = ({ active, payload, label }: any) => {
-  if (active && payload && payload.length) {
+// Generar datos acumulados simples
+const generateSimpleData = (totalPlayers: number, totalTeams: number) => {
+  return [{
+    name: 'Total',
+    jugadores: totalPlayers,
+    equipos: totalTeams,
+    total: totalPlayers + totalTeams
+  }];
+};
+
+const PerformanceChart = ({ data, loading = false }: PerformanceChartProps) => {
+  const theme = useTheme();
+  
+  if (loading) {
     return (
-      <div 
-        style={{
-          backgroundColor: 'white',
-          padding: '8px 12px',
-          border: '1px solid #e0e0e0',
-          borderRadius: '4px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}
-      >
-        <p style={{ margin: 0, color: '#666' }}>{`${label}`}</p>
-        <p style={{ margin: '4px 0 0', color: '#3f51b5', fontWeight: 500 }}>
-          {`${payload[0].value} participantes`}
-        </p>
+      <div style={{
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        color: theme.palette.text.secondary
+      }}>
+        Cargando datos...
       </div>
     );
   }
-  return null;
-};
-
-const PerformanceChart = () => {
-  const theme = useTheme();
+  
+  // Usar datos proporcionados o generar datos simples
+  const chartData = data && data.length > 0 
+    ? data 
+    : generateSimpleData(0, 0);
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart
-        data={data}
+      <BarChart
+        data={chartData}
         margin={{
-          top: 10,
-          right: 0,
-          left: 0,
-          bottom: 0,
+          top: 20,
+          right: 30,
+          left: 20,
+          bottom: 5,
         }}
+        barCategoryGap={20}
       >
-        <defs>
-          <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor={theme.palette.primary.main} stopOpacity={0.8} />
-            <stop offset="95%" stopColor={theme.palette.primary.main} stopOpacity={0.1} />
-          </linearGradient>
-        </defs>
-        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+        <CartesianGrid 
+          strokeDasharray="3 3" 
+          vertical={false} 
+          stroke={theme.palette.divider}
+          strokeOpacity={0.5}
+        />
         <XAxis 
           dataKey="name" 
           axisLine={false} 
           tickLine={false}
-          tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
+          tick={{ fill: theme.palette.text.primary, fontSize: 14, fontWeight: 500 }}
         />
         <YAxis 
           axisLine={false} 
           tickLine={false}
           tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
-          width={35}
+          width={40}
+          tickFormatter={(value) => value.toLocaleString('es-ES')}
         />
         <Tooltip 
-          content={<CustomTooltip />} 
-          cursor={{ stroke: theme.palette.divider, strokeWidth: 1 }}
+          contentStyle={{
+            backgroundColor: 'white',
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 8,
+            boxShadow: theme.shadows[2],
+            padding: '12px 16px',
+          }}
+          formatter={(value: number, name: string) => {
+            if (name === 'jugadores') return [value, 'Jugadores'];
+            if (name === 'equipos') return [value, 'Equipos'];
+            return [value, 'Total'];
+          }}
+          labelStyle={{
+            color: theme.palette.text.primary,
+            fontWeight: 600,
+            marginBottom: 4,
+          }}
         />
-        <Area
-          type="monotone"
-          dataKey="value"
-          stroke={theme.palette.primary.main}
-          fillOpacity={1}
-          fill="url(#colorValue)"
-          strokeWidth={2}
-          activeDot={{ r: 6, stroke: theme.palette.primary.main, strokeWidth: 2, fill: 'white' }}
-        />
-      </AreaChart>
+        <Bar 
+          dataKey="jugadores" 
+          name="Jugadores"
+          fill={theme.palette.primary.main}
+          radius={[4, 4, 0, 0]}
+        >
+          {chartData.map((entry, index) => (
+            <Cell 
+              key={`cell-${index}`} 
+              fill={theme.palette.primary.main} 
+            />
+          ))}
+        </Bar>
+        <Bar 
+          dataKey="equipos" 
+          name="Equipos"
+          fill={theme.palette.secondary.main}
+          radius={[4, 4, 0, 0]}
+        >
+          {chartData.map((entry, index) => (
+            <Cell 
+              key={`cell-${index}`} 
+              fill={theme.palette.secondary.main} 
+            />
+          ))}
+        </Bar>
+      </BarChart>
     </ResponsiveContainer>
   );
 };

@@ -21,6 +21,7 @@ import {
   Select,
   SelectChangeEvent,
   Button,
+  Avatar,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -479,48 +480,132 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
       </Box>
 
       {/* Data Table */}
-      <TableContainer component={Paper}>
-        <Table>
+      <TableContainer component={Paper} sx={{ flex: 1, mb: 3 }}>
+        <Table
+          size="small"
+          sx={{ minWidth: 650 }}
+          aria-label="tabla de posiciones"
+        >
           <TableHead>
             <TableRow>
+              <TableCell>#</TableCell>
               <TableCell>Equipo</TableCell>
+              <TableCell align="right">PTS</TableCell>
               <TableCell align="center">PJ</TableCell>
               <TableCell align="center">PG</TableCell>
               <TableCell align="center">PE</TableCell>
               <TableCell align="center">PP</TableCell>
               <TableCell align="center">GF</TableCell>
               <TableCell align="center">GC</TableCell>
-              <TableCell align="center">DG</TableCell>
-              <TableCell align="center">Puntos</TableCell>
-              <TableCell align="right">Acciones</TableCell>
+              <TableCell align="center">+/-</TableCell>
+              <TableCell align="center">Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {filteredData.length > 0 ? (
-              paginatedData.map((posicion) => (
+              paginatedData.map((posicion, index) => (
                 <TableRow
                   key={`${posicion.equipoId}-${posicion.subcategoriaId}`}
+                  sx={{
+                    "&:last-child td, &:last-child th": { border: 0 },
+                    bgcolor: index < 3 ? "rgba(25, 118, 210, 0.04)" : "inherit",
+                  }}
                 >
-                  <TableCell>{posicion.equipoNombre}</TableCell>
-                  <TableCell align="center">
-                    {posicion.partidosJugados}
+                  <TableCell component="th" scope="row">
+                    <Box
+                      sx={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        bgcolor:
+                          index === 0
+                            ? "gold"
+                            : index === 1
+                            ? "silver"
+                            : index === 2
+                            ? "#cd7f32"
+                            : "transparent",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: index < 3 ? "white" : "inherit",
+                        fontWeight: index < 3 ? "bold" : "normal",
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
                   </TableCell>
-                  <TableCell align="center">{posicion.victorias}</TableCell>
-                  <TableCell align="center">{posicion.empates}</TableCell>
-                  <TableCell align="center">{posicion.derrotas}</TableCell>
-                  <TableCell align="center">{posicion.golesAFavor}</TableCell>
-                  <TableCell align="center">{posicion.golesEnContra}</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Avatar
+                        src={`/team-logos/${posicion.equipoNombre
+                          ?.toLowerCase()
+                          .replace(/\s+/g, "-")}.png`}
+                        alt={posicion.equipoNombre}
+                        sx={{ width: 28, height: 28, fontSize: "0.75rem" }}
+                      >
+                        {posicion.equipoNombre?.charAt(0) || "T"}
+                      </Avatar>
+                      <Typography variant="body2" fontWeight={500}>
+                        {posicion.equipoNombre}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography fontWeight="bold" color="primary">
+                      {posicion.puntos}
+                    </Typography>
+                  </TableCell>
                   <TableCell align="center">
-                    {posicion.diferenciaGoles}
+                    {posicion.partidosJugados || 0}
                   </TableCell>
                   <TableCell align="center">
                     <Chip
-                      label={posicion.puntos}
-                      color="primary"
+                      label={posicion.victorias || 0}
+                      size="small"
+                      color="success"
                       variant="outlined"
+                      sx={{ minWidth: 30 }}
                     />
                   </TableCell>
-                  <TableCell align="right">
+                  <TableCell align="center">
+                    <Chip
+                      label={posicion.empates || 0}
+                      size="small"
+                      color="warning"
+                      variant="outlined"
+                      sx={{ minWidth: 30 }}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    <Chip
+                      label={posicion.derrotas || 0}
+                      size="small"
+                      color="error"
+                      variant="outlined"
+                      sx={{ minWidth: 30 }}
+                    />
+                  </TableCell>
+                  <TableCell align="center">
+                    {posicion.golesAFavor || 0}
+                  </TableCell>
+                  <TableCell align="center">
+                    {posicion.golesEnContra || 0}
+                  </TableCell>
+                  <TableCell
+                    align="center"
+                    sx={{
+                      color:
+                        (posicion.diferenciaGoles || 0) >= 0
+                          ? "success.main"
+                          : "error.main",
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {(posicion.diferenciaGoles || 0) > 0 ? "+" : ""}
+                    {posicion.diferenciaGoles || 0}
+                  </TableCell>
+                  <TableCell align="center">
                     <IconButton
                       size="small"
                       onClick={() => onEdit(posicion)}
@@ -542,8 +627,8 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={10} align="center">
-                  <Typography variant="body2" color="textSecondary">
+                <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
+                  <Typography variant="body2" color="text.secondary">
                     No hay datos disponibles
                   </Typography>
                 </TableCell>
