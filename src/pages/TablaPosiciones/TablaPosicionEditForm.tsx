@@ -6,8 +6,6 @@ import {
   DialogActions,
   Button,
   TextField,
-  Box,
-  Typography,
   CircularProgress,
 } from "@mui/material";
 import {
@@ -116,12 +114,6 @@ const TablaPosicionEditForm: React.FC<TablaPosicionEditFormProps> = ({
       <form onSubmit={handleSubmit}>
         <DialogTitle>Editar Posición en la Tabla</DialogTitle>
         <DialogContent>
-          <Box mt={2} mb={2}>
-            <Typography variant="subtitle1" color="textSecondary">
-              Modifique los datos de la posición
-            </Typography>
-          </Box>
-
           <TextField
             fullWidth
             margin="normal"

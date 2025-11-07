@@ -25,7 +25,6 @@ import {
 } from "@mui/material";
 import {
   Edit as EditIcon,
-  Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
 } from "@mui/icons-material";
@@ -41,13 +40,11 @@ import teamService from "@/api/teamService";
 interface TablaPosicionesTableProps {
   refreshKey: number;
   onEdit: (posicion: TablaPosicion) => void;
-  onRefresh: () => void;
 }
 
 const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
   refreshKey,
   onEdit,
-  onRefresh,
 }) => {
   // State for table data and pagination
   const [posiciones, setPosiciones] = useState<TablaPosicion[]>([]);
@@ -299,17 +296,6 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
   ) => {
     setRowsPerPage(parseInt(event.target.value, 10));
     setPage(0);
-  };
-
-  const handleDelete = async (subcategoriaId: number, equipoId: number) => {
-    if (window.confirm("¿Está seguro de eliminar esta posición?")) {
-      try {
-        await tablaPosicionService.delete(subcategoriaId, equipoId);
-        onRefresh();
-      } catch (error) {
-        console.error("Error deleting position:", error);
-      }
-    }
   };
 
   if (loading) {
@@ -612,15 +598,6 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
                       color="primary"
                     >
                       <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() =>
-                        handleDelete(posicion.subcategoriaId, posicion.equipoId)
-                      }
-                      color="error"
-                    >
-                      <DeleteIcon />
                     </IconButton>
                   </TableCell>
                 </TableRow>

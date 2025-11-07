@@ -18,10 +18,6 @@ const Teams: React.FC = () => {
     setEditingTeam(team);
   };
 
-  const handleDelete = async (team: Team) => {
-    // Add your delete logic here
-    console.log("Deleting team:", team);
-  };
 
   const handleCloseEdit = () => {
     setEditingTeam(null);
@@ -61,7 +57,6 @@ const Teams: React.FC = () => {
       <TeamTable
         refreshKey={refreshKey}
         onEdit={handleEdit}
-        onDelete={handleDelete}
         onRefresh={handleSuccess}
       />
 

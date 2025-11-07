@@ -483,20 +483,19 @@ const TeamTable: React.FC<TeamTableProps> = ({
               <TableCell>Categoría</TableCell>
               <TableCell>Serie</TableCell>
               <TableCell align="center">Jugadores</TableCell>
-              <TableCell align="center">Estado</TableCell>
               <TableCell align="center">Acciones</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                   <CircularProgress />
                 </TableCell>
               </TableRow>
             ) : filteredTeams.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                   <Typography variant="body2" color="text.secondary">
                     No se encontraron equipos
                   </Typography>
@@ -540,14 +539,6 @@ const TeamTable: React.FC<TeamTableProps> = ({
                   <TableCell align="center">
                     <Chip
                       label={team.jugadoresCount || 0}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={team.estado === "activo" ? "Activo" : "Inactivo"}
-                      color={team.estado === "activo" ? "success" : "default"}
                       size="small"
                       variant="outlined"
                     />

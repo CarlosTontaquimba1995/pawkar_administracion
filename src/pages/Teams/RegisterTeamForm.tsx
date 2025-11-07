@@ -529,15 +529,22 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                       label="Fecha de Fundación"
                       type="date"
                       value={team.fundacion}
-                      onChange={(e) =>
-                        handleTeamChange(index, "fundacion", e.target.value)
-                      }
+                      onChange={(e) => {
+                        const dateValue = e.target.value;
+                        // Only update if the year has 4 digits or less
+                        if (!dateValue || dateValue.split('-')[0].length <= 4) {
+                          handleTeamChange(index, "fundacion", dateValue);
+                        }
+                      }}
                       fullWidth
                       required
                       size="small"
                       variant="outlined"
                       InputLabelProps={{
                         shrink: true,
+                      }}
+                      inputProps={{
+                        max: new Date().toISOString().split('T')[0] // Prevent future dates
                       }}
                       InputProps={{
                         endAdornment: (
