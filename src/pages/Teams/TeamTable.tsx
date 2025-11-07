@@ -34,6 +34,7 @@ import {
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
+  People as PeopleIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
 } from "@mui/icons-material";
@@ -45,6 +46,7 @@ import categoriaService from "@/api/categoriaService";
 import serieService from "@/api/serieService";
 import { Team } from "@/types/team.types";
 import { Subcategoria } from "@/types/subcategoria.types";
+import TeamRosterDialog from "./components/TeamRosterDialog";
 
 interface TeamTableProps {
   refreshKey: number;
@@ -71,6 +73,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   // Filter states
   const [categorias, setCategorias] = useState<Subcategoria[]>([]);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [teamToViewRoster, setTeamToViewRoster] = useState<{id: number, name: string} | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [categoriaSeleccionada, setCategoriaSeleccionada] =
     useState<string>("");
@@ -281,6 +284,17 @@ const TeamTable: React.FC<TeamTableProps> = ({
 
   const handleDeleteClick = (team: Team) => {
     setTeamToDelete(team);
+  };
+
+  const handleViewRoster = (team: Team) => {
+    setTeamToViewRoster({
+      id: team.equipoId,
+      name: team.nombre
+    });
+  };
+
+  const handleCloseRosterDialog = () => {
+    setTeamToViewRoster(null);
   };
 
   const handleDeleteConfirm = async () => {
@@ -549,6 +563,16 @@ const TeamTable: React.FC<TeamTableProps> = ({
                           <EditIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
+                      <Tooltip title="Ver plantilla">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleViewRoster(team)}
+                          sx={{ mr: 1 }}
+                        >
+                          <PeopleIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title="Eliminar">
                         <IconButton
                           size="small"
@@ -630,6 +654,16 @@ const TeamTable: React.FC<TeamTableProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Team Roster Dialog */}
+      {teamToViewRoster && (
+        <TeamRosterDialog
+          open={!!teamToViewRoster}
+          onClose={handleCloseRosterDialog}
+          teamId={teamToViewRoster.id}
+          teamName={teamToViewRoster.name}
+        />
+      )}
     </Box>
   );
 };
