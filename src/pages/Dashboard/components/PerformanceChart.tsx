@@ -64,37 +64,41 @@ const PerformanceChart = ({ data, loading = false }: PerformanceChartProps) => {
         }}
         barCategoryGap={20}
       >
-        <CartesianGrid 
-          strokeDasharray="3 3" 
-          vertical={false} 
+        <CartesianGrid
+          strokeDasharray="3 3"
+          vertical={false}
           stroke={theme.palette.divider}
           strokeOpacity={0.5}
         />
-        <XAxis 
-          dataKey="name" 
-          axisLine={false} 
+        <XAxis
+          dataKey="name"
+          axisLine={false}
           tickLine={false}
-          tick={{ fill: theme.palette.text.primary, fontSize: 14, fontWeight: 500 }}
+          tick={{
+            fill: theme.palette.text.primary,
+            fontSize: 14,
+            fontWeight: 500,
+          }}
         />
-        <YAxis 
-          axisLine={false} 
+        <YAxis
+          axisLine={false}
           tickLine={false}
           tick={{ fill: theme.palette.text.secondary, fontSize: 12 }}
           width={40}
-          tickFormatter={(value) => value.toLocaleString('es-ES')}
+          tickFormatter={(value) => value.toLocaleString("es-ES")}
         />
-        <Tooltip 
+        <Tooltip
           contentStyle={{
-            backgroundColor: 'white',
+            backgroundColor: "white",
             border: `1px solid ${theme.palette.divider}`,
             borderRadius: 8,
             boxShadow: theme.shadows[2],
-            padding: '12px 16px',
+            padding: "12px 16px",
           }}
           formatter={(value: number, name: string) => {
-            if (name === 'jugadores') return [value, 'Jugadores'];
-            if (name === 'equipos') return [value, 'Equipos'];
-            return [value, 'Total'];
+            if (name === "jugadores") return [value, "Jugadores"];
+            if (name === "equipos") return [value, "Equipos"];
+            return [value, "Total"];
           }}
           labelStyle={{
             color: theme.palette.text.primary,
@@ -102,30 +106,24 @@ const PerformanceChart = ({ data, loading = false }: PerformanceChartProps) => {
             marginBottom: 4,
           }}
         />
-        <Bar 
-          dataKey="jugadores" 
+        <Bar
+          dataKey="jugadores"
           name="Jugadores"
           fill={theme.palette.primary.main}
           radius={[4, 4, 0, 0]}
         >
-          {chartData.map((entry, index) => (
-            <Cell 
-              key={`cell-${index}`} 
-              fill={theme.palette.primary.main} 
-            />
+          {chartData.map((_, index) => (
+            <Cell key={`cell-${index}`} fill={theme.palette.primary.main} />
           ))}
         </Bar>
-        <Bar 
-          dataKey="equipos" 
+        <Bar
+          dataKey="equipos"
           name="Equipos"
           fill={theme.palette.secondary.main}
           radius={[4, 4, 0, 0]}
         >
-          {chartData.map((entry, index) => (
-            <Cell 
-              key={`cell-${index}`} 
-              fill={theme.palette.secondary.main} 
-            />
+          {chartData.map((_, index) => (
+            <Cell key={`cell-${index}`} fill={theme.palette.secondary.main} />
           ))}
         </Bar>
       </BarChart>
