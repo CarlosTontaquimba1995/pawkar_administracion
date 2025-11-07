@@ -41,6 +41,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import teamService from "@/api/teamService";
 import subcategoriaService from "@/api/subcategoriaService";
+import categoriaService from "@/api/categoriaService";
 import serieService from "@/api/serieService";
 import { Team } from "@/types/team.types";
 import { Subcategoria } from "@/types/subcategoria.types";
@@ -166,13 +167,30 @@ const TeamTable: React.FC<TeamTableProps> = ({
   useEffect(() => {
     const fetchCategorias = async () => {
       try {
-        const response = await subcategoriaService.getCategories();
-        if (response.success) {
-          setCategorias(response.data || []);
+        // First, get the DEPORTES category by its mnemonic
+        const categoriaResponse = await categoriaService.getCategoriaByNemonico(
+          "DEPORTES"
+        );
+
+        if (categoriaResponse.success && categoriaResponse.data) {
+          // Then get subcategories for the DEPORTES category
+          const subcategoriasResponse =
+            await subcategoriaService.getSubcategoriasByCategoria(
+              categoriaResponse.data.categoriaId
+            );
+
+          if (subcategoriasResponse.success) {
+            setCategorias(subcategoriasResponse.data || []);
+          } else {
+            console.error(
+              "Error loading subcategories:",
+              subcategoriasResponse.message || "Unknown error"
+            );
+          }
         } else {
           console.error(
-            "Error loading categories:",
-            response.message || "Unknown error"
+            "Error loading DEPORTES category:",
+            categoriaResponse.message || "Unknown error"
           );
         }
       } catch (error) {
@@ -262,8 +280,8 @@ const TeamTable: React.FC<TeamTableProps> = ({
   };
 
   const handleDeleteClick = (team: Team) => {
-      setTeamToDelete(team);
-    };
+    setTeamToDelete(team);
+  };
 
   const handleDeleteConfirm = async () => {
     if (!teamToDelete) return;
@@ -538,7 +556,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
                           onClick={() => handleDeleteClick(team)}
                         >
                           <DeleteIcon fontSize="small" />
-                        </IconButton> 
+                        </IconButton>
                       </Tooltip>
                     </Box>
                   </TableCell>
