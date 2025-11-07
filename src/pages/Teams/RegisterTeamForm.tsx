@@ -594,7 +594,6 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}

@@ -485,8 +485,6 @@ const EditTeam: React.FC<EditTeamProps> = ({
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           sx={{ width: "100%" }}
-          elevation={6}
-          variant="filled"
         >
           {snackbar.message}
         </Alert>
