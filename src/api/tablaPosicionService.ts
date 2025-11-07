@@ -3,7 +3,8 @@ import {
     TablaPosicion,
     TablaPosicionRequest,
     ActualizarDesdePartidoRequest,
-    SearchParams
+    SearchParams,
+    EquipoPosicionResponse
 } from '@/types/tablaPosicion.types';
 
 const API_URL = 'http://localhost:8080/api/tabla-posicion';
@@ -59,6 +60,21 @@ api.interceptors.response.use(
 );
 
 const tablaPosicionService = {
+    /**
+     * Obtiene la posición específica de un equipo en la tabla de posiciones de una subcategoría
+     * @param subcategoriaId ID de la subcategoría
+     * @param equipoId ID del equipo
+     */
+    getPosicionEquipo: async (subcategoriaId: number, equipoId: number): Promise<EquipoPosicionResponse> => {
+        try {
+            const response = await api.get<EquipoPosicionResponse>(`/subcategoria/${subcategoriaId}/equipo/${equipoId}`);
+            return response.data;
+        } catch (error) {
+            console.error('Error al obtener la posición del equipo:', error);
+            throw error;
+        }
+    },
+
     /**
      * Obtiene la tabla de posiciones para una subcategoría específica
      * @param subcategoriaId ID de la subcategoría

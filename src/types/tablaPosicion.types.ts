@@ -46,6 +46,26 @@ export interface ActualizarDesdePartidoRequest {
   estadoPartido: string;
 }
 
+export interface EquipoPosicionResponse {
+  success: boolean;
+  message: string;
+  data: {
+    tablaPosicionId: number;
+    subcategoriaId: number;
+    equipoId: number;
+    nombreEquipo: string;
+    partidosJugados: number;
+    victorias: number;
+    derrotas: number;
+    empates: number;
+    golesAFavor: number;
+    golesEnContra: number;
+    diferenciaGoles: number;
+    puntos: number;
+    posicion: number;
+  };
+}
+
 export interface SearchParams {
   subcategoriaId?: number;
   categoriaId?: number;
