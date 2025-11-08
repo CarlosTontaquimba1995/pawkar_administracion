@@ -30,7 +30,6 @@ export interface CreateSancionRequest {
   jugadorId: number;
   encuentroId: number;
   tipoSancion: string;
-  motivo?: string | null;
   detalleSancion?: string | null;
   fechaRegistro: string;
 }

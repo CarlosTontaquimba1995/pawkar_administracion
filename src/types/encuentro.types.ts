@@ -10,6 +10,10 @@ export interface Encuentro {
   estadioId: number;
   estado: EstadoEncuentro;
   activo: boolean;
+  equipoLocalId: number;
+  equipoLocalNombre: string;
+  equipoVisitanteId: number;
+  equipoVisitanteNombre: string;
 }
 
 export interface CreateEncuentroRequest {
