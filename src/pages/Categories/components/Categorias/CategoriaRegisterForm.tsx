@@ -10,6 +10,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   Divider,
   Paper,
@@ -35,6 +36,8 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
     { categoriaId: Date.now(), nombre: "" },
   ]);
   const [loading, setLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<number | null>(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -50,8 +53,31 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
   };
 
   const handleRemoveCategoria = (id: number) => {
-    if (categorias.length > 1) {
-      setCategorias(categorias.filter((cat) => cat.categoriaId !== id));
+    setCategoryToDelete(id);
+  };
+
+  const handleDeleteCancel = () => {
+    if (!isDeleting) {
+      setCategoryToDelete(null);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!categoryToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      // Remove the category from the list
+      setCategorias(categorias.filter((cat) => cat.categoriaId !== categoryToDelete));
+      setCategoryToDelete(null);
+    } catch (error) {
+      setSnackbar({
+        open: true,
+        message: "Error al eliminar la categoría",
+        severity: "error",
+      });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -226,7 +252,9 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                     {categorias.length > 1 && (
                       <IconButton
                         className="delete-button"
-                        onClick={() => handleRemoveCategoria(categoria.categoriaId)}
+                        onClick={() =>
+                          handleRemoveCategoria(categoria.categoriaId)
+                        }
                         size="small"
                         disabled={loading}
                         sx={{
@@ -282,17 +310,44 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={categoryToDelete !== null}
+        onClose={handleDeleteCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Eliminar Categoría</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            ¿Está seguro de que desea eliminar esta categoría?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            disabled={isDeleting}
+            autoFocus
+          >
+            {isDeleting ? "Eliminando..." : "Eliminar"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
