@@ -460,8 +460,8 @@ const Events = () => {
                       sx={{
                         width: { xs: "100%", md: 200 },
                         minHeight: { xs: 140, md: "100%" },
-                        background:
-                          "linear-gradient(135deg, #473587 0%, #655d83ff 100%)",
+                        background: (theme) =>
+                          `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
                         color: "white",
                         display: "flex",
                         flexDirection: "column",
@@ -694,7 +694,7 @@ const Events = () => {
           disabled={isLoading}
         >
           <ListItemIcon>
-            <DeleteIcon fontSize="small" sx={{ color: 'error.main' }} />
+            <DeleteIcon fontSize="small" sx={{ color: "error.main" }} />
           </ListItemIcon>
           <ListItemText>Eliminar</ListItemText>
         </MenuItem>
