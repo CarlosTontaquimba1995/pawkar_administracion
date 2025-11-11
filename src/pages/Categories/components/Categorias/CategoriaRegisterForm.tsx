@@ -183,7 +183,7 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                 <Box
                   key={categoria.categoriaId}
                   sx={{
-                    position: "outlined",
+                    position: "relative",
                     mb: 2,
                     "&:hover .delete-button": {
                       opacity: 1,
@@ -223,33 +223,33 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
                         disabled={loading}
                       />
                     </Box>
+                    {categorias.length > 1 && (
+                      <IconButton
+                        className="delete-button"
+                        onClick={() => handleRemoveCategoria(categoria.categoriaId)}
+                        size="small"
+                        disabled={loading}
+                        sx={{
+                          position: "absolute",
+                          top: -10,
+                          right: -10,
+                          backgroundColor: "error.main",
+                          color: "white",
+                          opacity: 0,
+                          visibility: "hidden",
+                          transform: "translate(0, 0)",
+                          transition: "all 0.2s ease",
+                          width: 24,
+                          height: 24,
+                          "&:hover": {
+                            backgroundColor: "error.dark",
+                          },
+                        }}
+                      >
+                        <CloseIcon fontSize="small" />
+                      </IconButton>
+                    )}
                   </Paper>
-                  {categorias.length > 1 && (
-                    <IconButton
-                      className="delete-button"
-                      size="small"
-                      onClick={() =>
-                        handleRemoveCategoria(categoria.categoriaId)
-                      }
-                      sx={{
-                        position: "absolute",
-                        right: -12,
-                        top: -12,
-                        color: "white",
-                        backgroundColor: "error.main",
-                        opacity: 0,
-                        visibility: "hidden",
-                        transition: "all 0.2s ease",
-                        zIndex: 1,
-                        "&:hover": {
-                          backgroundColor: "error.dark",
-                          transform: "scale(1.1)",
-                        },
-                      }}
-                    >
-                      <CloseIcon fontSize="small" />
-                    </IconButton>
-                  )}
                 </Box>
               ))}
             </Box>
@@ -282,12 +282,13 @@ const CategoriaRegisterForm: React.FC<CategoriaRegisterFormProps> = ({
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          variant="filled"
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>
