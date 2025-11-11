@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'react-toastify';
 import verificationService from "../../api/verificationApiService";
+import ThemeConfigDialog from "@/components/theme/ThemeConfigDialog";
 import {
   Drawer,
   List,
@@ -89,6 +90,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const [hasEventsCategory, setHasEventsCategory] = useState<boolean | null>(
     null
   );
+  const [themeDialogOpen, setThemeDialogOpen] = useState(false);
 
   useEffect(() => {
     const checkRequiredData = async () => {
@@ -185,6 +187,22 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
     navigate(path);
   };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate("/login");
+      toast.success("Sesión cerrada correctamente");
+    } catch (error) {
+      console.error("Error al cerrar sesión:", error);
+      toast.error("Error al cerrar sesión");
+    }
+  };
+
+  const handleSettingsClick = () => {
+    setThemeDialogOpen(true);
+  };
+
 
   const drawer = (
     <div>
@@ -283,18 +301,35 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
           {bottomMenuItems.map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
-                onClick={() => handleNavigation(item.path)}
+                onClick={() => {
+                  if (item.path === "/logout") {
+                    handleLogout();
+                  } else if (item.path === "/settings") {
+                    handleSettingsClick();
+                  } else {
+                    navigate(item.path);
+                  }
+                }}
+                selected={location.pathname === item.path}
                 sx={{
-                  borderRadius: 2,
-                  mx: 1,
+                  "&.Mui-selected": {
+                    backgroundColor: "primary.light",
+                    "&:hover": {
+                      backgroundColor: "primary.light",
+                    },
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.main",
+                    },
+                    "& .MuiListItemText-primary": {
+                      fontWeight: "bold",
+                    },
+                  },
                   "&:hover": {
                     backgroundColor: "action.hover",
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
-                  {item.icon}
-                </ListItemIcon>
+                <ListItemIcon sx={{ minWidth: 40 }}>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.text} />
               </ListItemButton>
             </ListItem>
@@ -325,6 +360,11 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       >
         {drawer}
       </Drawer>
+
+      <ThemeConfigDialog
+        open={themeDialogOpen}
+        onClose={() => setThemeDialogOpen(false)}
+      />
 
       {/* Desktop drawer */}
       <StyledDrawer
