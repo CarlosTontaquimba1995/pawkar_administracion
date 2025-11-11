@@ -2,6 +2,23 @@ import { createTheme } from '@mui/material/styles';
 import { appColors, colorWithOpacity } from './colors';
 
 declare module '@mui/material/styles' {
+  interface Palette {
+    gradients: {
+      primary: string;
+      secondary: string;
+      accent: string;
+      soft: string;
+    };
+  }
+  interface PaletteOptions {
+    gradients?: {
+      primary?: string;
+      secondary?: string;
+      accent?: string;
+      soft?: string;
+    };
+  }
+  
   interface Theme {
     custom: {
       colors: typeof appColors;
@@ -18,6 +35,12 @@ declare module '@mui/material/styles' {
 
 const theme = createTheme({
   palette: {
+    gradients: {
+      primary: appColors.gradients.primary,
+      secondary: appColors.gradients.secondary,
+      accent: appColors.gradients.accent,
+      soft: appColors.gradients.soft,
+    },
     primary: {
       main: appColors.primary,
       light: appColors.primaryLight,

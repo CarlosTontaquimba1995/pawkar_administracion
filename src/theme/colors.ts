@@ -45,7 +45,7 @@ export const appColors = {
   
   // Gradientes predefinidos
   gradients: {
-    primary: `linear-gradient(135deg, #473587 0%, #A81B7C 100%)`,
+    primary: `linear-gradient(135deg, #473587 0%, #6f5dadff 100%)`,
     secondary: `linear-gradient(135deg, #A81B7C 0%, #DA8764 100%)`,
     accent: `linear-gradient(135deg, #86BEBD 0%, #473587 100%)`,
     soft: `linear-gradient(135deg, #F5F3F8 0%, #FFFFFF 100%)`,
