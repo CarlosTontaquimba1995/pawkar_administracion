@@ -91,7 +91,16 @@ const CategoriesPage: React.FC = () => {
       ]);
       console.log(catRes);
       setCategories(catRes.data);
-      setSubcategories(subRes.data);
+      const deportesSubcategories = subRes.data.filter((sub: Subcategoria) =>
+        catRes.data.some(
+          (
+            cat: any // Using 'any' here since we know the data structure
+          ) =>
+            cat.categoriaId === sub.categoriaId && cat.nemonico === "DEPORTES"
+        )
+      );
+      console.log(deportesSubcategories);
+      setSubcategories(deportesSubcategories);
       setSeries(serRes.data);
     } catch (err) {
       console.error("Error fetching data:", err);
