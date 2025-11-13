@@ -214,12 +214,26 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
       <List>
         {menuItems.map((item) => {
-          // Handle disabled states
+          // Handle navigation with validation
           const isTeamsItem = item.path === "/teams";
           const isEventsItem = item.path === "/events";
-          const isDisabled =
-            (isTeamsItem && hasRequiredData === false) ||
-            (isEventsItem && hasEventsCategory === false);
+          const isPlayersItem = item.path === "/players";
+
+          const handleItemClick = () => {
+            if ((isTeamsItem || isPlayersItem) && hasRequiredData === false) {
+              toast.warning(
+                "Se requiere registrar Subcategorías y Series primero"
+              );
+              return;
+            }
+            if (isEventsItem && hasEventsCategory === false) {
+              toast.warning(
+                "Se requiere registrar la categoría 'EVENTOS' primero"
+              );
+              return;
+            }
+            handleNavigation(item.path);
+          };
 
           return (
             <ListItem
@@ -227,11 +241,9 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
               disablePadding
               sx={{
                 display: "block",
-                opacity: isDisabled ? 0.5 : 1,
-                pointerEvents: isDisabled ? "none" : "auto",
-                cursor: isDisabled ? "not-allowed" : "pointer",
+                cursor: "pointer",
               }}
-              onClick={() => !isDisabled && handleNavigation(item.path)}
+              onClick={handleItemClick}
             >
               <ListItemButton
                 selected={location.pathname === item.path}
@@ -241,6 +253,12 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
                   "&:hover": {
                     backgroundColor: "action.hover",
                   },
+                  opacity:
+                    ((isTeamsItem || isPlayersItem) &&
+                      hasRequiredData === false) ||
+                    (isEventsItem && hasEventsCategory === false)
+                      ? 0.7
+                      : 1,
                 }}
               >
                 <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>

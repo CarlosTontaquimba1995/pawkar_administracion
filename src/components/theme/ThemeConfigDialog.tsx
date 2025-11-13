@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -10,79 +10,35 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Paper,
+  Divider,
+  useTheme,
+  Card,
+  CardContent,
+  CardHeader,
+  Tooltip,
+  alpha,
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Close as CloseIcon,
-  ColorLens as ColorLensIcon,
   RestartAlt as ResetIcon,
+  Palette as PaletteIcon,
+  TextFields as TextFieldsIcon,
+  ContentCopy as ContentCopyIcon,
+  CheckCircle as CheckCircleIcon,
+  ColorLens as ColorLensIcon,
 } from "@mui/icons-material";
 import { useThemeConfig } from "@/contexts/ThemeContext";
 
-// Simple color picker component to avoid external dependencies
-const ColorPicker = ({
-  color,
-  onChange,
-}: {
-  color: string;
-  onChange: (color: string) => void;
-}) => {
-  const [showPicker, setShowPicker] = useState(false);
-
-  return (
-    <Box sx={{ position: "relative" }}>
-      <Box
-        onClick={() => setShowPicker(!showPicker)}
-        sx={{
-          width: 30,
-          height: 30,
-          borderRadius: "4px",
-          bgcolor: color,
-          border: "1px solid rgba(0,0,0,0.2)",
-          cursor: "pointer",
-          "&:hover": {
-            transform: "scale(1.1)",
-            transition: "transform 0.2s",
-          },
-        }}
-      />
-      {showPicker && (
-        <Box
-          sx={{
-            position: "absolute",
-            zIndex: 1,
-            top: 40,
-            left: 0,
-            bgcolor: "background.paper",
-            p: 1,
-            borderRadius: 1,
-            boxShadow: 3,
-          }}
-        >
-          <input
-            type="color"
-            value={color}
-            onChange={(e) => {
-              onChange(e.target.value);
-            }}
-            style={{ width: "100%", height: 40, border: "none" }}
-          />
-          <input
-            type="text"
-            value={color}
-            onChange={(e) => onChange(e.target.value)}
-            style={{
-              width: "100%",
-              marginTop: 8,
-              padding: 4,
-              border: "1px solid #ccc",
-              borderRadius: 4,
-            }}
-          />
-        </Box>
-      )}
-    </Box>
-  );
-};
+interface ColorField {
+  id: string;
+  label: string;
+  value: string;
+}
 
 interface ThemeConfigDialogProps {
   open: boolean;
@@ -90,103 +46,24 @@ interface ThemeConfigDialogProps {
 }
 
 const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
+  const theme = useTheme();
   const { colors, updateColors, resetColors } = useThemeConfig();
-  const [localColors, setLocalColors] = useState({
-    primary: colors.primary,
-    secondary: colors.secondary,
-    accent1: colors.accent1,
-    accent2: colors.accent2,
-    background: colors.background.default,
-    textPrimary: colors.text.primary,
-    textSecondary: colors.text.secondary,
-  });
-
-  // Update local colors when theme changes
-  useEffect(() => {
-    setLocalColors({
-      primary: colors.primary,
-      secondary: colors.secondary,
-      accent1: colors.accent1,
-      accent2: colors.accent2,
-      background:
-        typeof colors.background === "string"
-          ? colors.background
-          : colors.background.default,
-      textPrimary:
-        typeof colors.text === "string" ? colors.text : colors.text.primary,
-      textSecondary:
-        typeof colors.text === "string" ? colors.text : colors.text.secondary,
-    });
-  }, [colors]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState<"success" | "error">(
     "success"
   );
+  const [activeTab, setActiveTab] = useState("colors");
 
-  useEffect(() => {
-    if (open) {
-      setLocalColors({
-        primary: colors.primary,
-        secondary: colors.secondary,
-        accent1: colors.accent1,
-        accent2: colors.accent2,
-        background: colors.background.default,
-        textPrimary: colors.text.primary,
-        textSecondary: colors.text.secondary,
-      });
-    }
-  }, [open, colors]);
-
-  const handleColorChange = (field: string, value: string) => {
-    setLocalColors((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+  const handleColorChange = (id: string, color: string) => {
+    updateColors({ [id]: color });
   };
 
   const handleSave = () => {
-    try {
-      // Create a new colors object with the updated values
-      const updatedColors = {
-        ...colors,
-        primary: localColors.primary,
-        secondary: localColors.secondary,
-        accent1: localColors.accent1,
-        accent2: localColors.accent2,
-        background: {
-          default: localColors.background,
-          paper: colors.background.paper || "#FFFFFF",
-          dark: colors.background.dark || "#121212",
-          light: colors.background.light || "#F5F5F5",
-        },
-        text: {
-          primary: localColors.textPrimary,
-          secondary: localColors.textSecondary,
-          disabled: colors.text?.disabled || "rgba(0, 0, 0, 0.38)",
-          white: colors.text?.white || "#FFFFFF",
-          onPrimary: colors.text?.onPrimary || "#FFFFFF",
-          onSecondary: colors.text?.onSecondary || "#FFFFFF",
-        },
-        gradients: colors.gradients || {
-          primary: `linear-gradient(135deg, ${localColors.primary} 0%, ${localColors.primary}80 100%)`,
-          secondary: `linear-gradient(135deg, ${localColors.secondary} 0%, ${localColors.secondary}80 100%)`,
-          accent: `linear-gradient(135deg, ${localColors.accent1} 0%, ${localColors.accent2} 100%)`,
-          soft: `linear-gradient(135deg, #F5F3F8 0%, #FFFFFF 100%)`,
-        },
-      };
-
-      updateColors(updatedColors);
-      setSnackbarMessage("Tema guardado correctamente");
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-      onClose();
-    } catch (error) {
-      console.error("Error saving theme:", error);
-      setSnackbarMessage("Error al guardar el tema");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    }
+    setSnackbarMessage("Tema guardado exitosamente");
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+    onClose();
   };
 
   const handleReset = () => {
@@ -194,261 +71,995 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
     setSnackbarMessage("Tema restablecido a los valores predeterminados");
     setSnackbarSeverity("success");
     setSnackbarOpen(true);
-    onClose();
   };
 
-  const handleSnackbarClose = () => {
-    setSnackbarOpen(false);
-  };
 
-  const colorFields = [
-    { id: "primary", label: "Color Primario", value: localColors.primary },
-    {
-      id: "secondary",
-      label: "Color Secundario",
-      value: localColors.secondary,
-    },
-    { id: "accent1", label: "Acento 1", value: localColors.accent1 },
-    { id: "accent2", label: "Acento 2", value: localColors.accent2 },
+  const colorFields: ColorField[] = [
+    { id: "primary", label: "Primario", value: colors.primary as string },
+    { id: "secondary", label: "Secundario", value: colors.secondary as string },
+    { id: "accent1", label: "Acento 1", value: colors.accent1 as string },
+    { id: "accent2", label: "Acento 2", value: colors.accent2 as string },
   ];
 
-  const otherFields = [
-    { id: "background", label: "Fondo", value: localColors.background },
+  const otherFields: ColorField[] = [
     {
-      id: "textPrimary",
+      id: "text.primary",
       label: "Texto Principal",
-      value: localColors.textPrimary,
+      value: (colors.text as any)?.primary || "#000000",
     },
     {
-      id: "textSecondary",
+      id: "text.secondary",
       label: "Texto Secundario",
-      value: localColors.textSecondary,
+      value: (colors.text as any)?.secondary || "#666666",
+    },
+    {
+      id: "background.default",
+      label: "Fondo",
+      value: (colors.background as any)?.default || "#ffffff",
+    },
+    {
+      id: "background.paper",
+      label: "Superficie",
+      value: (colors.background as any)?.paper || "#f5f5f5",
     },
   ];
+
+  const copyToClipboard = (color: string) => {
+    navigator.clipboard.writeText(color);
+    setSnackbarMessage(`Color copiado: ${color}`);
+    setSnackbarSeverity("success");
+    setSnackbarOpen(true);
+  };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-      <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Configuración del Tema</Typography>
-          <IconButton onClick={onClose} size="small">
-            <CloseIcon />
-          </IconButton>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: 3,
+          bgcolor: 'background.paper',
+          backgroundImage: 'none',
+          boxShadow: 24,
+          maxHeight: '95vh',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          border: `1px solid ${theme.palette.divider}`,
+          width: { xs: '98vw', sm: '95vw', md: '90vw', lg: '85vw' },
+          maxWidth: 1400,
+          m: 1,
+          '& .MuiDialog-container': {
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100%',
+            p: 2,
+          },
+        },
+      }}
+      TransitionProps={{ timeout: 200 }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          p: { xs: 1.5, sm: 2 },
+          bgcolor: 'background.default',
+          position: 'sticky',
+          top: 0,
+          zIndex: 1,
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+        }}
+      >
+        <Box display="flex" alignItems="center" gap={1.5}>
+          <PaletteIcon color="primary" />
+          <Typography variant="h6" component="div">
+            Personalizar Tema
+          </Typography>
         </Box>
+        <IconButton
+          onClick={onClose}
+          size="small"
+          sx={{
+            "&:hover": {
+              bgcolor: "action.hover",
+            },
+          }}
+        >
+          <CloseIcon />
+        </IconButton>
       </DialogTitle>
-      <DialogContent dividers sx={{ minWidth: 500, overflow: "auto" }}>
+
+      <DialogContent dividers sx={{ p: 0, overflow: "hidden" }}>
         <Box
           sx={{
             display: "flex",
-            flexDirection: { xs: "column", md: "row" },
-            gap: 3,
+            flexDirection: { xs: "column", lg: "row" },
+            width: '100%',
+            maxHeight: 'calc(95vh - 150px)',
+            overflow: 'hidden',
+            '& > *': {
+              flex: '1 1 auto',
+              overflow: 'hidden',
+              minWidth: 0,
+            },
           }}
         >
-          <Box sx={{ width: { xs: "100%", md: "50%" } }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Colores Principales
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {colorFields.map((field) => (
-                <Box
-                  key={field.id}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    p: 1.5,
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                    border: "1px solid",
-                    borderColor: "divider",
+          {/* Sidebar de navegación */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              flex: 1,
+              overflow: 'hidden',
+              borderRight: '1px solid',
+              borderColor: { xs: 'divider', sm: 'divider' },
+              maxWidth: { xs: '100%', sm: 300 },
+              minWidth: { xs: '100%', sm: 250 },
+              borderBottom: { xs: '1px solid', sm: 'none' },
+            }}
+          >
+            <List disablePadding sx={{ p: 1.5 }}>
+              <ListItemButton
+                selected={activeTab === "colors"}
+                onClick={() => setActiveTab("colors")}
+                sx={{
+                  borderRadius: 2,
+                  mb: 1,
+                  px: 2,
+                  py: 1.5,
+                  transition: 'all 0.2s ease-in-out',
+                  '&.Mui-selected': {
+                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                    color: 'primary.main',
+                    '& .MuiListItemIcon-root': {
+                      color: 'primary.main',
+                    },
+                    '&:hover': {
+                      bgcolor: alpha(theme.palette.primary.main, 0.12),
+                    },
+                  },
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36, color: 'text.secondary' }}>
+                  <PaletteIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary="Colores"
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    fontWeight: 500,
                   }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {field.label}
-                  </Typography>
-                  <ColorPicker
-                    color={
-                      typeof colors[field.id as keyof typeof colors] ===
-                      "string"
-                        ? (colors[field.id as keyof typeof colors] as string)
-                        : (
-                            colors[field.id as keyof typeof colors] as {
-                              default?: string;
-                            }
-                          )?.default || "#000000"
-                    }
-                    onChange={(color) => handleColorChange(field.id, color)}
-                  />
-                </Box>
-              ))}
-            </Box>
-
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 3 }}>
-              Otros Colores
-            </Typography>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {otherFields.map((field) => (
+                />
                 <Box
-                  key={field.id}
                   sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    p: 1.5,
-                    borderRadius: 1,
-                    bgcolor: "background.paper",
-                    border: "1px solid",
-                    borderColor: "divider",
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    bgcolor: 'primary.main',
+                    opacity: activeTab === 'colors' ? 1 : 0,
+                    transition: 'opacity 0.2s ease-in-out',
+                    ml: 1,
                   }}
-                >
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    {field.label}
-                  </Typography>
-                  <ColorPicker
-                    color={(() => {
-                      const colorValue =
-                        colors[field.id as keyof typeof colors];
-                      if (typeof colorValue === "string") {
-                        return colorValue;
-                      } else if (
-                        colorValue &&
-                        typeof colorValue === "object" &&
-                        "default" in colorValue
-                      ) {
-                        return colorValue.default;
-                      }
-                      return "#000000";
-                    })()}
-                    onChange={(color) => handleColorChange(field.id, color)}
-                  />
-                </Box>
-              ))}
-            </Box>
+                />
+              </ListItemButton>
+              <ListItemButton
+                selected={activeTab === "typography"}
+                onClick={() => setActiveTab("typography")}
+                disabled
+                sx={{
+                  borderRadius: 2,
+                  px: 2,
+                  py: 1.5,
+                  opacity: 0.6,
+                  '&:hover': {
+                    bgcolor: 'transparent',
+                    cursor: 'not-allowed',
+                  },
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 36 }}>
+                  <TextFieldsIcon fontSize="small" />
+                </ListItemIcon>
+                <ListItemText
+                  primary={
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      <span>Tipografía</span>
+                      <Box
+                        sx={{
+                          ml: 1,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          bgcolor: 'divider',
+                          color: 'text.secondary',
+                          px: 0.75,
+                          py: 0.25,
+                          borderRadius: 4,
+                          lineHeight: 1.2,
+                        }}
+                      >
+                        Próximamente
+                      </Box>
+                    </Box>
+                  }
+                  primaryTypographyProps={{
+                    variant: "body2",
+                    color: 'text.secondary',
+                  }}
+                />
+              </ListItemButton>
+            </List>
           </Box>
 
-          <Box sx={{ width: { xs: "100%", md: "50%" } }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Vista Previa
-            </Typography>
-            <Box
-              sx={{
-                p: 3,
-                borderRadius: 2,
-                bgcolor: "background.paper",
-                color: "text.primary",
-                minHeight: "400px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 2,
-                border: "1px solid",
-                borderColor: "divider",
-              }}
-            >
-              <Typography variant="h6" sx={{ color: colors.primary }}>
-                Título Principal
-              </Typography>
-              <Typography variant="body1">
-                Este es un texto de ejemplo para mostrar el color de texto
-                principal.
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Este es un texto secundario con un color más claro.
-              </Typography>
-
-              <Box sx={{ mt: 2, display: "flex", gap: 2, flexWrap: "wrap" }}>
-                <Button
-                  variant="contained"
-                  sx={{
-                    bgcolor: colors.primary,
-                    "&:hover": { bgcolor: `${colors.primary}CC` },
-                  }}
-                >
-                  Botón Primario
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  sx={{
-                    color: colors.secondary,
-                    borderColor: colors.secondary,
-                    "&:hover": {
-                      borderColor: `${colors.secondary}CC`,
-                      bgcolor: `${colors.secondary}10`,
-                    },
-                  }}
-                >
-                  Botón Secundario
-                </Button>
-              </Box>
-
+          {/* Contenido principal */}
+          <Box sx={{ 
+            flex: 1, 
+            p: { xs: 1.5, sm: 2, md: 3 },
+            overflowY: "auto",
+            overflowX: 'hidden',
+            width: '100%',
+            maxWidth: '100%',
+            '& > *': {
+              minWidth: 0, // Evita desbordamiento horizontal
+            },
+            '&::-webkit-scrollbar': {
+              width: '6px',
+            },
+            '&::-webkit-scrollbar-track': {
+              background: 'transparent',
+            },
+            '&::-webkit-scrollbar-thumb': {
+              background: theme.palette.divider,
+              borderRadius: '3px',
+              '&:hover': {
+                background: theme.palette.text.secondary,
+              },
+            },
+          }}>
+            {activeTab === "colors" && (
               <Box
                 sx={{
-                  mt: 2,
-                  p: 2,
-                  bgcolor: "rgba(0,0,0,0.05)",
-                  borderRadius: 1,
+                  display: "flex",
+                  flexDirection: { xs: "column", lg: "row" },
+                  gap: { xs: 2, md: 3 },
+                  width: '100%',
+                  '& > *': {
+                    flex: 1,
+                    minWidth: 0, // Evita desbordamiento
+                  },
                 }}
               >
-                <Typography
-                  variant="subtitle2"
-                  sx={{ color: colors.secondary, mb: 1 }}
-                >
-                  Tarjeta de Ejemplo
-                </Typography>
-                <Typography variant="body2">
-                  Este es un ejemplo de un componente de tarjeta con colores
-                  personalizados.
-                </Typography>
-              </Box>
+                <Box sx={{
+                  width: '100%',
+                  flex: '1 1 50%',
+                  minWidth: 0, // Asegura que el contenido no desborde
+                  pr: { md: 1.5 },
+                  '& > *': {
+                    maxWidth: '100%',
+                  },
+                }}>
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      mb: 3,
+                      borderRadius: 2,
+                      borderColor: "divider",
+                      boxShadow: "none",
+                    }}
+                  >
+                    <CardHeader
+                      title="Colores Principales"
+                      titleTypographyProps={{
+                        variant: "subtitle1",
+                        fontWeight: "600",
+                      }}
+                      sx={{ pb: 1, px: 2.5, pt: 2.5 }}
+                    />
+                    <CardContent sx={{ pt: 0, px: 2.5, pb: "16px !important" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1.5,
+                        }}
+                      >
+                        {colorFields.map((field) => (
+                          <Box
+                            key={field.id}
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              width: '100%',
+                              mb: 1.5,
+                              p: 0.5,
+                              borderRadius: 1,
+                              transition: 'all 0.2s ease-in-out',
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                              },
+                            }}
+                          >
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                fontWeight="500"
+                                sx={{ mb: 0.5 }}
+                              >
+                                {field.label}
+                              </Typography>
+                              <Box
+                                sx={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 1.5,
+                                  flex: 1,
+                                  minWidth: 0,
+                                }}
+                              >
+                                <Box
+                                  sx={{
+                                    width: 16,
+                                    height: 16,
+                                    borderRadius: "4px",
+                                    bgcolor: field.value,
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                  }}
+                                />
+                                <Typography
+                                  variant="caption"
+                                  sx={{
+                                    fontFamily: 'monospace',
+                                    fontSize: 11,
+                                    bgcolor: 'action.selected',
+                                    px: 0.75,
+                                    py: 0.25,
+                                    borderRadius: 0.5,
+                                    color: 'text.secondary',
+                                  }}
+                                >
+                                  {field.value.toUpperCase()}
+                                </Typography>
+                              </Box>
+                            </Box>
+                            <Box display="flex" alignItems="center" gap={1}>
+                              <Tooltip title="Cambiar color">
+                                <Box
+                                  sx={{
+                                    position: 'relative',
+                                    width: 40,
+                                    height: 40,
+                                    borderRadius: 1,
+                                    overflow: 'hidden',
+                                    flexShrink: 0,
+                                  }}
+                                >
+                                  <Box
+                                    component="input"
+                                    type="color"
+                                    value={field.value}
+                                    onChange={(
+                                      e: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      handleColorChange(field.id, e.target.value)
+                                    }
+                                    style={{
+                                      position: "absolute",
+                                      width: "100%",
+                                      height: "100%",
+                                      opacity: 0,
+                                      cursor: "pointer",
+                                      zIndex: 2,
+                                    }}
+                                  />
+                                  <Box
+                                    sx={{
+                                      position: 'relative',
+                                      width: '100%',
+                                      height: '100%',
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      backgroundColor: field.value,
+                                      borderRadius: 'inherit',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.2s ease-in-out',
+                                      '&:hover': {
+                                        transform: 'scale(1.05)',
+                                        boxShadow: `0 4px 12px ${alpha(field.value, 0.3)}`,
+                                        borderColor: 'primary.main',
+                                      },
+                                      '&:active': {
+                                        transform: 'scale(0.98)',
+                                      },
+                                    }}
+                                  >
+                                    <Box
+                                      sx={{
+                                        position: 'absolute',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.2) 100%)',
+                                        opacity: 0.5,
+                                        pointerEvents: 'none',
+                                      }}
+                                    />
+                                    <ColorLensIcon
+                                      fontSize="small"
+                                      sx={{
+                                        color: "common.white",
+                                        filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
+                                        position: 'relative',
+                                        zIndex: 1,
+                                      }}
+                                    />
+                                  </Box>
+                                </Box>
+                              </Tooltip>
+                              <Tooltip title="Copiar color">
+                                <IconButton
+                                  size="small"
+                                  onClick={() =>
+                                    copyToClipboard(field.value)
+                                  }
+                                  sx={{
+                                    "&:hover": {
+                                      bgcolor: "action.hover",
+                                    },
+                                  }}
+                                >
+                                  <ContentCopyIcon fontSize="small" />
+                                </IconButton>
+                              </Tooltip>
+                            </Box>
+                          </Box>
+                        ))}
+                      </Box>
+                    </CardContent>
+                  </Card>
 
-              <Box
-                sx={{
-                  mt: "auto",
-                  pt: 2,
-                  borderTop: "1px solid",
-                  borderColor: "divider",
-                }}
-              >
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  sx={{
-                    color: "text.secondary",
-                    fontSize: "0.75rem",
-                  }}
-                >
-                  Vista previa en tiempo real
-                </Typography>
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      borderRadius: 2,
+                      borderColor: "divider",
+                      boxShadow: "none",
+                    }}
+                  >
+                    <CardHeader
+                      title="Colores de Texto y Fondo"
+                      titleTypographyProps={{
+                        variant: "subtitle1",
+                        fontWeight: "600",
+                      }}
+                      sx={{ pb: 1, px: 2.5, pt: 2.5 }}
+                    />
+                    <CardContent sx={{ pt: 0, px: 2.5, pb: "16px !important" }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 1.5,
+                        }}
+                      >
+                        {otherFields.map((field) => {
+                          const currentColor = (() => {
+                            const colorValue =
+                              colors[
+                                field.id.split(".")[0] as keyof typeof colors
+                              ];
+                            if (typeof colorValue === "string") {
+                              return colorValue;
+                            } else if (
+                              colorValue &&
+                              typeof colorValue === "object" &&
+                              field.id.split(".")[1] in colorValue
+                            ) {
+                              return (colorValue as any)[
+                                field.id.split(".")[1]
+                              ];
+                            }
+                            return "#000000";
+                          })();
+
+                          return (
+                            <Box
+                              key={field.id}
+                              sx={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                                mb: 1.5,
+                                p: 0.5,
+                                borderRadius: 1,
+                                transition: 'all 0.2s ease-in-out',
+                                '&:hover': {
+                                  bgcolor: 'action.hover',
+                                },
+                              }}
+                            >
+                              <Box>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="500"
+                                  sx={{ mb: 0.5 }}
+                                >
+                                  {field.label}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 1.5,
+                                    flex: 1,
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      width: 16,
+                                      height: 16,
+                                      borderRadius: "4px",
+                                      bgcolor: currentColor,
+                                      border: "1px solid",
+                                      borderColor: "divider",
+                                    }}
+                                  />
+                                  <Typography
+                                    variant="caption"
+                                    sx={{
+                                      fontFamily: 'monospace',
+                                      fontSize: 11,
+                                      bgcolor: 'action.selected',
+                                      px: 0.75,
+                                      py: 0.25,
+                                      borderRadius: 0.5,
+                                      color: 'text.secondary',
+                                    }}
+                                  >
+                                    {currentColor.toUpperCase()}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Box display="flex" alignItems="center" gap={1}>
+                                <Box
+                                  sx={{
+                                    position: 'relative',
+                                    width: 36,
+                                    height: 36,
+                                    mr: 1,
+                                  }}
+                                >
+                                  <Box
+                                    component="input"
+                                    type="color"
+                                    value={currentColor}
+                                    onChange={(
+                                      e: React.ChangeEvent<HTMLInputElement>
+                                    ) =>
+                                      handleColorChange(
+                                        field.id.split(".")[0],
+                                        e.target.value
+                                      )
+                                    }
+                                    style={{
+                                      position: "absolute",
+                                      width: "100%",
+                                      height: "100%",
+                                      opacity: 0,
+                                      cursor: "pointer",
+                                    }}
+                                  />
+                                  <Box
+                                    sx={{
+                                      width: '100%',
+                                      height: '100%',
+                                      border: '1px solid',
+                                      borderColor: 'divider',
+                                      backgroundColor: currentColor,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'all 0.2s ease-in-out',
+                                      '&:hover': {
+                                        borderColor: 'primary.main',
+                                        boxShadow: `0 0 0 2px ${theme.palette.primary.light}`,
+                                      },
+                                    }}
+                                  >
+                                    <ColorLensIcon
+                                      fontSize="small"
+                                      sx={{
+                                        color: "white",
+                                        filter:
+                                          "drop-shadow(0 0 1px rgba(0,0,0,0.5))",
+                                        opacity: 0.8,
+                                      }}
+                                    />
+                                  </Box>
+                                </Box>
+                                <Tooltip title="Copiar color">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                      copyToClipboard(currentColor)
+                                    }
+                                    sx={{
+                                      "&:hover": {
+                                        bgcolor: "action.hover",
+                                      },
+                                    }}
+                                  >
+                                    <ContentCopyIcon fontSize="small" />
+                                  </IconButton>
+                                </Tooltip>
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Box>
+
+                <Box sx={{
+                  width: '100%',
+                  flex: '1 1 50%',
+                  minWidth: 0, // Asegura que el contenido no desborde
+                  pr: { md: 1.5 },
+                  '& > *': {
+                    maxWidth: '100%',
+                  },
+                }}>
+                  <Card
+                    variant="outlined"
+                    sx={{
+                      height: "100%",
+                      borderRadius: 2,
+                      borderColor: "divider",
+                      boxShadow: "none",
+                      display: "flex",
+                      flexDirection: "column",
+                    }}
+                  >
+                    <CardHeader
+                      title={
+                        <Box
+                          display="flex"
+                          alignItems="center"
+                          gap={1}
+                          color="text.primary"
+                        >
+                          <CheckCircleIcon color="primary" fontSize="small" />
+                          <span>Vista Previa</span>
+                        </Box>
+                      }
+                      titleTypographyProps={{
+                        variant: "subtitle1",
+                        fontWeight: "600",
+                      }}
+                      sx={{ pb: 1, px: 2.5, pt: 2.5 }}
+                    />
+                    <CardContent
+                      sx={{
+                        flex: 1,
+                        p: 3,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          flex: 1,
+                          p: 3,
+                          borderRadius: 2,
+                          bgcolor: "background.paper",
+                          color: "text.primary",
+                          border: "1px solid",
+                          borderColor: "divider",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2.5,
+                        }}
+                      >
+                        <Box>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              color: "primary.main",
+                              fontWeight: "700",
+                              mb: 1,
+                            }}
+                          >
+                            Título Principal
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{ mb: 2, lineHeight: 1.6 }}
+                          >
+                            Este es un texto de ejemplo para mostrar el color de
+                            texto principal.
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{ lineHeight: 1.6 }}
+                          >
+                            Este es un texto secundario con un color más claro
+                            que se utiliza para información adicional.
+                          </Typography>
+                        </Box>
+
+                        <Divider sx={{ my: 1 }} />
+
+                        <Box
+                          sx={{
+                            mt: 1,
+                            display: "flex",
+                            gap: 2,
+                            flexWrap: "wrap",
+                          }}
+                        >
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            startIcon={<CheckCircleIcon />}
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: "500",
+                              borderRadius: 2,
+                              boxShadow: "none",
+                              "&:hover": {
+                                boxShadow: `0 4px 12px ${alpha(
+                                  colors.primary as string,
+                                  0.2
+                                )}`,
+                              },
+                            }}
+                          >
+                            Acción Principal
+                          </Button>
+
+                          <Button
+                            variant="outlined"
+                            color="secondary"
+                            sx={{
+                              textTransform: "none",
+                              fontWeight: "500",
+                              borderRadius: 2,
+                              borderWidth: 1.5,
+                              "&:hover": {
+                                borderWidth: 1.5,
+                              },
+                            }}
+                          >
+                            Acción Secundaria
+                          </Button>
+                        </Box>
+
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            mt: 2,
+                            p: 2.5,
+                            borderRadius: 2,
+                            bgcolor: "background.paper",
+                            border: "1px solid",
+                            borderColor: "divider",
+                            transition: "all 0.2s",
+                            "&:hover": {
+                              borderColor: "primary.main",
+                              boxShadow: `0 4px 12px ${alpha(
+                                colors.primary as string,
+                                0.08
+                              )}`,
+                            },
+                          }}
+                        >
+                          <Box display="flex" alignItems="center" mb={1}>
+                            <Box
+                              sx={{
+                                width: 40,
+                                height: 40,
+                                borderRadius: "50%",
+                                bgcolor: "primary.light",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "primary.contrastText",
+                                mr: 2,
+                                flexShrink: 0,
+                              }}
+                            >
+                              <PaletteIcon fontSize="small" />
+                            </Box>
+                            <Box>
+                              <Typography
+                                variant="subtitle2"
+                                fontWeight="600"
+                                sx={{ color: "text.primary" }}
+                              >
+                                Tarjeta de Ejemplo
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                Personaliza los colores a tu gusto
+                              </Typography>
+                            </Box>
+                          </Box>
+                          <Typography
+                            variant="body2"
+                            sx={{ mt: 1, pl: 6, color: "text.secondary" }}
+                          >
+                            Los cambios se aplicarán en tiempo real a medida que
+                            ajustas los colores.
+                          </Typography>
+                        </Paper>
+
+                        <Box
+                          sx={{
+                            mt: "auto",
+                            pt: 2,
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "space-between",
+                          }}
+                        >
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 0.5,
+                              fontSize: "0.7rem",
+                              color: "text.secondary",
+                            }}
+                          >
+                            <CheckCircleIcon
+                              color="primary"
+                              fontSize="inherit"
+                            />
+                            Vista previa en tiempo real
+                          </Typography>
+                          <Box sx={{ display: "flex", gap: 0.5 }}>
+                            {["primary", "secondary", "accent1", "accent2"].map(
+                              (color) => (
+                                <Box
+                                  key={color}
+                                  sx={{
+                                    width: 12,
+                                    height: 12,
+                                    borderRadius: "2px",
+                                    bgcolor: `${
+                                      colors[color as keyof typeof colors]
+                                    }`,
+                                    border: "1px solid",
+                                    borderColor: "divider",
+                                  }}
+                                />
+                              )
+                            )}
+                          </Box>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                </Box>
               </Box>
-            </Box>
+            )}
           </Box>
         </Box>
       </DialogContent>
-      <DialogActions sx={{ p: 2, justifyContent: "space-between" }}>
-        <Button onClick={handleReset} startIcon={<ResetIcon />} color="inherit">
-          Restablecer
-        </Button>
-        <Box>
-          <Button onClick={onClose} sx={{ mr: 1 }}>
+
+      <DialogActions
+        sx={{
+          p: 2,
+          justifyContent: "space-between",
+          borderTop: `1px solid ${theme.palette.divider}`,
+          bgcolor: "background.paper",
+          borderRadius: "0 0 12px 12px",
+        }}
+      >
+        <Tooltip title="Restablecer a los valores por defecto">
+          <Button
+            onClick={handleReset}
+            startIcon={<ResetIcon />}
+            color="inherit"
+            sx={{
+              textTransform: "none",
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
+            }}
+          >
+            Restablecer
+          </Button>
+        </Tooltip>
+        <Box display="flex" gap={1}>
+          <Button
+            onClick={onClose}
+            sx={{
+              textTransform: "none",
+              px: 2,
+              "&:hover": {
+                bgcolor: "action.hover",
+              },
+            }}
+          >
             Cancelar
           </Button>
           <Button
             variant="contained"
             onClick={handleSave}
             startIcon={<ColorLensIcon />}
+            sx={{
+              textTransform: "none",
+              px: 3,
+              fontWeight: "500",
+              borderRadius: 2,
+              boxShadow: "none",
+              "&:hover": {
+                boxShadow: `0 4px 12px ${alpha(colors.primary as string, 0.2)}`,
+              },
+            }}
           >
-            Aplicar Tema
+            Aplicar Cambios
           </Button>
         </Box>
       </DialogActions>
+
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={3000}
-        onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+        onClose={() => setSnackbarOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        sx={{
+          '& .MuiPaper-root': {
+            borderRadius: 2,
+            boxShadow: theme.shadows[6],
+            minWidth: 'auto',
+          },
+        }}
       >
-        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity}>
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity={snackbarSeverity}
+          variant="filled"
+          sx={{
+            width: '100%',
+            alignItems: 'center',
+            '& .MuiAlert-message': {
+              py: 1,
+            },
+          }}
+          iconMapping={{
+            success: <CheckCircleIcon fontSize="inherit" />,
+            error: <CloseIcon fontSize="inherit" />,
+          }}
+        >
           {snackbarMessage}
+            {snackbarSeverity === "success" && (
+              <CheckCircleIcon fontSize="inherit" sx={{ mr: 1 }} />
+            )}
+            {snackbarMessage}
         </Alert>
       </Snackbar>
     </Dialog>
