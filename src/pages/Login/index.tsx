@@ -84,49 +84,52 @@ const Login = () => {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
-        height: '100vh',
-        width: '100vw',
-        display: 'flex',
-        flexDirection: { xs: 'column', md: 'row' },
-        overflow: 'hidden',
+        minHeight: "100vh",
+        height: "100%",
+        width: "100%",
+        display: "flex",
+        flexDirection: { xs: "column", md: "row" },
+        overflowX: "hidden",
       }}
     >
-      {/* Panel izquierdo - Branding */}
+      {/* Panel izquierdo - Branding (solo en desktop) */}
       <Box
         sx={{
-          width: { xs: '100%', md: '50vw' },
-          height: { xs: '30vh', md: '100vh' },
+          display: { xs: "none", md: "flex" },
+          width: "50vw",
+          minHeight: "100vh",
           background: theme.custom.colors.gradients.primary,
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: { xs: 4, md: 6 },
-          position: 'relative',
-          '&::before': {
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          padding: 6,
+          position: "relative",
+          overflow: "hidden",
+          "&::before": {
             content: '""',
-            position: 'absolute',
+            position: "absolute",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
             background: `radial-gradient(circle at 20% 50%, ${theme.custom.colorWithOpacity.secondary[30]} 0%, transparent 50%),
-                         radial-gradient(circle at 80% 80%, ${theme.custom.colorWithOpacity.accent2[20]} 0%, transparent 50%)`,
+                       radial-gradient(circle at 80% 80%, ${theme.custom.colorWithOpacity.accent2[20]} 0%, transparent 50%)`,
           },
         }}
       >
         <Fade in timeout={1000}>
-          <Box sx={{ textAlign: 'center', zIndex: 1 }}>
-            <SportsIcon sx={{ fontSize: { xs: 60, md: 120 }, color: 'white', mb: { xs: 1, md: 3 }, opacity: 0.9 }} />
+          <Box sx={{ textAlign: "center", zIndex: 1 }}>
+            <SportsIcon
+              sx={{ fontSize: 120, color: "white", mb: 3, opacity: 0.9 }}
+            />
             <Typography
               variant="h2"
               sx={{
-                color: 'white',
+                color: "white",
                 fontWeight: 800,
-                mb: { xs: 1, md: 2 },
-                fontSize: { xs: '1.75rem', md: '3rem' },
-                textShadow: '0 2px 20px rgba(0,0,0,0.2)',
+                mb: 2,
+                fontSize: "3rem",
+                textShadow: "0 2px 20px rgba(0,0,0,0.2)",
               }}
             >
               Pawkar Admin
@@ -134,12 +137,12 @@ const Login = () => {
             <Typography
               variant="h6"
               sx={{
-                color: 'white',
+                color: "white",
                 opacity: 0.95,
                 fontWeight: 300,
                 maxWidth: 400,
-                mx: 'auto',
-                fontSize: { xs: '0.875rem', md: '1.25rem' },
+                mx: "auto",
+                fontSize: "1.25rem",
               }}
             >
               Sistema de Gestión Deportiva Profesional
@@ -148,29 +151,38 @@ const Login = () => {
         </Fade>
       </Box>
 
-      {/* Panel derecho - Formulario */}
+      {/* Panel del formulario (completo en móvil, mitad en desktop) */}
       <Box
         sx={{
-          width: { xs: '100%', md: '50vw' },
-          height: { xs: '70vh', md: '100vh' },
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          width: { xs: "100%", md: "50vw" },
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
           backgroundColor: theme.custom.colors.background.paper,
-          overflow: 'auto',
+          padding: { xs: 3, sm: 4, md: 6 },
         }}
       >
         <Slide direction="left" in timeout={800}>
           <Box
             sx={{
-              width: '100%',
-              maxWidth: '500px',
+              width: "100%",
+              maxWidth: { xs: "100%", sm: "500px" },
               padding: { xs: 3, sm: 4, md: 5 },
+              backgroundColor: { xs: "background.paper", sm: "transparent" },
+              borderRadius: { xs: 2, sm: 0 },
+              boxShadow: { xs: theme.shadows[2], sm: "none" },
             }}
           >
-            {/* Logo móvil */}
-            <Box sx={{ display: { xs: 'flex', md: 'none' }, justifyContent: 'center', mb: 3 }}>
-              <SportsIcon sx={{ fontSize: 60, color: 'primary.main' }} />
+            {/* Logo en móvil */}
+            <Box
+              sx={{
+                display: { xs: "flex", md: "none" },
+                justifyContent: "center",
+                mb: 4,
+              }}
+            >
+              <SportsIcon sx={{ fontSize: 80, color: "primary.main" }} />
             </Box>
 
             {/* Título */}
@@ -181,8 +193,8 @@ const Login = () => {
                 gutterBottom
                 sx={{
                   fontWeight: 700,
-                  color: 'primary.main',
-                  textAlign: { xs: 'center', md: 'left' },
+                  color: "primary.main",
+                  textAlign: { xs: "center", md: "left" },
                 }}
               >
                 Bienvenido
@@ -190,7 +202,7 @@ const Login = () => {
               <Typography
                 variant="body1"
                 color="text.secondary"
-                sx={{ textAlign: { xs: 'center', md: 'left' } }}
+                sx={{ textAlign: { xs: "center", md: "left" } }}
               >
                 Ingresa tus credenciales para continuar
               </Typography>
@@ -229,17 +241,23 @@ const Login = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonIcon sx={{ color: 'primary.main' }} />
+                      <PersonIcon sx={{ color: "primary.main" }} />
                     </InputAdornment>
                   ),
                 }}
                 sx={{
                   mb: 2,
-                  '& .MuiOutlinedInput-root': {
+                  "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
                     },
+                  },
+                  "& .MuiInputBase-input": {
+                    fontSize: { xs: "16px", sm: "inherit" }, // Evita zoom en iOS
+                  },
+                  "& label": {
+                    fontSize: { xs: "14px", sm: "inherit" },
                   },
                 }}
               />
@@ -248,7 +266,7 @@ const Login = () => {
                 fullWidth
                 label="Contraseña"
                 name="password"
-                type={showPassword ? 'text' : 'password'}
+                type={showPassword ? "text" : "password"}
                 value={formData.password}
                 onChange={handleChange}
                 margin="normal"
@@ -258,7 +276,7 @@ const Login = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockIcon sx={{ color: 'primary.main' }} />
+                      <LockIcon sx={{ color: "primary.main" }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -267,7 +285,7 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
                         disabled={isLoading}
-                        sx={{ color: 'primary.main' }}
+                        sx={{ color: "primary.main" }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -276,10 +294,10 @@ const Login = () => {
                 }}
                 sx={{
                   mb: 3,
-                  '& .MuiOutlinedInput-root': {
+                  "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
-                    '&:hover fieldset': {
-                      borderColor: 'primary.main',
+                    "&:hover fieldset": {
+                      borderColor: "primary.main",
                     },
                   },
                 }}
@@ -291,24 +309,31 @@ const Login = () => {
                 variant="contained"
                 size="large"
                 disabled={isLoading}
-                startIcon={isLoading ? <CircularProgress size={20} color="inherit" /> : <LoginIcon />}
+                startIcon={
+                  isLoading ? (
+                    <CircularProgress size={20} color="inherit" />
+                  ) : (
+                    <LoginIcon />
+                  )
+                }
                 sx={{
-                  py: 1.8,
+                  py: { xs: 1.5, sm: 1.8 },
                   borderRadius: 2,
-                  fontSize: '1rem',
+                  fontSize: { xs: "0.9rem", sm: "1rem" },
                   fontWeight: 600,
-                  textTransform: 'none',
+                  minHeight: "48px", // Tamaño mínimo para mejor accesibilidad táctil
+                  textTransform: "none",
                   background: theme.custom.colors.gradients.primary,
                   boxShadow: theme.custom.colors.shadows.primary,
-                  '&:hover': {
+                  "&:hover": {
                     background: theme.custom.colors.gradients.primary,
                     boxShadow: theme.custom.colors.shadows.medium,
-                    transform: 'translateY(-2px)',
+                    transform: "translateY(-2px)",
                   },
-                  transition: 'all 0.3s ease',
+                  transition: "all 0.3s ease",
                 }}
               >
-                {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+                {isLoading ? "Iniciando sesión..." : "Iniciar Sesión"}
               </Button>
             </form>
 
@@ -325,15 +350,19 @@ const Login = () => {
               <Typography
                 variant="caption"
                 sx={{
-                  display: 'block',
+                  display: "block",
                   fontWeight: 600,
-                  color: 'text.primary',
+                  color: "text.primary",
                   mb: 1,
                 }}
               >
                 🔑 Credenciales de prueba:
               </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ mb: 0.5 }}
+              >
                 <strong>Usuario:</strong> testuser
               </Typography>
               <Typography variant="body2" color="text.secondary">
