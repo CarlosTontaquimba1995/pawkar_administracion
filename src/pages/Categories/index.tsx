@@ -1,30 +1,29 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext";
-import CategoriaRegisterForm from "./components/Categorias/CategoriaRegisterForm";
+import React, { useState, useEffect, useCallback } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Box,
   Button,
   Card,
   CardContent,
-  Typography,
   Tabs,
   Tab,
   useTheme,
   useMediaQuery,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
-import { Categoria } from "../../types/categoria.types";
-import { categoriaService } from "../../api/categoriaService";
-import { Subcategoria } from "@/types/subcategoria.types";
-import serieService from "@/api/serieService";
-import subcategoriaService from "@/api/subcategoriaService";
-import { Serie } from "@/types/serie.types";
-import SubcategoriesTable from "./components/Subcategorias/SubcategoriesTable";
+import CategoriaRegisterForm from "./components/Categorias/CategoriaRegisterForm";
 import RegisterSubcategoriaForm from "./components/Subcategorias/RegisterSubcategoriaForm";
-import CategoriesTable from "./components/Categorias/CategoriesTable";
-import SeriesTable from "./components/Series/SeriesTable";
 import SerieRegisterForm from "./components/Series/SerieRegisterForm";
 import SerieEditForm from "./components/Series/SerieEditForm";
+import CategoriesTable from "./components/Categorias/CategoriesTable";
+import SubcategoriesTable from "./components/Subcategorias/SubcategoriesTable";
+import SeriesTable from "./components/Series/SeriesTable";
+import categoriaService from "@/api/categoriaService";
+import subcategoriaService from "@/api/subcategoriaService";
+import serieService from "@/api/serieService";
+import { Categoria } from "@/types/categoria.types";
+import { Subcategoria } from "@/types/subcategoria.types";
+import { Serie } from "@/types/serie.types";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -34,8 +33,6 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <div
@@ -43,20 +40,9 @@ function TabPanel(props: TabPanelProps) {
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
-      style={{ width: "100%" }}
       {...other}
     >
-      {value === index && (
-        <Box
-          sx={{
-            p: isMobile ? 1 : 3,
-            width: "100%",
-            overflowX: "auto",
-          }}
-        >
-          <div style={{ minWidth: isMobile ? "100%" : "auto" }}>{children}</div>
-        </Box>
-      )}
+      {value === index && <Box sx={{ py: 3 }}>{children}</Box>}
     </div>
   );
 }
@@ -69,71 +55,63 @@ function a11yProps(index: number) {
 }
 
 const CategoriesPage: React.FC = () => {
-  const { token } = useAuth();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
   const [tabValue, setTabValue] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
   const [categories, setCategories] = useState<Categoria[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategoria[]>([]);
   const [series, setSeries] = useState<Serie[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [showAddSubcategoriaForm, setShowAddSubcategoriaForm] = useState(false);
+  const [showAddSerieForm, setShowAddSerieForm] = useState(false);
+  const [editingSerieId, setEditingSerieId] = useState<number | null>(null);
+  const { token } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
-  };
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!token) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      // Fetch all data in parallel
       const [catRes, subRes, serRes] = await Promise.all([
         categoriaService.getCategorias(),
         subcategoriaService.getSubcategorias(),
         serieService.getSeriesBySubcategoria(1),
       ]);
-      console.log(catRes);
+
       setCategories(catRes.data);
       const deportesSubcategories = subRes.data.filter((sub: Subcategoria) =>
         catRes.data.some(
-          (
-            cat: any // Using 'any' here since we know the data structure
-          ) =>
-            cat.categoriaId === sub.categoriaId && cat.nemonico === "DEPORTES"
+          (cat: Categoria) => cat.categoriaId === sub.categoriaId
         )
       );
-      console.log(deportesSubcategories);
       setSubcategories(deportesSubcategories);
       setSeries(serRes.data);
     } catch (err) {
       console.error("Error fetching data:", err);
-      setError("Error al cargar los datos. Por favor, intente de nuevo.");
+      setError("Error al cargar los datos");
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
 
   useEffect(() => {
     fetchData();
-  }, [token]);
+  }, [fetchData]);
 
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [showAddSubcategoriaForm, setShowAddSubcategoriaForm] = useState(false);
-  const [showAddSerieForm, setShowAddSerieForm] = useState(false);
-  const [editingSerieId, setEditingSerieId] = useState<number | null>(null);
+  const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+  };
 
   const handleAddNew = () => {
     if (tabValue === 0) {
       setShowAddForm(true);
     } else if (tabValue === 1) {
       setShowAddSubcategoriaForm(true);
-    } else if (tabValue === 2) {
+    } else {
       setShowAddSerieForm(true);
     }
   };
@@ -142,9 +120,8 @@ const CategoriesPage: React.FC = () => {
     setShowAddForm(false);
   };
 
-  const handleSuccess = async () => {
-    setShowAddForm(false);
-    await fetchData(); // Refresh the data
+  const handleSuccess = () => {
+    fetchData();
   };
 
   if (loading) {
@@ -162,83 +139,43 @@ const CategoriesPage: React.FC = () => {
         p: isMobile ? 1 : 3,
         maxWidth: "100vw",
         overflowX: "hidden",
+        transition: "all 0.3s ease-in-out",
       }}
     >
-      {/* Tabs Section */}
-      <Box
-        sx={{
-          borderBottom: 1,
-          borderColor: "divider",
-          mb: 3,
-          width: "100%",
-          overflowX: "auto",
-          WebkitOverflowScrolling: "touch",
-          "&::-webkit-scrollbar": { display: "none" },
-        }}
-      >
-        <Tabs
-          value={tabValue}
-          onChange={handleTabChange}
-          variant={isMobile ? "scrollable" : "standard"}
-          scrollButtons={isMobile ? true : false}
-          allowScrollButtonsMobile
-          sx={{
-            minWidth: isMobile ? "max-content" : "auto",
-            "& .MuiTab-root": {
-              minWidth: isMobile ? "auto" : 160,
-              px: isMobile ? 2 : 3,
-              fontSize: isMobile ? "0.8rem" : "0.875rem",
-              textTransform: "none",
-              minHeight: "48px",
-            },
-          }}
-        >
-          <Tab label="Categorías" {...a11yProps(0)} />
-          <Tab label="Subcategorías" {...a11yProps(1)} />
-          <Tab label="Series" {...a11yProps(2)} />
-        </Tabs>
-      </Box>
-
-      {/* Main Content */}
       <Card
         elevation={isMobile ? 0 : 1}
         sx={{
           borderRadius: isMobile ? 0 : 2,
-          width: "100%",
-          maxWidth: "100vw",
+          width: isMobile ? "100%" : "600px",
+          maxWidth: "100%",
+          margin: "0 auto",
           overflow: "hidden",
+          transition: "all 0.3s ease-in-out",
+          minHeight: "500px",
+          display: "flex",
+          flexDirection: "column",
         }}
       >
         <CardContent
           sx={{
             p: isMobile ? 2 : 3,
-            "&:last-child": { pb: isMobile ? 2 : 3 },
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            "&:last-child": {
+              pb: isMobile ? 2 : 3,
+            },
           }}
         >
-          {/* Header Section */}
+          {/* Button moved here, inside CardContent but before Tabs */}
           <Box
             display="flex"
             flexDirection={isMobile ? "column" : "row"}
-            justifyContent="space-between"
+            justifyContent="flex-end"
             alignItems={isMobile ? "stretch" : "center"}
             gap={2}
             mb={3}
-            width="100%"
           >
-            <Typography
-              variant={isMobile ? "h6" : "h5"}
-              component="h2"
-              sx={{
-                fontWeight: 600,
-                textAlign: isMobile ? "center" : "left",
-              }}
-            >
-              {tabValue === 0
-                ? "Categorías"
-                : tabValue === 1
-                ? "Subcategorías"
-                : "Series"}
-            </Typography>
             <Button
               fullWidth={isMobile}
               variant="contained"
@@ -248,12 +185,21 @@ const CategoriesPage: React.FC = () => {
               size={isMobile ? "medium" : "large"}
               sx={{
                 whiteSpace: "nowrap",
-                minWidth: isMobile ? "100%" : "auto",
+                minWidth: isMobile ? "100%" : "220px",
+                width: isMobile ? "100%" : "220px",
                 textTransform: "none",
                 fontWeight: 500,
                 borderRadius: 2,
                 boxShadow: "none",
-                "&:hover": { boxShadow: theme.shadows[3] },
+                px: 3,
+                justifyContent: "center",
+                "&:hover": {
+                  boxShadow: theme.shadows[3],
+                  backgroundColor: "primary.dark",
+                },
+                "& .MuiButton-startIcon": {
+                  marginRight: 1,
+                },
               }}
             >
               Agregar{" "}
@@ -266,33 +212,112 @@ const CategoriesPage: React.FC = () => {
             </Button>
           </Box>
 
+          {/* Tabs Section */}
+          <Box
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              mb: 3,
+              width: "100%",
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              "&::-webkit-scrollbar": { display: "none" },
+            }}
+          >
+            <Tabs
+              value={tabValue}
+              onChange={handleTabChange}
+              variant={isMobile ? "scrollable" : "standard"}
+              scrollButtons={isMobile ? true : false}
+              allowScrollButtonsMobile
+              sx={{
+                minWidth: isMobile ? "max-content" : "auto",
+                "& .MuiTab-root": {
+                  minWidth: isMobile ? "auto" : 160,
+                  px: isMobile ? 2 : 3,
+                  fontSize: isMobile ? "0.8rem" : "0.875rem",
+                  textTransform: "none",
+                  minHeight: "48px",
+                },
+              }}
+            >
+              <Tab label="Categorías" {...a11yProps(0)} />
+              <Tab label="Subcategorías" {...a11yProps(1)} />
+              <Tab label="Series" {...a11yProps(2)} />
+            </Tabs>
+          </Box>
+
           {/* Tab Content */}
-          <Box sx={{ width: "100%", overflowX: "auto" }}>
+          <Box
+            sx={{
+              width: "100%",
+              overflowX: "auto",
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              minHeight: "300px",
+              transition: "opacity 0.3s ease-in-out",
+              opacity: 1,
+              "&.MuiBox-root": {
+                transition: "opacity 0.3s ease-in-out",
+              },
+            }}
+          >
             <TabPanel value={tabValue} index={0}>
-              <CategoriesTable categories={categories} onRefresh={fetchData} />
+              <Box
+                sx={{
+                  transition: "opacity 0.3s ease-in-out",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <CategoriesTable
+                  categories={categories}
+                  onRefresh={fetchData}
+                />
+              </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              <SubcategoriesTable
-                subcategories={subcategories}
-                categories={categories}
-                onRefresh={fetchData}
-              />
+              <Box
+                sx={{
+                  transition: "opacity 0.3s ease-in-out",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <SubcategoriesTable
+                  subcategories={subcategories}
+                  categories={categories}
+                  onRefresh={fetchData}
+                />
+              </Box>
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
-              <SeriesTable
-                series={series}
-                subcategorias={subcategories}
-                onRefresh={fetchData}
-                onEdit={(id) => setEditingSerieId(id)}
-              />
+              <Box
+                sx={{
+                  transition: "opacity 0.3s ease-in-out",
+                  flex: 1,
+                  display: "flex",
+                  flexDirection: "column",
+                }}
+              >
+                <SeriesTable
+                  series={series}
+                  subcategorias={subcategories}
+                  onRefresh={fetchData}
+                  onEdit={(id) => setEditingSerieId(id)}
+                />
+              </Box>
             </TabPanel>
           </Box>
         </CardContent>
       </Card>
 
-      {/* Categoria Register Form Modal */}
+      {/* Modals */}
       <CategoriaRegisterForm
         open={showAddForm}
         onClose={handleCloseForm}

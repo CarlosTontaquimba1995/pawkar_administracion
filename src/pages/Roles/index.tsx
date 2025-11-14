@@ -5,7 +5,6 @@ import {
   Button,
   Card,
   CardContent,
-  Typography,
   Tabs,
   Tab,
   useTheme,
@@ -34,6 +33,8 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <div
@@ -41,11 +42,18 @@ function TabPanel(props: TabPanelProps) {
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
+      style={{ width: "100%" }}
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
-          <div>{children}</div>
+        <Box
+          sx={{
+            p: isMobile ? 1 : 3,
+            width: "100%",
+            overflowX: "auto",
+          }}
+        >
+          <div style={{ minWidth: isMobile ? "100%" : "auto" }}>{children}</div>
         </Box>
       )}
     </div>
@@ -215,66 +223,103 @@ const RolesPage = () => {
   };
 
   return (
-    <Box>
-      <Box
-        mb={4}
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        flexWrap="wrap"
-        gap={2}
+    <Box
+      sx={{
+        width: "100%",
+        p: isMobile ? 1 : 3,
+        maxWidth: "100vw",
+        overflowX: "hidden",
+      }}
+    >
+      <Card
+        elevation={isMobile ? 0 : 1}
+        sx={{
+          borderRadius: isMobile ? 0 : 2,
+          width: isMobile ? "100%" : "800px",
+          maxWidth: "100%",
+          margin: "0 auto",
+          overflow: "hidden",
+          transition: "all 0.3s ease-in-out",
+          minHeight: "500px",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <Typography variant="h4" component="h1">
-          Gestión de Roles
-        </Typography>
-        <Box display="flex" gap={2} flexWrap="wrap">
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<GroupAddIcon />}
-            onClick={() => setShowAssignRoleForm(true)}
-            sx={{
-              display: value === 0 ? "flex" : "none",
-              "&:hover": {
-                backgroundColor: "primary.main",
-                color: "white",
-                borderColor: "primary.main",
-              },
-            }}
+        <CardContent
+          sx={{
+            p: isMobile ? 2 : 3,
+            "&:last-child": { pb: isMobile ? 2 : 3 },
+          }}
+        >
+          <Box
+            display="flex"
+            flexDirection={isMobile ? "column" : "row"}
+            justifyContent="flex-end"
+            alignItems={isMobile ? "stretch" : "center"}
+            gap={2}
+            mb={3}
           >
-            Asignar Rol
-          </Button>
-          <Button
-            variant="outlined"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => setShowAddForm(true)}
-            sx={{
-              display: value === 1 ? "flex" : "none",
-              "&:hover": {
-                backgroundColor: "primary.main",
-                color: "white",
-                borderColor: "primary.main",
-              },
-            }}
-          >
-            Nuevo Rol
-          </Button>
-        </Box>
-      </Box>
+            <Button
+              fullWidth={isMobile}
+              variant="contained"
+              color="primary"
+              startIcon={value === 0 ? <GroupAddIcon /> : <AddIcon />}
+              onClick={() =>
+                value === 0 ? setShowAssignRoleForm(true) : setShowAddForm(true)
+              }
+              size={isMobile ? "medium" : "large"}
+              sx={{
+                whiteSpace: "nowrap",
+                minWidth: isMobile ? "100%" : "auto",
+                textTransform: "none",
+                fontWeight: 500,
+                borderRadius: 2,
+                boxShadow: "none",
+                "&:hover": {
+                  boxShadow: theme.shadows[3],
+                  backgroundColor: "primary.dark",
+                },
+              }}
+            >
+              {value === 0 ? "Asignar Rol" : "Agregar Rol"}
+            </Button>
+          </Box>
 
-      <Card>
-        <CardContent>
-          <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
+          <Box
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              width: "100%",
+              overflowX: "auto",
+              WebkitOverflowScrolling: "touch",
+              "&::-webkit-scrollbar": { display: "none" },
+            }}
+          >
             <Tabs
               value={value}
               onChange={handleChange}
-              aria-label="roles tabs"
               variant={isMobile ? "scrollable" : "standard"}
-              scrollButtons="auto"
+              scrollButtons={isMobile ? true : false}
+              allowScrollButtonsMobile
+              sx={{
+                minWidth: isMobile ? "max-content" : "auto",
+                "& .MuiTab-root": {
+                  minWidth: isMobile ? "auto" : 200,
+                  px: isMobile ? 2 : 3,
+                  fontSize: isMobile ? "0.8rem" : "0.875rem",
+                  textTransform: "none",
+                  minHeight: "48px",
+                },
+              }}
             >
-              <Tab label="Asignación de Roles" {...a11yProps(0)} />
-              <Tab label="Lista de Roles" {...a11yProps(1)} />
+              <Tab
+                label={isMobile ? "Asignar" : "Asignación de Roles"}
+                {...a11yProps(0)}
+              />
+              <Tab
+                label={isMobile ? "Lista" : "Lista de Roles"}
+                {...a11yProps(1)}
+              />
             </Tabs>
           </Box>
 

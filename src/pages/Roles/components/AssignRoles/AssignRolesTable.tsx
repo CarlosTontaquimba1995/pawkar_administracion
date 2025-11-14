@@ -1,37 +1,31 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   Box,
-  Chip,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  Paper,
   IconButton,
   Snackbar,
   Alert,
   CircularProgress,
-  SelectChangeEvent,
-  InputAdornment,
   Button,
   Dialog,
   DialogActions,
   DialogContent,
   DialogContentText,
   DialogTitle,
+  useTheme,
+  useMediaQuery,
+  InputAdornment,
+  SelectChangeEvent,
 } from "@mui/material";
 import {
   Search as SearchIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
+import DataTable from "@/components/common/DataTable/DataTable";
 import { Subcategoria } from "@/types/subcategoria.types";
 import { SubcategoriaRol } from "@/types/subcategoriaRoles.types";
 import subcategoriaRolesService from "@/api/subcategoriaRolesService";
@@ -57,84 +51,58 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedSubcategoria, setSelectedSubcategoria] = useState<string | "">(
-    subcategorias[0]?.nombre || ""
+  const [selectedSubcategoria, setSelectedSubcategoria] = useState<string>("");
+  const [roleToDelete, setRoleToDelete] = useState<SubcategoriaRol | null>(
+    null
   );
-
-  // Automatically select the first subcategory if none is selected
-  React.useEffect(() => {
-    if (subcategorias.length > 0 && !selectedSubcategoria) {
-      setSelectedSubcategoria(subcategorias[0].nombre);
-      onSubcategoriaSelect?.(subcategorias[0].nombre);
-    }
-  }, [subcategorias, selectedSubcategoria, onSubcategoriaSelect]);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
     severity: "success" as "success" | "error" | "info" | "warning",
   });
 
-  // Delete dialog state
-  const [roleToDelete, setRoleToDelete] = useState<SubcategoriaRol | null>(
-    null
-  );
-  const [isDeleting, setIsDeleting] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const handleSubcategoriaChange = async (event: SelectChangeEvent<string>) => {
+  // Set initial selected subcategory
+  useEffect(() => {
+    if (subcategorias.length > 0 && !selectedSubcategoria) {
+      setSelectedSubcategoria(subcategorias[0]?.nombre || "");
+      if (subcategorias[0]?.nombre) {
+        onSubcategoriaSelect?.(subcategorias[0].nombre);
+      }
+    }
+  }, [subcategorias, selectedSubcategoria, onSubcategoriaSelect]);
+
+  const handleSubcategoriaChange = (event: SelectChangeEvent) => {
     const subcategoriaNombre = event.target.value as string;
     setSelectedSubcategoria(subcategoriaNombre);
-
-    if (!subcategoriaNombre) {
-      return;
-    }
-
-    // Notify parent component to load roles for this subcategory if not already loaded
-    onSubcategoriaSelect(subcategoriaNombre);
+    onSubcategoriaSelect?.(subcategoriaNombre);
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
-  const filteredData = useMemo(() => {
-    if (!selectedSubcategoria) {
-      // If no subcategory is selected, show all roles from all subcategories
-      return Object.values(rolesBySubcategoria)
-        .flat()
-        .filter(
-          (role: SubcategoriaRol) =>
-            (role.rolName || "")
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase()) ||
-            (role.rolDetail || "")
-              .toLowerCase()
-              .includes(searchTerm.toLowerCase())
-        );
-    }
-    const roles = rolesBySubcategoria[selectedSubcategoria] || [];
-    return roles.filter(
-      (role: SubcategoriaRol) =>
-        (role.rolName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (role.rolDetail || "").toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [selectedSubcategoria, rolesBySubcategoria, searchTerm]);
-
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - filteredData.length) : 0;
-
-  const handleCloseSnackbar = () => {
-    setSnackbar((prev) => ({ ...prev, open: false }));
+  const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(event.target.value);
+    setPage(0);
   };
 
   const handleDeleteClick = (role: SubcategoriaRol) => {
     setRoleToDelete(role);
+  };
+
+  const handleDeleteCancel = () => {
+    if (!isDeleting) {
+      setRoleToDelete(null);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -154,7 +122,7 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
           severity: "success",
         });
 
-        // Update the local state immediately
+        // Update local state
         if (rolesBySubcategoria[selectedSubcategoria]) {
           const updatedRoles = rolesBySubcategoria[selectedSubcategoria].filter(
             (role) =>
@@ -170,209 +138,189 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
           }));
         }
 
-        // Also trigger a refresh from the server to ensure consistency
+        // Refresh data
         onSubcategoriaSelect(selectedSubcategoria);
       } else {
-        throw new Error(
-          response.message || "Error al eliminar el rol de la subcategoría"
-        );
+        throw new Error(response.message || "Error al eliminar el rol");
       }
     } catch (error: any) {
-      console.error("Error al eliminar el rol de la subcategoría:", error);
-
-      if (error.response?.data?.message) {
-        setSnackbar({
-          open: true,
-          message: error.response.data.message,
-          severity: "error",
-        });
-      } else {
-        setSnackbar({
-          open: true,
-          message:
-            error.message || "Error al eliminar el rol de la subcategoría",
-          severity: "error",
-        });
-      }
+      console.error("Error al eliminar el rol:", error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || "Error al eliminar el rol",
+        severity: "error",
+      });
     } finally {
       setRoleToDelete(null);
       setIsDeleting(false);
     }
   };
 
-  const handleDeleteCancel = () => {
-    setRoleToDelete(null);
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const isSystemRole = (roleName?: string) => {
-    if (!roleName) return false;
-    return ["ADMIN", "MANAGER", "USER"].includes(roleName);
-  };
+  // Filter and paginate data
+  const filteredData = useMemo(() => {
+    if (!selectedSubcategoria) {
+      return [];
+    }
 
-  // Check if user has a specific role
+    const roles = rolesBySubcategoria[selectedSubcategoria] || [];
 
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" p={4}>
-        <CircularProgress />
-      </Box>
+    if (!searchTerm) return roles;
+
+    const searchLower = searchTerm.toLowerCase();
+    return roles.filter(
+      (role) =>
+        (role.rolName || "").toLowerCase().includes(searchLower) ||
+        (role.rolDetail || "").toLowerCase().includes(searchLower)
     );
-  }
+  }, [selectedSubcategoria, rolesBySubcategoria, searchTerm]);
+
+  const paginatedData = useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredData.slice(start, start + rowsPerPage);
+  }, [filteredData, page, rowsPerPage]);
+
+  // Table columns
+  const columns = [
+    {
+      id: "rolName",
+      label: "Rol",
+      minWidth: 150,
+      align: "left" as const,
+    },
+    {
+      id: "rolDetail",
+      label: "Descripción",
+      minWidth: 200,
+      align: "left" as const,
+      format: (value: string) => value || "-",
+    },
+    {
+      id: "actions",
+      label: "Acciones",
+      minWidth: 100,
+      align: "center" as const,
+      format: (_: any, row: SubcategoriaRol) => (
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+          <IconButton
+            size="small"
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteClick(row);
+            }}
+            sx={{ "&:hover": { bgcolor: "error.light", color: "white" } }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
+  ];
 
   return (
-    <Box>
-      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
-        <FormControl sx={{ minWidth: 200 }} size="small">
-          <InputLabel>Filtrar por subcategoría</InputLabel>
+    <Box sx={{ width: "100%" }}>
+      <Box
+        sx={{
+          display: "flex",
+          gap: 2,
+          mb: 3,
+          flexWrap: "wrap",
+          flexDirection: isMobile ? "column" : "row",
+          alignItems: isMobile ? "stretch" : "center",
+        }}
+      >
+        <FormControl sx={{ minWidth: isMobile ? "100%" : 250 }} size="small">
+          <InputLabel id="subcategoria-select-label">Subcategoría</InputLabel>
           <Select
+            labelId="subcategoria-select-label"
+            id="subcategoria-select"
             value={selectedSubcategoria}
+            label="Subcategoría"
             onChange={handleSubcategoriaChange}
-            label="Filtrar por subcategoría"
-            disabled={loading || subcategorias.length === 0}
+            disabled={loading}
+            fullWidth={isMobile}
           >
-            {subcategorias?.map((subcategoria) => (
+            {subcategorias.map((subcategoria) => (
               <MenuItem
-                key={`subcat-${
-                  subcategoria.subcategoriaId || subcategoria.nombre
-                }`}
-                value={subcategoria.nombre || ""}
+                key={subcategoria.subcategoriaId}
+                value={subcategoria.nombre}
               >
                 {subcategoria.nombre}
               </MenuItem>
             ))}
           </Select>
         </FormControl>
-
         <TextField
+          fullWidth={isMobile}
           variant="outlined"
           size="small"
           placeholder="Buscar roles..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={handleSearchChange}
+          disabled={loading}
+          sx={{
+            maxWidth: isMobile ? "100%" : 300,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+              "&:hover fieldset": {
+                borderColor: "primary.main",
+              },
+            },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon color="action" />
               </InputAdornment>
             ),
           }}
-          sx={{ minWidth: 250 }}
         />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>
-                Descripción del Rol
-              </TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Subcategoría</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Estado</TableCell>
-              <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                Acciones
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : filteredData.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  No se encontraron roles
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredData
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((role: SubcategoriaRol, index: number) => (
-                  <TableRow
-                    key={`role-${role.rolId}-${role.subcategoriaId}-${index}`}
-                  >
-                    <TableCell>{role.rolDetail || "Sin descripción"}</TableCell>
-                    <TableCell>
-                      {role.subcategoriaName || "Sin subcategoría"}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label="Activo"
-                        color="success"
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          "&.MuiChip-colorSuccess": {
-                            bgcolor: "accent2.light",
-                            color: "accent2.dark",
-                            "&:hover": {
-                              bgcolor: "accent2.main",
-                              color: "white",
-                            },
-                          },
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <IconButton
-                        color="error"
-                        onClick={() => handleDeleteClick(role)}
-                        disabled={isSystemRole(role.rolName)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))
-            )}
-            {emptyRows > 0 && (
-              <TableRow style={{ height: 53 * emptyRows }}>
-                <TableCell colSpan={4} />
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={filteredData.length}
-        rowsPerPage={rowsPerPage}
+      <DataTable
+        columns={columns}
+        data={paginatedData}
+        loading={loading}
         page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={filteredData.length}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
+        emptyMessage="No se encontraron roles asignados"
       />
 
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!roleToDelete}
         onClose={handleDeleteCancel}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
       >
-        <DialogTitle id="alert-dialog-title">Confirmar eliminación</DialogTitle>
+        <DialogTitle id="delete-dialog-title">
+          Eliminar rol de subcategoría
+        </DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
-            ¿Está seguro que desea eliminar el rol "{roleToDelete?.rolName}" de
-            esta subcategoría? Esta acción no se puede deshacer.
+          <DialogContentText id="delete-dialog-description">
+            ¿Estás seguro de que deseas eliminar el rol "{roleToDelete?.rolName}
+            " de esta subcategoría? Esta acción no se puede deshacer.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleDeleteCancel} disabled={isDeleting}>
+          <Button
+            onClick={handleDeleteCancel}
+            color="primary"
+            disabled={isDeleting}
+          >
             Cancelar
           </Button>
           <Button
             onClick={handleDeleteConfirm}
             color="error"
-            disabled={
-              isDeleting ||
-              (roleToDelete ? isSystemRole(roleToDelete.rolName) : false)
-            }
+            disabled={isDeleting}
             startIcon={isDeleting ? <CircularProgress size={20} /> : null}
           >
             {isDeleting ? "Eliminando..." : "Eliminar"}
@@ -380,15 +328,17 @@ const AssignRolesTable: React.FC<AssignRolesTableProps> = ({
         </DialogActions>
       </Dialog>
 
+      {/* Snackbar for notifications */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
+          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}

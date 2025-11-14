@@ -1,19 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
-  TablePagination,
   TextField,
   InputAdornment,
   Box,
-  Typography,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -21,6 +11,9 @@ import {
   DialogActions,
   Button,
   CircularProgress,
+  Typography,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -28,6 +21,7 @@ import {
   Search as SearchIcon,
 } from "@mui/icons-material";
 import { Snackbar, Alert } from "@mui/material";
+import DataTable from "@/components/common/DataTable/DataTable";
 import { Role } from "@/types/role.types";
 import roleService from "@/api/roleService";
 import RoleEditForm from "./RoleEditForm";
@@ -41,7 +35,6 @@ const RolesTable: React.FC<RolesTableProps> = ({
   roles: initialRoles,
   onRefresh,
 }) => {
-  const [roles, setRoles] = useState<Role[]>(initialRoles);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [searchTerm, setSearchTerm] = useState("");
@@ -56,22 +49,19 @@ const RolesTable: React.FC<RolesTableProps> = ({
     severity: "success" as "success" | "error" | "info" | "warning",
   });
 
-  useEffect(() => {
-    setRoles(initialRoles);
-  }, [initialRoles]);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
@@ -140,157 +130,139 @@ const RolesTable: React.FC<RolesTableProps> = ({
     return roleName === "ROLE_USER" || roleName === "ROLE_ADMIN";
   };
 
-  // Filter out system roles and apply search filter
-  const searchedRoles = React.useMemo(() => {
-    // First filter out system roles
-    const nonSystemRoles = roles.filter((role) => !isSystemRole(role.name));
-
-    // Then apply search filter if there's a search term
-    if (!searchTerm) return nonSystemRoles;
-
+  // Filter roles based on search term
+  const filteredRoles = React.useMemo(() => {
+    if (!searchTerm) return initialRoles;
     const searchLower = searchTerm.toLowerCase();
-    return nonSystemRoles.filter(
+    return initialRoles.filter(
       (role) =>
         role.name.toLowerCase().includes(searchLower) ||
-        role.detail?.toLowerCase().includes(searchLower) ||
-        false
+        (role.detail?.toLowerCase().includes(searchLower) ?? false)
     );
-  }, [roles, searchTerm]);
+  }, [initialRoles, searchTerm]);
 
-  // Avoid a layout jump when reaching the last page with empty rows.
-  const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - searchedRoles.length) : 0;
+  // Pagination
+  const paginatedRoles = React.useMemo(() => {
+    const start = page * rowsPerPage;
+    return filteredRoles.slice(start, start + rowsPerPage);
+  }, [filteredRoles, page, rowsPerPage]);
+
+  // Table columns
+  const columns = [
+    {
+      id: "name",
+      label: "Nombre",
+      minWidth: 150,
+      align: "left" as const,
+    },
+    {
+      id: "detail",
+      label: "Descripción",
+      minWidth: 200,
+      align: "left" as const,
+      format: (value: string) => value || "-",
+    },
+    {
+      id: "estado",
+      label: "Estado",
+      minWidth: 100,
+      align: "left" as const,
+      format: (value: boolean) => (value ? "Activo" : "Inactivo"),
+    },
+    {
+      id: "actions",
+      label: "Acciones",
+      minWidth: 120,
+      align: "center" as const,
+      format: (_: any, row: Role) => (
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1 }}>
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(row.id);
+            }}
+            disabled={isSystemRole(row.name)}
+            title={
+              isSystemRole(row.name)
+                ? "No se puede editar este rol del sistema"
+                : "Editar"
+            }
+            sx={{ "&:hover": { bgcolor: "primary.light", color: "white" } }}
+          >
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton
+            size="small"
+            color="error"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteClick(row);
+            }}
+            disabled={isSystemRole(row.name)}
+            title={
+              isSystemRole(row.name)
+                ? "No se puede eliminar este rol del sistema"
+                : "Eliminar"
+            }
+            sx={{ "&:hover": { bgcolor: "error.light", color: "white" } }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+      ),
+    },
+  ];
 
   return (
-    <Box>
-      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
+    <Box sx={{ width: "100%" }}>
+      <Box
+        sx={{
+          width: "100%",
+          mb: 3,
+          display: "flex",
+          flexDirection: isMobile ? "column" : "row",
+          gap: 2,
+          alignItems: "center",
+        }}
+      >
         <TextField
+          fullWidth
           variant="outlined"
           size="small"
           placeholder="Buscar roles..."
           value={searchTerm}
           onChange={handleSearchChange}
+          sx={{
+            maxWidth: isMobile ? "100%" : 400,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: 2,
+              "&:hover fieldset": {
+                borderColor: "primary.main",
+              },
+            },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
-                <SearchIcon />
+                <SearchIcon color="action" />
               </InputAdornment>
             ),
           }}
-          sx={{ minWidth: 250 }}
         />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell sx={{ fontWeight: "bold" }}>Nombre</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Descripción</TableCell>
-              <TableCell sx={{ fontWeight: "bold" }}>Estado</TableCell>
-              <TableCell align="right" sx={{ fontWeight: "bold" }}>
-                Acciones
-              </TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <CircularProgress />
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : searchedRoles.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <Typography variant="body1" color="textSecondary">
-                      No se encontraron roles
-                    </Typography>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {searchedRoles
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((role) => (
-                    <TableRow key={role.id}>
-                      <TableCell>{role.name}</TableCell>
-                      <TableCell>{role.detail || "Sin descripción"}</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={role.estado ? "Activo" : "Inactivo"}
-                          color={role.estado ? "success" : "default"}
-                          size="small"
-                          sx={{
-                            fontWeight: 500,
-                            "&.MuiChip-colorSuccess": {
-                              bgcolor: "accent2.light",
-                              color: "accent2.dark",
-                              "&:hover": {
-                                bgcolor: "accent2.main",
-                                color: "white",
-                              },
-                            },
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          onClick={() => handleEdit(role.id)}
-                          size="small"
-                          color="primary"
-                          disabled={isDeleting || isSystemRole(role.name)}
-                          title={
-                            isSystemRole(role.name)
-                              ? "No se puede editar este rol del sistema"
-                              : "Editar"
-                          }
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={() => handleDeleteClick(role)}
-                          size="small"
-                          color="error"
-                          disabled={isDeleting || isSystemRole(role.name)}
-                          title={
-                            isSystemRole(role.name)
-                              ? "No se puede eliminar este rol del sistema"
-                              : "Eliminar"
-                          }
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={4} />
-                  </TableRow>
-                )}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={searchedRoles.length}
-        rowsPerPage={rowsPerPage}
+      <DataTable
+        columns={columns}
+        data={paginatedRoles}
+        loading={isLoading}
         page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={filteredRoles.length}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
+        emptyMessage="No se encontraron roles"
       />
       {/* Edit Dialog */}
       <RoleEditForm
