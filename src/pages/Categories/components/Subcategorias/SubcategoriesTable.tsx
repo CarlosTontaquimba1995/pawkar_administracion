@@ -16,6 +16,8 @@ import {
   Select,
   MenuItem,
   Alert,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -203,15 +205,41 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
     setPage(0);
   };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   return (
     <Box>
-      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
-        <FormControl sx={{ minWidth: 200 }} size="small">
-          <InputLabel>Filtrar por categoría</InputLabel>
+      <Box
+        mb={3}
+        display="flex"
+        flexDirection={isMobile ? "column" : "row"}
+        gap={2}
+        sx={{
+          "& > *": {
+            width: isMobile ? "100%" : "auto",
+            minWidth: isMobile ? "100%" : 200,
+          },
+        }}
+      >
+        <FormControl
+          size="small"
+          sx={{
+            minWidth: isMobile ? "100%" : 250,
+            "& .MuiInputBase-root": {
+              height: 40,
+            },
+          }}
+        >
+          <InputLabel id="category-filter-label">
+            Filtrar por categoría
+          </InputLabel>
           <Select
+            labelId="category-filter-label"
             value={selectedCategory || ""}
             onChange={handleCategoryChange}
             label="Filtrar por categoría"
+            fullWidth
           >
             {categories.map((category) => (
               <MenuItem key={category.categoriaId} value={category.categoriaId}>
@@ -233,8 +261,17 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
                 <SearchIcon />
               </InputAdornment>
             ),
+            sx: {
+              height: 40,
+            },
           }}
-          sx={{ minWidth: 250 }}
+          sx={{
+            flexGrow: 1,
+            "& .MuiInputBase-root": {
+              height: 40,
+            },
+          }}
+          fullWidth={isMobile}
         />
       </Box>
 

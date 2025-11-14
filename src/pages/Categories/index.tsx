@@ -34,6 +34,8 @@ interface TabPanelProps {
 
 function TabPanel(props: TabPanelProps) {
   const { children, value, index, ...other } = props;
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <div
@@ -41,11 +43,18 @@ function TabPanel(props: TabPanelProps) {
       hidden={value !== index}
       id={`simple-tabpanel-${index}`}
       aria-labelledby={`simple-tab-${index}`}
+      style={{ width: "100%" }}
       {...other}
     >
       {value === index && (
-        <Box sx={{ p: 3 }}>
-          <div>{children}</div>
+        <Box
+          sx={{
+            p: isMobile ? 1 : 3,
+            width: "100%",
+            overflowX: "auto",
+          }}
+        >
+          <div style={{ minWidth: isMobile ? "100%" : "auto" }}>{children}</div>
         </Box>
       )}
     </div>
@@ -147,14 +156,42 @@ const CategoriesPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ width: "100%" }}>
-      <Box sx={{ borderBottom: 1, borderColor: "divider", mb: 3 }}>
+    <Box
+      sx={{
+        width: "100%",
+        p: isMobile ? 1 : 3,
+        maxWidth: "100vw",
+        overflowX: "hidden",
+      }}
+    >
+      {/* Tabs Section */}
+      <Box
+        sx={{
+          borderBottom: 1,
+          borderColor: "divider",
+          mb: 3,
+          width: "100%",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          "&::-webkit-scrollbar": { display: "none" },
+        }}
+      >
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
-          aria-label="categorias tabs"
           variant={isMobile ? "scrollable" : "standard"}
-          scrollButtons={isMobile ? "auto" : false}
+          scrollButtons={isMobile ? true : false}
+          allowScrollButtonsMobile
+          sx={{
+            minWidth: isMobile ? "max-content" : "auto",
+            "& .MuiTab-root": {
+              minWidth: isMobile ? "auto" : 160,
+              px: isMobile ? 2 : 3,
+              fontSize: isMobile ? "0.8rem" : "0.875rem",
+              textTransform: "none",
+              minHeight: "48px",
+            },
+          }}
         >
           <Tab label="Categorías" {...a11yProps(0)} />
           <Tab label="Subcategorías" {...a11yProps(1)} />
@@ -162,15 +199,40 @@ const CategoriesPage: React.FC = () => {
         </Tabs>
       </Box>
 
-      <Card>
-        <CardContent>
+      {/* Main Content */}
+      <Card
+        elevation={isMobile ? 0 : 1}
+        sx={{
+          borderRadius: isMobile ? 0 : 2,
+          width: "100%",
+          maxWidth: "100vw",
+          overflow: "hidden",
+        }}
+      >
+        <CardContent
+          sx={{
+            p: isMobile ? 2 : 3,
+            "&:last-child": { pb: isMobile ? 2 : 3 },
+          }}
+        >
+          {/* Header Section */}
           <Box
             display="flex"
+            flexDirection={isMobile ? "column" : "row"}
             justifyContent="space-between"
-            alignItems="center"
+            alignItems={isMobile ? "stretch" : "center"}
+            gap={2}
             mb={3}
+            width="100%"
           >
-            <Typography variant="h5" component="h2">
+            <Typography
+              variant={isMobile ? "h6" : "h5"}
+              component="h2"
+              sx={{
+                fontWeight: 600,
+                textAlign: isMobile ? "center" : "left",
+              }}
+            >
               {tabValue === 0
                 ? "Categorías"
                 : tabValue === 1
@@ -178,47 +240,55 @@ const CategoriesPage: React.FC = () => {
                 : "Series"}
             </Typography>
             <Button
-              variant="outlined"
+              fullWidth={isMobile}
+              variant="contained"
               color="primary"
               startIcon={<AddIcon />}
               onClick={handleAddNew}
+              size={isMobile ? "medium" : "large"}
               sx={{
-                "&:hover": {
-                  backgroundColor: "primary.main",
-                  color: "white",
-                  borderColor: "primary.main",
-                },
+                whiteSpace: "nowrap",
+                minWidth: isMobile ? "100%" : "auto",
+                textTransform: "none",
+                fontWeight: 500,
+                borderRadius: 2,
+                boxShadow: "none",
+                "&:hover": { boxShadow: theme.shadows[3] },
               }}
             >
               Agregar{" "}
-              {tabValue === 0
-                ? "Categoría"
-                : tabValue === 1
-                ? "Subcategoría"
-                : "Serie"}
+              {!isMobile &&
+                (tabValue === 0
+                  ? "Categoría"
+                  : tabValue === 1
+                  ? "Subcategoría"
+                  : "Serie")}
             </Button>
           </Box>
 
-          <TabPanel value={tabValue} index={0}>
-            <CategoriesTable categories={categories} onRefresh={fetchData} />
-          </TabPanel>
+          {/* Tab Content */}
+          <Box sx={{ width: "100%", overflowX: "auto" }}>
+            <TabPanel value={tabValue} index={0}>
+              <CategoriesTable categories={categories} onRefresh={fetchData} />
+            </TabPanel>
 
-          <TabPanel value={tabValue} index={1}>
-            <SubcategoriesTable
-              subcategories={subcategories}
-              categories={categories}
-              onRefresh={fetchData}
-            />
-          </TabPanel>
+            <TabPanel value={tabValue} index={1}>
+              <SubcategoriesTable
+                subcategories={subcategories}
+                categories={categories}
+                onRefresh={fetchData}
+              />
+            </TabPanel>
 
-          <TabPanel value={tabValue} index={2}>
-            <SeriesTable
-              series={series}
-              subcategorias={subcategories}
-              onRefresh={fetchData}
-              onEdit={(id) => setEditingSerieId(id)}
-            />
-          </TabPanel>
+            <TabPanel value={tabValue} index={2}>
+              <SeriesTable
+                series={series}
+                subcategorias={subcategories}
+                onRefresh={fetchData}
+                onEdit={(id) => setEditingSerieId(id)}
+              />
+            </TabPanel>
+          </Box>
         </CardContent>
       </Card>
 
