@@ -90,10 +90,10 @@ const DataTable: React.FC<DataTableProps> = ({
     >
       <TableContainer
         sx={{
-          maxHeight: "calc(100vh - 250px)",
+          overflowX: "auto",
+          overflowY: "hidden",
           "&::-webkit-scrollbar": {
-            width: "8px",
-            height: "8px",
+            height: "6px",
           },
           "&::-webkit-scrollbar-track": {
             background: theme.palette.grey[100],

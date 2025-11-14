@@ -1,15 +1,24 @@
 import React, { useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  CardContent,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import RegisterTeam from "./RegisterTeamForm";
 import EditTeam from "./EditTeamForm";
-import TeamTable from "./TeamTable"; // Assuming TeamTable is in the same directory
+import TeamTable from "./TeamTable";
 import { Team } from "@/types/team.types";
 
 const Teams: React.FC = () => {
   const [openRegister, setOpenRegister] = useState(false);
   const [editingTeam, setEditingTeam] = useState<Team | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   const handleOpenRegister = () => setOpenRegister(true);
   const handleCloseRegister = () => setOpenRegister(false);
@@ -17,7 +26,6 @@ const Teams: React.FC = () => {
   const handleEdit = (team: Team) => {
     setEditingTeam(team);
   };
-
 
   const handleCloseEdit = () => {
     setEditingTeam(null);
@@ -28,37 +36,76 @@ const Teams: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
+    <Box
+      sx={{
+        width: "100%",
+        p: isMobile ? 1 : 3,
+        maxWidth: "100vw",
+        overflowX: "hidden",
+      }}
+    >
+      <Card
+        elevation={isMobile ? 0 : 1}
+        sx={{
+          borderRadius: isMobile ? 0 : 2,
+          width: isMobile ? "100%" : "800px",
+          maxWidth: "100%",
+          margin: "0 auto",
+          overflow: "hidden",
+          transition: "all 0.3s ease-in-out",
+          minHeight: "500px",
+          display: "flex",
+          flexDirection: "column",
+        }}
       >
-        <Typography variant="h4">Equipos</Typography>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenRegister}
+        <CardContent
           sx={{
-            "&:hover": {
-              backgroundColor: "primary.main",
-              color: "white",
-              borderColor: "primary.main",
-            },
-            textTransform: "none",
+            p: isMobile ? 2 : 3,
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            "&:last-child": { pb: isMobile ? 2 : 3 },
           }}
         >
-          Nuevo Equipo
-        </Button>
-      </Box>
+          <Box display="flex" justifyContent="flex-end" mb={3} width="100%">
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={handleOpenRegister}
+              size={isMobile ? "medium" : "large"}
+              sx={{
+                whiteSpace: "nowrap",
+                minWidth: isMobile ? "100%" : "220px",
+                width: isMobile ? "100%" : "auto",
+                textTransform: "none",
+                fontWeight: 500,
+                borderRadius: 2,
+                boxShadow: "none",
+                px: 3,
+                justifyContent: "center",
+                "&:hover": {
+                  boxShadow: theme.shadows[3],
+                  backgroundColor: "primary.dark",
+                },
+                "& .MuiButton-startIcon": {
+                  marginRight: 1,
+                },
+              }}
+            >
+              Nuevo Equipo
+            </Button>
+          </Box>
 
-      <TeamTable
-        refreshKey={refreshKey}
-        onEdit={handleEdit}
-        onRefresh={handleSuccess}
-      />
+          <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+            <TeamTable
+              refreshKey={refreshKey}
+              onEdit={handleEdit}
+              onRefresh={handleSuccess}
+            />
+          </Box>
+        </CardContent>
+      </Card>
 
       <RegisterTeam
         open={openRegister}

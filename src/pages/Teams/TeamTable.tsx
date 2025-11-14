@@ -1,13 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   IconButton,
   TextField,
   InputAdornment,
@@ -17,7 +10,6 @@ import {
   MenuItem,
   CircularProgress,
   SelectChangeEvent,
-  Paper,
   Tooltip,
   Avatar,
   Chip,
@@ -31,6 +23,7 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
+import DataTable, { Column } from "@/components/common/DataTable/DataTable";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
@@ -48,6 +41,12 @@ import { Team } from "@/types/team.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import TeamRosterDialog from "./components/TeamRosterDialog";
 
+type TeamWithDetails = Team & {
+  subcategoriaNombre?: string;
+  serieNombre?: string;
+  jugadoresCount?: number;
+};
+
 interface TeamTableProps {
   refreshKey: number;
   onEdit: (team: Team) => void;
@@ -63,7 +62,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   const navigate = useNavigate();
 
   // Table state
-  const [teams, setTeams] = useState<Team[]>([]);
+  const [teams, setTeams] = useState<TeamWithDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -73,7 +72,10 @@ const TeamTable: React.FC<TeamTableProps> = ({
   // Filter states
   const [categorias, setCategorias] = useState<Subcategoria[]>([]);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
-  const [teamToViewRoster, setTeamToViewRoster] = useState<{id: number, name: string} | null>(null);
+  const [teamToViewRoster, setTeamToViewRoster] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [categoriaSeleccionada, setCategoriaSeleccionada] =
     useState<string>("");
@@ -239,16 +241,14 @@ const TeamTable: React.FC<TeamTableProps> = ({
     fetchTeams();
   }, [fetchTeams, refreshKey]);
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
+  const handleChangePage = useCallback((newPage: number) => {
     setPage(newPage);
-  };
+  }, []);
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = useCallback((newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
-  };
+  }, []);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -289,7 +289,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   const handleViewRoster = (team: Team) => {
     setTeamToViewRoster({
       id: team.equipoId,
-      name: team.nombre
+      name: team.nombre,
     });
   };
 
@@ -346,17 +346,108 @@ const TeamTable: React.FC<TeamTableProps> = ({
     });
   }, [teams, searchTerm, categoriaSeleccionada, serieSeleccionada]);
 
-  // Get paginated data
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredTeams.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredTeams, page, rowsPerPage]);
+  // Define table columns
+  const columns: Column[] = useMemo(
+    () => [
+      {
+        id: "nombre",
+        label: "Equipo",
+        format: (value: string, row: TeamWithDetails) => (
+          <Box display="flex" alignItems="center" gap={1}>
+            <Avatar
+              src={`/team-logos/${row.nombre
+                ?.toLowerCase()
+                .replace(/\s+/g, "-")}.png`}
+              alt={row.nombre}
+              sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
+            >
+              {row.nombre?.charAt(0) || "T"}
+            </Avatar>
+            <Typography variant="body2" fontWeight={500}>
+              {value}
+            </Typography>
+          </Box>
+        ),
+      },
+      {
+        id: "subcategoriaNombre",
+        label: "Categoría",
+        hideOnMobile: true,
+      },
+      {
+        id: "serieNombre",
+        label: "Serie",
+        hideOnMobile: true,
+      },
+      {
+        id: "jugadoresCount",
+        label: "Jugadores",
+        align: "center" as const,
+        format: (value: number) => (
+          <Chip label={value || 0} size="small" variant="outlined" />
+        ),
+      },
+      {
+        id: "actions",
+        label: "Acciones",
+        align: "right" as const,
+        format: (_: unknown, row: TeamWithDetails) => (
+          <Box display="flex" justifyContent="flex-end" gap={1}>
+            <Tooltip title="Editar">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(row);
+                }}
+              >
+                <EditIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Ver plantilla">
+              <IconButton
+                size="small"
+                color="primary"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleViewRoster(row);
+                }}
+              >
+                <PeopleIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Eliminar">
+              <IconButton
+                size="small"
+                color="error"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteClick(row);
+                }}
+              >
+                <DeleteIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        ),
+      },
+    ],
+    [handleViewRoster, handleDeleteClick, onEdit]
+  );
 
   return (
     <Box>
       {/* Search and Filter Bar */}
       <Box mb={3}>
-        <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
+        <Box
+          display="flex"
+          flexDirection={{ xs: "column", sm: "row" }}
+          gap={2}
+          flexWrap="wrap"
+          alignItems={{ xs: "stretch", sm: "center" }}
+          width="100%"
+        >
           <TextField
             variant="outlined"
             size="small"
@@ -376,12 +467,21 @@ const TeamTable: React.FC<TeamTableProps> = ({
                   </IconButton>
                 </InputAdornment>
               ),
-              sx: { minWidth: 250 },
+              sx: {
+                minWidth: { xs: "100%", sm: 250 },
+                width: { xs: "100%", sm: "auto" },
+              },
             }}
           />
 
           {/* Category Filter */}
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+          <FormControl
+            size="small"
+            sx={{
+              minWidth: { xs: "100%", sm: 200 },
+              width: { xs: "100%", sm: "auto" },
+            }}
+          >
             <InputLabel id="categoria-label">Categoría</InputLabel>
             <Select
               labelId="categoria-label"
@@ -408,7 +508,10 @@ const TeamTable: React.FC<TeamTableProps> = ({
           {/* Series Filter */}
           <FormControl
             size="small"
-            sx={{ minWidth: 200 }}
+            sx={{
+              minWidth: { xs: "100%", sm: 200 },
+              width: { xs: "100%", sm: "auto" },
+            }}
             disabled={!categoriaSeleccionada || isLoadingSeries}
           >
             <InputLabel id="serie-label">
@@ -453,14 +556,21 @@ const TeamTable: React.FC<TeamTableProps> = ({
               variant="outlined"
               color="primary"
               size="small"
+              fullWidth
               startIcon={<ClearIcon />}
               onClick={handleClearFilters}
               sx={{
                 textTransform: "none",
                 height: "40px",
                 whiteSpace: "nowrap",
-                alignSelf: "flex-end",
+                alignSelf: { xs: "stretch", sm: "center" },
                 mb: 1,
+                mt: { xs: 1, sm: 0 },
+                width: { xs: "100%", sm: "auto" },
+                "@media (min-width: 600px)": {
+                  width: "auto",
+                  alignSelf: "center",
+                },
               }}
             >
               Limpiar filtros
@@ -470,138 +580,22 @@ const TeamTable: React.FC<TeamTableProps> = ({
       </Box>
 
       {/* Data Table */}
-      <TableContainer component={Paper} sx={{ flex: 1, mb: 3 }}>
-        <Table
-          size="small"
-          sx={{ minWidth: 650 }}
-          aria-label="tabla de equipos"
-        >
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>Equipo</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell>Serie</TableCell>
-              <TableCell align="center">Jugadores</TableCell>
-              <TableCell align="center">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : filteredTeams.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    No se encontraron equipos
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedData.map((team, index) => (
-                <TableRow
-                  key={`${team.equipoId}-${index}`}
-                  hover
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row">
-                    {index + 1 + page * rowsPerPage}
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Avatar
-                        src={`/team-logos/${team.nombre
-                          ?.toLowerCase()
-                          .replace(/\s+/g, "-")}.png`}
-                        alt={team.nombre}
-                        sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
-                      >
-                        {team.nombre?.charAt(0) || "T"}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight={500}>
-                        {team.nombre}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={team.subcategoriaNombre}
-                      size="small"
-                      variant="outlined"
-                      color="primary"
-                    />
-                  </TableCell>
-                  <TableCell>{team.serieNombre || "-"}</TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={team.jugadoresCount || 0}
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box display="flex" gap={1} justifyContent="center">
-                      <Tooltip title="Editar">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(team)}
-                          color="primary"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Ver plantilla">
-                        <IconButton
-                          size="small"
-                          color="primary"
-                          onClick={() => handleViewRoster(team)}
-                          sx={{ mr: 1 }}
-                        >
-                          <PeopleIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Eliminar">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(team)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Pagination */}
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        component="div"
-        count={filteredTeams.length}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
-        sx={{
-          "& .MuiTablePagination-toolbar": {
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
-      />
+      <Box sx={{ flex: 1, mb: 3 }}>
+        <DataTable
+          columns={columns}
+          data={filteredTeams}
+          loading={isLoading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRows={filteredTeams.length}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={(event) => handleChangeRowsPerPage(event)}
+          onRowClick={onEdit}
+          emptyMessage="No se encontraron equipos"
+          hover
+          stickyHeader
+        />
+      </Box>
       {/* Delete Confirmation Dialog */}
       <Dialog
         open={teamToDelete !== null}
