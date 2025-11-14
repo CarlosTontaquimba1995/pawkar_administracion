@@ -1,18 +1,9 @@
 import React, { useEffect, useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
-  TablePagination,
   TextField,
   InputAdornment,
   Box,
-  Typography,
   Chip,
   Dialog,
   DialogTitle,
@@ -25,13 +16,15 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Alert,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
-import { Snackbar, Alert } from "@mui/material";
+import { Snackbar } from "@mui/material";
+import DataTable from "@/components/common/DataTable/DataTable";
 import { Subcategoria } from "../../../../types/subcategoria.types";
 import { Categoria } from "../../../../types/categoria.types";
 import subcategoriaService from "@/api/subcategoriaService";
@@ -76,14 +69,12 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
@@ -213,12 +204,6 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
     setPage(0);
   };
 
-  // Avoid a layout jump when reaching the last page with empty rows.
-  const emptyRows =
-    page > 0
-      ? Math.max(0, (1 + page) * rowsPerPage - searchedSubcategories.length)
-      : 0;
-
   return (
     <Box>
       <Box mb={2} display="flex" gap={2} flexWrap="wrap">
@@ -254,112 +239,82 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
         />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Categoría</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell align="right">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <CircularProgress />
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : searchedSubcategories.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <Typography variant="body1" color="textSecondary">
-                      No se encontraron subcategorías
-                    </Typography>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : (
+      <DataTable
+        columns={[
+          {
+            id: "nombre",
+            label: "Nombre",
+          },
+          {
+            id: "categoria",
+            label: "Categoría",
+            format: (_, row: Subcategoria) => getCategoryName(row.categoriaId),
+          },
+          {
+            id: "estado",
+            label: "Estado",
+            format: (row: Subcategoria) => (
+              <Chip
+                label={row.estado ? "Activo" : "Inactivo"}
+                color={row.estado ? "success" : "default"}
+                size="small"
+                sx={{
+                  fontWeight: 500,
+                  "&.MuiChip-colorSuccess": {
+                    bgcolor: "accent2.light",
+                    color: "accent2.dark",
+                    "&:hover": {
+                      bgcolor: "accent2.main",
+                      color: "white",
+                    },
+                  },
+                }}
+              />
+            ),
+          },
+          {
+            id: "acciones",
+            label: "Acciones",
+            align: "right",
+            format: (_, row: Subcategoria) => (
               <>
-                {searchedSubcategories
-                  .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                  .map((subcategory) => (
-                    <TableRow key={subcategory.subcategoriaId}>
-                      <TableCell>{subcategory.nombre}</TableCell>
-                      <TableCell>
-                        {getCategoryName(subcategory.categoriaId)}
-                      </TableCell>
-                      <TableCell>
-                        <Chip
-                          label={
-                            subcategory.estado === true ? "Activo" : "Inactivo"
-                          }
-                          color={
-                            subcategory.estado === true ? "success" : "default"
-                          }
-                          size="small"
-                          sx={{
-                            fontWeight: 500,
-                            "&.MuiChip-colorSuccess": {
-                              bgcolor: "accent2.light",
-                              color: "accent2.dark",
-                              "&:hover": {
-                                bgcolor: "accent2.main",
-                                color: "white",
-                              },
-                            },
-                          }}
-                        />
-                      </TableCell>
-                      <TableCell align="right">
-                        <IconButton
-                          onClick={() => handleEdit(subcategory.subcategoriaId)}
-                          size="small"
-                          color="primary"
-                          disabled={isDeleting}
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton
-                          onClick={() =>
-                            handleDeleteClick(subcategory.subcategoriaId)
-                          }
-                          size="small"
-                          color="error"
-                          disabled={isDeleting}
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={4} />
-                  </TableRow>
-                )}
+                <IconButton
+                  onClick={() => handleEdit(row.subcategoriaId)}
+                  size="small"
+                  color="primary"
+                  disabled={isDeleting}
+                  aria-label={`Editar ${row.nombre}`}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  onClick={() => handleDeleteClick(row.subcategoriaId)}
+                  size="small"
+                  color="error"
+                  disabled={isDeleting}
+                  aria-label={`Eliminar ${row.nombre}`}
+                >
+                  {isDeleting && subcategoryToDelete === row.subcategoriaId ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    <DeleteIcon />
+                  )}
+                </IconButton>
               </>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={searchedSubcategories.length}
-        rowsPerPage={rowsPerPage}
+            ),
+          },
+        ]}
+        data={searchedSubcategories}
+        loading={isLoading}
         page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={searchedSubcategories.length}
         onPageChange={handleChangePage}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
+        emptyMessage="No se encontraron subcategorías"
+        onRowClick={undefined}
+        hover={true}
+        stickyHeader={true}
       />
 
       {/* Snackbar para mostrar mensajes */}

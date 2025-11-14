@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
-  TablePagination,
   TextField,
   InputAdornment,
   Box,
-  Typography,
   Chip,
   Dialog,
   DialogTitle,
@@ -27,12 +18,15 @@ import {
   MenuItem,
   Snackbar,
   Alert,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
+import DataTable from "@/components/common/DataTable/DataTable";
 import { Serie } from "@/types/serie.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import serieService from "@/api/serieService";
@@ -71,14 +65,12 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
     severity: "success" as "success" | "error" | "info" | "warning",
   });
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
@@ -187,33 +179,34 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
           (
             subcategorias.find((s) => s.subcategoriaId === serie.subcategoriaId)
               ?.nombre || ""
-          )
-            .toLowerCase()
-            .includes(searchLower)
+          ).includes(searchLower)
       );
     }
 
     return result;
   }, [filteredSeries, searchTerm, subcategorias]);
 
-  const currentRows = React.useMemo(() => {
-    return rowsPerPage > 0 && filteredAndSearchedSeries
-      ? filteredAndSearchedSeries.slice(
-          page * rowsPerPage,
-          page * rowsPerPage + rowsPerPage
-        )
-      : filteredAndSearchedSeries || [];
-  }, [filteredAndSearchedSeries, page, rowsPerPage]);
-
-  const emptyRows = Math.max(
-    0,
-    (1 + page) * rowsPerPage - (filteredAndSearchedSeries?.length || 0)
-  );
+  // Get theme for responsive design
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   return (
     <Box>
-      <Box mb={2} display="flex" gap={2} flexWrap="wrap">
-        <FormControl sx={{ minWidth: 200 }} size="small">
+      <Box
+        mb={2}
+        display="flex"
+        gap={2}
+        flexWrap="wrap"
+        flexDirection={isMobile ? "column" : "row"}
+      >
+        <FormControl
+          fullWidth={isMobile}
+          size="small"
+          sx={{
+            minWidth: isMobile ? "100%" : 200,
+            mb: isMobile ? 1 : 0,
+          }}
+        >
           <InputLabel>Filtrar por subcategoría</InputLabel>
           <Select
             value={selectedSubcategoria || ""}
@@ -224,7 +217,11 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
               setPage(0);
             }}
             displayEmpty
+            fullWidth
           >
+            <MenuItem value="">
+              <em>Todas las subcategorías</em>
+            </MenuItem>
             {subcategorias.map((sub) => (
               <MenuItem key={sub.subcategoriaId} value={sub.subcategoriaId}>
                 {sub.nombre}
@@ -239,6 +236,7 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
           variant="outlined"
           value={searchTerm}
           onChange={handleSearchChange}
+          fullWidth={isMobile}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -249,94 +247,113 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
         />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Subcategoría</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell align="right">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading || loading ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="center"
-                    p={2}
+      <Box sx={{ width: "100%", overflowX: "auto" }}>
+        <DataTable
+          columns={[
+            {
+              id: "nombreSerie",
+              label: "Nombre",
+              minWidth: 150,
+            },
+            {
+              id: "subcategoria",
+              label: "Subcategoría",
+              minWidth: 150,
+              hideOnMobile: true,
+              format: (_, row: Serie) =>
+                subcategorias.find(
+                  (s) => s.subcategoriaId === row.subcategoriaId
+                )?.nombre || "Sin categoría",
+            },
+            {
+              id: "estado",
+              label: "Estado",
+              minWidth: 100,
+              align: "center" as const,
+              format: (row: Serie) => (
+                <Chip
+                  label={row.estado ? "Activo" : "Inactivo"}
+                  color={row.estado ? "success" : "default"}
+                  size="small"
+                  sx={{
+                    fontWeight: 500,
+                    minWidth: 80,
+                    "&.MuiChip-colorSuccess": {
+                      bgcolor: "accent2.light",
+                      color: "accent2.dark",
+                      "&:hover": {
+                        bgcolor: "accent2.main",
+                        color: "white",
+                      },
+                    },
+                  }}
+                />
+              ),
+            },
+            {
+              id: "acciones",
+              label: "Acciones",
+              align: "right",
+              minWidth: 120,
+              format: (_, row: Serie) => (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: isMobile ? "flex-start" : "flex-end",
+                    gap: 1,
+                  }}
+                >
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(row.serieId);
+                    }}
+                    size="small"
+                    color="primary"
+                    disabled={isDeleting}
+                    aria-label={`Editar ${row.nombreSerie}`}
                   >
-                    <CircularProgress />
-                    <Box mt={1}>Cargando series...</Box>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : !filteredSeries || filteredSeries.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} align="center">
-                  <Box py={4}>
-                    <Typography variant="body1" color="textSecondary">
-                      {searchTerm
-                        ? selectedSubcategoria
-                          ? "No se encontraron series para la subcategoría seleccionada"
-                          : "No hay series disponibles"
-                        : "No hay series registradas"}
-                    </Typography>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : (
-              <>
-                {currentRows.map((serie) => (
-                  <TableRow key={serie.serieId} hover>
-                    <TableCell>{serie.nombreSerie}</TableCell>
-                    <TableCell>
-                      {subcategorias.find(
-                        (s) => s.subcategoriaId === serie.subcategoriaId
-                      )?.nombre || "Sin categoría"}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={serie.estado ? "Activo" : "Inactivo"}
-                        color={serie.estado ? "success" : "default"}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        onClick={() => handleEdit(serie.serieId)}
-                        size="small"
-                        color="primary"
-                        disabled={isDeleting}
-                        title="Editar serie"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDeleteClick(serie.serieId)}
-                        size="small"
-                        color="error"
-                        disabled={isDeleting}
-                        title="Eliminar serie"
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {emptyRows > 0 && (
-                  <TableRow style={{ height: 53 * emptyRows }}>
-                    <TableCell colSpan={4} />
-                  </TableRow>
-                )}
-              </>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(row.serieId);
+                    }}
+                    size="small"
+                    color="error"
+                    disabled={isDeleting}
+                    aria-label={`Eliminar ${row.nombreSerie}`}
+                  >
+                    {isDeleting && serieToDelete === row.serieId ? (
+                      <CircularProgress size={24} />
+                    ) : (
+                      <DeleteIcon />
+                    )}
+                  </IconButton>
+                </Box>
+              ),
+            },
+          ]}
+          data={filteredAndSearchedSeries}
+          loading={isLoading || loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRows={filteredAndSearchedSeries?.length || 0}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          emptyMessage={
+            searchTerm
+              ? selectedSubcategoria
+                ? "No se encontraron series para la subcategoría seleccionada"
+                : "No hay series disponibles"
+              : "No hay series registradas"
+          }
+          onRowClick={undefined}
+          hover={true}
+          stickyHeader={true}
+        />
+      </Box>
 
       {/* Delete Confirmation Dialog */}
       <Dialog
@@ -384,26 +401,6 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
           {snackbar.message}
         </Alert>
       </Snackbar>
-
-      <TablePagination
-        rowsPerPageOptions={[5, 10, 25]}
-        component="div"
-        count={filteredAndSearchedSeries?.length || 0}
-        rowsPerPage={rowsPerPage}
-        page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
-        sx={{
-          "& .MuiTablePagination-toolbar": {
-            paddingLeft: 2,
-            paddingRight: 2,
-          },
-        }}
-      />
     </Box>
   );
 };

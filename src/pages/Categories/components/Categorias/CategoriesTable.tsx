@@ -1,18 +1,9 @@
 import React, { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
-  TablePagination,
   TextField,
   InputAdornment,
   Box,
-  Typography,
   Chip,
   Button,
   Dialog,
@@ -27,6 +18,7 @@ import {
   Delete as DeleteIcon,
   Search as SearchIcon,
 } from "@mui/icons-material";
+import DataTable from "@/components/common/DataTable/DataTable";
 import { Snackbar, Alert } from "@mui/material";
 import { Categoria } from "@/types/categoria.types";
 import categoriaService from "@/api/categoriaService";
@@ -70,14 +62,12 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
     severity: "success",
   });
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handleChangePage = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
@@ -163,26 +153,16 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
     category.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // Avoid a layout jump when reaching the last page with empty rows.
-  const emptyRows =
-    page > 0
-      ? Math.max(0, (1 + page) * rowsPerPage - filteredCategories.length)
-      : 0;
-
   return (
     <Box>
-      <Box
-        mb={2}
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-      >
+      <Box mb={2}>
         <TextField
           variant="outlined"
           size="small"
           placeholder="Buscar categorías..."
           value={searchTerm}
           onChange={handleSearchChange}
+          fullWidth
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -193,95 +173,79 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
         />
       </Box>
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell align="right">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredCategories.length === 0 ? (
-              <TableRow key="no-results">
-                <TableCell colSpan={3} align="center">
-                  <Box py={4}>
-                    <Typography variant="body1" color="textSecondary">
-                      No se encontraron categorías
-                    </Typography>
-                  </Box>
-                </TableCell>
-              </TableRow>
-            ) : (
+      <DataTable
+        columns={[
+          {
+            id: "nombre",
+            label: "Nombre",
+          },
+          {
+            id: "estado",
+            label: "Estado",
+            format: (row: Categoria) => (
+              <Chip
+                label={row.estado ? "Activo" : "Inactivo"}
+                color={row.estado ? "success" : "default"}
+                size="small"
+                sx={{
+                  fontWeight: 500,
+                  "&.MuiChip-colorSuccess": {
+                    bgcolor: "accent2.light",
+                    color: "accent2.dark",
+                    "&:hover": {
+                      bgcolor: "accent2.main",
+                      color: "white",
+                    },
+                  },
+                }}
+              />
+            ),
+          },
+
+          {
+            id: "acciones",
+            label: "Acciones",
+            align: "right",
+            format: (_: any, row: Categoria) => (
               <>
-                {(rowsPerPage > 0
-                  ? filteredCategories.slice(
-                      page * rowsPerPage,
-                      page * rowsPerPage + rowsPerPage
-                    )
-                  : filteredCategories
-                ).map((category, index) => (
-                  <TableRow key={`category-${category.categoriaId || index}`}>
-                    <TableCell>{category.nombre}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={category.estado ? "Activo" : "Inactivo"}
-                        color={category.estado ? "success" : "default"}
-                        size="small"
-                        sx={{
-                          fontWeight: 500,
-                          "&.MuiChip-colorSuccess": {
-                            bgcolor: "accent2.light",
-                            color: "accent2.dark",
-                            "&:hover": {
-                              bgcolor: "accent2.main",
-                              color: "white",
-                            },
-                          },
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton
-                        onClick={() => handleEdit(category.categoriaId)}
-                        size="small"
-                        color="primary"
-                        disabled={isDeleting}
-                        aria-label={`Editar ${category.nombre}`}
-                      >
-                        <EditIcon />
-                      </IconButton>
-                      <IconButton
-                        onClick={() => handleDeleteClick(category.categoriaId)}
-                        size="small"
-                        color="error"
-                        disabled={isDeleting}
-                        aria-label={`Eliminar ${category.nombre}`}
-                      >
-                        {isDeleting &&
-                        categoryToDelete === category.categoriaId ? (
-                          <CircularProgress size={24} />
-                        ) : (
-                          <DeleteIcon />
-                        )}
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {emptyRows > 0 && (
-                  <TableRow
-                    key={`empty-rows-${page}`}
-                    style={{ height: 53 * emptyRows }}
-                  >
-                    <TableCell colSpan={3} />
-                  </TableRow>
-                )}
+                <IconButton
+                  onClick={() => handleEdit(row.categoriaId)}
+                  size="small"
+                  color="primary"
+                  disabled={isDeleting}
+                  aria-label={`Editar ${row.nombre}`}
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  onClick={() => handleDeleteClick(row.categoriaId)}
+                  size="small"
+                  color="error"
+                  disabled={isDeleting}
+                  aria-label={`Eliminar ${row.nombre}`}
+                >
+                  {isDeleting && categoryToDelete === row.categoriaId ? (
+                    <CircularProgress size={24} />
+                  ) : (
+                    <DeleteIcon />
+                  )}
+                </IconButton>
               </>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            ),
+          },
+        ]}
+        data={filteredCategories}
+        loading={false}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        totalRows={filteredCategories.length}
+        onPageChange={handleChangePage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        emptyMessage="No se encontraron categorías"
+        onRowClick={undefined}
+        hover={true}
+        stickyHeader={true}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog
@@ -310,22 +274,6 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Box component="div" sx={{ mt: 2 }}>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={filteredCategories.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          labelRowsPerPage="Filas por página:"
-          labelDisplayedRows={({ from, to, count }) =>
-            `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-          }
-        />
-      </Box>
 
       {/* Edit Category Dialog */}
       {editingCategoryId !== null && (
