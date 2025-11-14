@@ -37,6 +37,8 @@ import {
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { useTheme as useMuiTheme } from "@mui/material/styles";
+import { useThemeConfig } from "@/contexts/ThemeContext";
 import { Subcategoria } from "../../types/subcategoria.types";
 import subcategoriaService from "@/api/subcategoriaService";
 import EventsRegisterForm from "./EventsRegisterForm";
@@ -65,6 +67,8 @@ const formatEventDate = (dateString: string | null | undefined) => {
 };
 
 const Events = () => {
+  const theme = useMuiTheme();
+  const { colors } = useThemeConfig();
   const [tabValue, setTabValue] = useState<"upcoming" | "completed" | "all">(
     "upcoming"
   );
@@ -300,9 +304,9 @@ const Events = () => {
           onClick={handleOpenRegisterForm}
           sx={{
             "&:hover": {
-              backgroundColor: "primary.main",
-              color: "white",
-              borderColor: "primary.main",
+              backgroundColor: colors.primary,
+              color: colors.white,
+              borderColor: colors.primary,
             },
           }}
         >
@@ -317,7 +321,7 @@ const Events = () => {
           mb: 3,
           borderRadius: 2,
           border: "1px solid",
-          borderColor: "divider",
+          borderColor: colors.primary,
         }}
       >
         <Box
@@ -411,9 +415,9 @@ const Events = () => {
                 onClick={handleOpenRegisterForm}
                 sx={{
                   "&:hover": {
-                    backgroundColor: "primary.main",
-                    color: "white",
-                    borderColor: "primary.main",
+                    backgroundColor: colors.primary,
+                    color: colors.white,
+                    borderColor: colors.primary,
                   },
                 }}
               >
@@ -434,13 +438,16 @@ const Events = () => {
                     height: "100%",
                     width: "100%",
                     maxWidth: "100%",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    backgroundColor: theme.palette.background.paper,
+                    boxShadow: `0 2px 8px ${colors.primary}10`,
                     borderRadius: 2,
                     overflow: "hidden",
-                    transition: "all 0.2s ease",
+                    transition: "all 0.3s ease",
+                    border: `1px solid ${colors.primary}20`,
                     "&:hover": {
-                      transform: "translateY(-2px)",
-                      boxShadow: "0 4px 16px rgba(0,0,0,0.1)",
+                      transform: "translateY(-4px)",
+                      boxShadow: `0 4px 16px ${colors.primary}20`,
+                      borderColor: `${colors.primary}30`,
                     },
                     "@media (min-width: 900px)": {
                       maxWidth: "none",
@@ -460,8 +467,8 @@ const Events = () => {
                       sx={{
                         width: { xs: "100%", md: 200 },
                         minHeight: { xs: 140, md: "100%" },
-                        background: (theme) => theme.palette.gradients.primary,
-                        color: "white",
+                        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                        color: colors.white,
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
@@ -477,10 +484,12 @@ const Events = () => {
                           top: 8,
                           right: 8,
                           "& .MuiIconButton-root": {
-                            color: "white",
-                            backgroundColor: "rgba(255,255,255,0.2)",
+                            color: colors.white,
+                            backgroundColor: `${colors.white}20`,
+                            transition: "all 0.2s ease",
                             "&:hover": {
-                              backgroundColor: "rgba(255,255,255,0.3)",
+                              backgroundColor: `${colors.white}30`,
+                              transform: "scale(1.05)",
                             },
                           },
                         }}
@@ -516,7 +525,12 @@ const Events = () => {
                       </Typography>
                     </Box>
                     <Box
-                      sx={{ flex: 1, display: "flex", flexDirection: "column" }}
+                      sx={{
+                        flex: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                        backgroundColor: theme.palette.background.paper,
+                      }}
                     >
                       <CardContent
                         sx={{
@@ -530,15 +544,17 @@ const Events = () => {
                         <Box sx={{ mb: 2 }}>
                           <Typography
                             variant="h6"
-                            component="h2"
+                            component="div"
                             sx={{
                               fontWeight: 600,
-                              mb: 1,
-                              display: "-webkit-box",
-                              WebkitLineClamp: 2,
-                              WebkitBoxOrient: "vertical",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
+                              mb: 1.5,
+                              color: colors.primary,
+                              fontSize: "1.1rem",
+                              letterSpacing: "0.3px",
+                              transition: "color 0.2s ease",
+                              "&:hover": {
+                                color: colors.secondary,
+                              },
                             }}
                           >
                             {event.nombre}
@@ -556,11 +572,11 @@ const Events = () => {
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
-                                bgcolor: "rgba(25, 118, 210, 0.1)",
+                                bgcolor: `${colors.primary}10`,
                                 px: 1.5,
                                 py: 0.5,
                                 borderRadius: 1,
-                                color: "primary.main",
+                                color: colors.primary,
                               }}
                             >
                               <EventIcon

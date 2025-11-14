@@ -3,7 +3,6 @@ import {
   Box,
   Paper,
   Typography,
-  useTheme,
   CircularProgress,
   Table,
   TableBody,
@@ -28,6 +27,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import playerService from "@/api/playerService";
 import categoriaService from "@/api/categoriaService";
 import subcategoriaService from "@/api/subcategoriaService";
+import { useTheme as useMuiTheme } from "@mui/material/styles";
+import { useThemeConfig } from "@/contexts/ThemeContext";
 
 const StatCard = ({
   title,
@@ -80,7 +81,8 @@ const StatCard = ({
 };
 
 const Dashboard = () => {
-  const theme = useTheme();
+  const theme = useMuiTheme();
+  const { colors } = useThemeConfig();
   const { token } = useAuth();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
@@ -562,9 +564,16 @@ const Dashboard = () => {
                                   mr: 1,
                                   fontSize: "0.75rem",
                                   display: { xs: "none", sm: "flex" },
+                                  bgcolor: colors.primary,
+                                  color: "#fff",
+                                  "&:hover": {
+                                    transform: "scale(1.05)",
+                                    transition: "all 0.2s ease",
+                                    boxShadow: `0 0 0 2px ${colors.secondary}`,
+                                  },
                                 }}
                               >
-                                {team.nombre.charAt(0)}
+                                {team.nombre.charAt(0).toUpperCase()}
                               </Avatar>
                               <Box
                                 component="span"
