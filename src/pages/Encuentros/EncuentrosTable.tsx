@@ -575,142 +575,177 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
     <Box>
       <Card>
         <CardContent>
-          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2, mb: 2 }}>
+          <Box
+            component="div"
+            sx={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 2,
+              mb: 2,
+              "& > *": {
+                flex: "1 1 200px",
+                minWidth: "150px",
+                maxWidth: "100%",
+                "@media (max-width: 600px)": {
+                  flex: "1 1 100%",
+                },
+              },
+            }}
+          >
+            {/* Filter components go here */}
+            {/* Filter components go here */}
             {/* Fecha Inicio */}
-            <TextField
-              label="Fecha Inicio"
-              type="date"
-              name="fechaInicio"
-              value={formatDateForInput(searchParams.fechaInicio)}
-              onChange={handleFilterChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              size="small"
-            />
+            <Box>
+              <TextField
+                fullWidth
+                label="Fecha Inicio"
+                type="date"
+                name="fechaInicio"
+                value={formatDateForInput(searchParams.fechaInicio)}
+                onChange={handleFilterChange}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                size="small"
+              />
+            </Box>
 
             {/* Fecha Fin */}
-            <TextField
-              label="Fecha Fin"
-              type="date"
-              name="fechaFin"
-              value={formatDateForInput(searchParams.fechaFin)}
-              onChange={handleFilterChange}
-              InputLabelProps={{
-                shrink: true,
-              }}
-              size="small"
-            />
+            <Box>
+              <TextField
+                fullWidth
+                label="Fecha Fin"
+                type="date"
+                name="fechaFin"
+                value={formatDateForInput(searchParams.fechaFin)}
+                onChange={handleFilterChange}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                size="small"
+              />
+            </Box>
 
             {/* Subcategoría */}
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
-              <Select
-                labelId="subcategoria-label"
-                name="subcategoriaId"
-                value={searchParams.subcategoriaId || 0}
-                onChange={handleFilterChange}
-                label="Subcategoría"
-              >
-                <MenuItem value={0}>
-                  <em>Seleccione subcategoría</em>
-                </MenuItem>
-                {subcategorias.map((subcategoria) => (
-                  <MenuItem
-                    key={subcategoria.subcategoriaId}
-                    value={subcategoria.subcategoriaId}
-                  >
-                    {subcategoria.nombre}
+            <Box>
+              <FormControl fullWidth size="small">
+                <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
+                <Select
+                  labelId="subcategoria-label"
+                  name="subcategoriaId"
+                  value={searchParams.subcategoriaId || 0}
+                  onChange={handleFilterChange}
+                  label="Subcategoría"
+                >
+                  <MenuItem value={0}>
+                    <em>Seleccione subcategoría</em>
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  {subcategorias.map((subcategoria) => (
+                    <MenuItem
+                      key={subcategoria.subcategoriaId}
+                      value={subcategoria.subcategoriaId}
+                    >
+                      {subcategoria.nombre}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
             {/* Serie */}
-            <FormControl
-              size="small"
-              sx={{ minWidth: 200 }}
-              disabled={!searchParams.subcategoriaId}
-            >
-              <InputLabel id="serie-label">Serie</InputLabel>
-              <Select
-                labelId="serie-label"
-                name="serieId"
-                value={searchParams.serieId || 0}
-                onChange={handleFilterChange}
-                label="Serie"
+            <Box>
+              <FormControl
+                fullWidth
+                size="small"
+                disabled={!searchParams.subcategoriaId}
               >
-                <MenuItem value={0}>
-                  <em>Todas las series</em>
-                </MenuItem>
-                {series.map((serie) => (
-                  <MenuItem key={serie.serieId} value={serie.serieId}>
-                    {serie.nombreSerie}
+                <InputLabel id="serie-label">Serie</InputLabel>
+                <Select
+                  labelId="serie-label"
+                  name="serieId"
+                  value={searchParams.serieId || 0}
+                  onChange={handleFilterChange}
+                  label="Serie"
+                >
+                  <MenuItem value={0}>
+                    <em>Todas las series</em>
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  {series.map((serie) => (
+                    <MenuItem key={serie.serieId} value={serie.serieId}>
+                      {serie.nombreSerie}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
             {/* Equipo */}
-            <FormControl
-              size="small"
-              sx={{ minWidth: 200 }}
-              disabled={!searchParams.serieId}
-            >
-              <InputLabel id="equipo-label">Equipo</InputLabel>
-              <Select
-                labelId="equipo-label"
-                name="equipoId"
-                value={searchParams.equipoId || 0}
-                onChange={handleFilterChange}
-                label="Equipo"
+            <Box>
+              <FormControl
+                fullWidth
+                size="small"
+                disabled={!searchParams.serieId}
               >
-                <MenuItem value={0}>
-                  <em>Todos los equipos</em>
-                </MenuItem>
-                {filteredEquipos.map((equipo) => (
-                  <MenuItem key={equipo.equipoId} value={equipo.equipoId}>
-                    {equipo.nombre}
+                <InputLabel id="equipo-label">Equipo</InputLabel>
+                <Select
+                  labelId="equipo-label"
+                  name="equipoId"
+                  value={searchParams.equipoId || 0}
+                  onChange={handleFilterChange}
+                  label="Equipo"
+                >
+                  <MenuItem value={0}>
+                    <em>Todos los equipos</em>
                   </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+                  {filteredEquipos.map((equipo) => (
+                    <MenuItem key={equipo.equipoId} value={equipo.equipoId}>
+                      {equipo.nombre}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
             {/* Estadio */}
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Estadio</InputLabel>
-              <Select
-                name="estadioId"
-                value={searchParams.estadioId || 0}
-                onChange={handleFilterChange}
-                label="Estadio"
-              >
-                <MenuItem value={0}>Todos</MenuItem>
-                {estadios.map((estadio) => (
-                  <MenuItem key={estadio.id} value={estadio.id}>
-                    {estadio.nombre}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+            <Box>
+              <FormControl fullWidth size="small">
+                <InputLabel>Estadio</InputLabel>
+                <Select
+                  name="estadioId"
+                  value={searchParams.estadioId || 0}
+                  onChange={handleFilterChange}
+                  label="Estadio"
+                >
+                  <MenuItem value={0}>Todos</MenuItem>
+                  {estadios.map((estadio) => (
+                    <MenuItem key={estadio.id} value={estadio.id}>
+                      {estadio.nombre}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Box>
 
             {/* Estado */}
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Estado</InputLabel>
-              <Select
-                name="estado"
-                value={searchParams.estado}
-                onChange={handleFilterChange}
-                label="Estado"
-              >
-                <MenuItem value="">Todos</MenuItem>
-                <MenuItem value="PENDIENTE">Pendiente</MenuItem>
-                <MenuItem value="EN_JUEGO">En juego</MenuItem>
-                <MenuItem value="SUSPENDIDO">Suspendido</MenuItem>
-                <MenuItem value="FINALIZADO">Finalizado</MenuItem>
-                <MenuItem value="APLAZADO">Aplazado</MenuItem>
-              </Select>
-            </FormControl>
+            <Box>
+              <FormControl fullWidth size="small">
+                <InputLabel>Estado</InputLabel>
+                <Select
+                  fullWidth
+                  name="estado"
+                  value={searchParams.estado}
+                  onChange={handleFilterChange}
+                  label="Estado"
+                >
+                  <MenuItem value="">Todos</MenuItem>
+                  <MenuItem value="PENDIENTE">Pendiente</MenuItem>
+                  <MenuItem value="EN_JUEGO">En juego</MenuItem>
+                  <MenuItem value="SUSPENDIDO">Suspendido</MenuItem>
+                  <MenuItem value="FINALIZADO">Finalizado</MenuItem>
+                  <MenuItem value="APLAZADO">Aplazado</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
 
             {/* Clear Filters Button */}
             {isFilterActive() && (
@@ -736,102 +771,103 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         </CardContent>
       </Card>
 
-      <DataTable
-        columns={[
-          {
-            id: "fechaHora",
-            label: "Fecha y Hora",
-            format: (value: string) => new Date(value).toLocaleString(),
-            sortable: true,
-          },
-          {
-            id: "titulo",
-            label: "Partido",
-            sortable: true,
-          },
-          {
-            id: "subcategoriaNombre",
-            label: "Subcategoría",
-            sortable: true,
-          },
-          {
-            id: "estadioNombre",
-            label: "Estadio",
-            sortable: true,
-          },
-          {
-            id: "estado",
-            label: "Estado",
-            format: (value: string) => (
-              <Chip
-                label={value}
-                color={
-                  value === "FINALIZADO"
-                    ? "success"
-                    : value === "EN_JUEGO"
-                    ? "primary"
-                    : "default"
-                }
-                size="small"
-              />
-            ),
-            sortable: true,
-          },
-          {
-            id: "acciones",
-            label: "Acciones",
-            align: "right",
-            format: (_: any, row: any) => (
-              <>
-                <IconButton
+      <Box sx={{ mt: 3 }}>
+        <DataTable
+          columns={[
+            {
+              id: "fechaHora",
+              label: "Fecha y Hora",
+              format: (value: string) => new Date(value).toLocaleString(),
+              sortable: true,
+            },
+            {
+              id: "titulo",
+              label: "Partido",
+              sortable: true,
+            },
+            {
+              id: "subcategoriaNombre",
+              label: "Subcategoría",
+              sortable: true,
+            },
+            {
+              id: "estadioNombre",
+              label: "Estadio",
+              sortable: true,
+            },
+            {
+              id: "estado",
+              label: "Estado",
+              format: (value: string) => (
+                <Chip
+                  label={value}
+                  color={
+                    value === "FINALIZADO"
+                      ? "success"
+                      : value === "EN_JUEGO"
+                      ? "primary"
+                      : "default"
+                  }
                   size="small"
-                  onClick={() => onEdit(row)}
+                />
+              ),
+              sortable: true,
+            },
+            {
+              id: "acciones",
+              label: "Acciones",
+              align: "right",
+              format: (_: any, row: any) => (
+                <>
+                  <IconButton
+                    size="small"
+                    onClick={() => onEdit(row)}
+                    color="primary"
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    size="small"
+                    onClick={() => handleDeleteClick(row)}
+                    color="error"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </>
+              ),
+            },
+            {
+              id: "sanciones",
+              label: "Sancionar Jugador",
+              align: "center",
+              format: (_: any, row: any) => (
+                <IconButton
+                  onClick={() => handleOpenSancionesDialog(row)}
                   color="primary"
+                  title="Gestionar sanciones"
                 >
-                  <EditIcon />
+                  <Badge
+                    badgeContent={sancionesByEncuentro[row.id!]?.length || 0}
+                    color="error"
+                  >
+                    <GavelIcon />
+                  </Badge>
                 </IconButton>
-                <IconButton
-                  size="small"
-                  onClick={() => handleDeleteClick(row)}
-                  color="error"
-                >
-                  <DeleteIcon />
-                </IconButton>
-              </>
-            ),
-          },
-          {
-            id: "sanciones",
-            label: "Sancionar Jugador",
-            align: "center",
-            format: (_: any, row: any) => (
-              <IconButton
-                onClick={() => handleOpenSancionesDialog(row)}
-                color="primary"
-                title="Gestionar sanciones"
-              >
-                <Badge
-                  badgeContent={sancionesByEncuentro[row.id!]?.length || 0}
-                  color="error"
-                >
-                  <GavelIcon />
-                </Badge>
-              </IconButton>
-            ),
-          },
-        ]}
-        data={encuentros}
-        loading={loading}
-        emptyMessage="No se encontraron encuentros"
-        onRowClick={onEdit}
-        page={searchParams.page}
-        rowsPerPage={searchParams.size}
-        totalRows={totalElements}
-        onPageChange={(newPage) => handlePageChange(null, newPage)}
-        onRowsPerPageChange={handleDataTableRowsPerPageChange}
-      />
+              ),
+            },
+          ]}
+          data={encuentros}
+          loading={loading}
+          emptyMessage="No se encontraron encuentros"
+          onRowClick={onEdit}
+          page={searchParams.page}
+          rowsPerPage={searchParams.size}
+          totalRows={totalElements}
+          onPageChange={(newPage) => handlePageChange(null, newPage)}
+          onRowsPerPageChange={handleDataTableRowsPerPageChange}
+        />
+      </Box>
 
-      {/* Sanciones Dialog */}
       <SancionDialog
         open={sancionesDialogOpen}
         onClose={handleCloseSancionesDialog}
@@ -861,7 +897,6 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         onRowsPerPageChange={handleTablePaginationRowsPerPageChange}
       />
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={!!encuentroToDelete}
         onClose={() => setEncuentroToDelete(null)}
@@ -890,7 +925,6 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         </DialogActions>
       </Dialog>
 
-      {/* Error Snackbar */}
       <Snackbar
         open={!!error}
         autoHideDuration={6000}

@@ -2,12 +2,12 @@ import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
+  Card,
+  CardContent,
   CircularProgress,
   useTheme,
   useMediaQuery,
   styled,
-  Paper,
-  Typography,
 } from "@mui/material";
 import { Add as AddIcon } from "@mui/icons-material";
 import EncuentrosRegisterForm from "./EncuentrosRegisterForm";
@@ -17,12 +17,22 @@ import { Estadio } from "@/types/estadio.types";
 import estadioService from "@/api/estadioService";
 import EncuentrosTable from "./EncuentrosTable";
 
-const PageContainer = styled(Paper)(({ theme }) => ({
-  maxWidth: 1600,
-  margin: "0 auto",
-  padding: theme.spacing(2),
+const PageContainer = styled(Box)(({ theme }) => ({
+  width: "100%",
+  p: theme.spacing(3),
+  maxWidth: "100vw",
+  overflowX: "hidden",
   [theme.breakpoints.down("sm")]: {
-    padding: theme.spacing(1),
+    p: 1,
+  },
+}));
+
+const StyledCard = styled(Card)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[1],
+  [theme.breakpoints.down("sm")]: {
+    boxShadow: "none",
+    borderRadius: 0,
   },
 }));
 
@@ -80,77 +90,61 @@ const EncuentrosPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: { xs: 1, sm: 2, md: 3 } }}>
-      <PageContainer elevation={3}>
-        <Box
-          display="flex"
-          flexDirection={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "stretch", sm: "center" }}
-          mb={3}
-          gap={2}
-        >
-          <Typography
-            variant="h4"
-            component="h1"
-            sx={{
-              fontWeight: 500,
-              textAlign: { xs: "center", sm: "left" },
-              mb: { xs: 2, sm: 0 },
-              fontSize: { xs: "1.5rem", sm: "2rem" },
-            }}
+    <PageContainer>
+      <StyledCard>
+        <CardContent>
+          <Box
+            display="flex"
+            justifyContent={isMobile ? "stretch" : "flex-end"}
+            alignItems="center"
+            mb={3}
+            flexDirection={isMobile ? "column" : "row"}
+            gap={isMobile ? 2 : 0}
           >
-            Gestión de Encuentros
-          </Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<AddIcon />}
-            onClick={() => setShowAddForm(true)}
-            size={isMobile ? "medium" : "large"}
-            fullWidth={isMobile}
-            sx={{
-              whiteSpace: "nowrap",
-              minWidth: isMobile ? "100%" : "auto",
-              textTransform: "none",
-              fontWeight: 500,
-              borderRadius: 2,
-              "&:hover": {
-                backgroundColor: "primary.dark",
-              },
-              py: 1,
-              px: 3,
-            }}
-          >
-            Nuevo Encuentro
-          </Button>
-        </Box>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<AddIcon />}
+              onClick={() => setShowAddForm(true)}
+              size={isMobile ? "small" : "medium"}
+              fullWidth={isMobile}
+            >
+              {isMobile ? "Nuevo" : "Nuevo Encuentro"}
+            </Button>
+          </Box>
 
-        <Box mt={3}>
-          <EncuentrosTable
-            refreshKey={refreshKey}
-            onEdit={handleEdit}
-            onRefresh={handleSuccess}
-          />
-        </Box>
+          {loading ? (
+            <Box display="flex" justifyContent="center" my={4}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <EncuentrosTable
+              refreshKey={refreshKey}
+              onEdit={handleEdit}
+              onRefresh={handleSuccess}
+            />
+          )}
+        </CardContent>
+      </StyledCard>
 
+      {showAddForm && (
         <EncuentrosRegisterForm
           open={showAddForm}
           onClose={() => setShowAddForm(false)}
           onSuccess={handleSuccess}
           estadios={estadios}
         />
+      )}
 
-        {editingEncuentro && (
-          <EncuentrosEditForm
-            open={!!editingEncuentro}
-            onClose={handleCloseEdit}
-            encuentroId={editingEncuentro?.id || 0}
-            onSuccess={handleSuccess}
-          />
-        )}
-      </PageContainer>
-    </Box>
+      {editingEncuentro && (
+        <EncuentrosEditForm
+          open={!!editingEncuentro}
+          onClose={handleCloseEdit}
+          encuentroId={editingEncuentro?.id || 0}
+          onSuccess={handleSuccess}
+        />
+      )}
+    </PageContainer>
   );
 };
 
