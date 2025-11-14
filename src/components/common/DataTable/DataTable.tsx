@@ -23,6 +23,7 @@ export interface Column {
   align?: TableCellProps["align"];
   format?: (value: any, row?: any) => React.ReactNode;
   hideOnMobile?: boolean;
+  sortable?: boolean;
 }
 
 interface DataTableProps {

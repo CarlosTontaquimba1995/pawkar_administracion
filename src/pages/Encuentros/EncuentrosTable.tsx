@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
   TextField,
   Box,
@@ -51,6 +44,7 @@ import { Sancion } from "@/types/sancion.types";
 import SancionDialog from "@/pages/Encuentros/SancionDialog";
 import { Badge } from "@mui/material";
 import plantillaService from "@/api/plantillaService";
+import DataTable from "@/components/common/DataTable/DataTable";
 
 interface EncuentrosTableProps {
   refreshKey: number;
@@ -302,15 +296,28 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
     });
   };
 
-  const handlePageChange = (_: any, newPage: number) => {
+  const handlePageChange = (
+    _: React.MouseEvent<HTMLButtonElement> | null,
+    newPage: number
+  ) => {
     setSearchParams((prev) => ({
       ...prev,
       page: newPage,
     }));
   };
 
-  const handleRowsPerPageChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+  // Handler for DataTable component
+  const handleDataTableRowsPerPageChange = (rowsPerPage: number) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      page: 0,
+      size: rowsPerPage,
+    }));
+  };
+
+  // Handler for MUI TablePagination component
+  const handleTablePaginationRowsPerPageChange = (
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     setSearchParams((prev) => ({
       ...prev,
@@ -729,92 +736,100 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         </CardContent>
       </Card>
 
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Fecha y Hora</TableCell>
-              <TableCell>Partido</TableCell>
-              <TableCell>Subcategoría</TableCell>
-              <TableCell>Estadio</TableCell>
-              <TableCell>Estado</TableCell>
-              <TableCell>Acciones</TableCell>
-              <TableCell>Sancionar Jugador</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center">
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : encuentros.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center">
-                  No se encontraron encuentros
-                </TableCell>
-              </TableRow>
-            ) : (
-              encuentros.map((encuentro) => (
-                <TableRow key={encuentro.id}>
-                  <TableCell>
-                    {new Date(encuentro.fechaHora).toLocaleString()}
-                  </TableCell>
-                  <TableCell>{encuentro.titulo}</TableCell>
-                  <TableCell>{encuentro.subcategoriaNombre}</TableCell>
-                  <TableCell>{encuentro.estadioNombre}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={encuentro.estado}
-                      color={
-                        encuentro.estado === "FINALIZADO"
-                          ? "success"
-                          : encuentro.estado === "EN_JUEGO"
-                          ? "primary"
-                          : "default"
-                      }
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(encuentro)}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteClick(encuentro)}
-                      color="error"
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </TableCell>
-                  <TableCell>
-                    <IconButton
-                      onClick={() => handleOpenSancionesDialog(encuentro)}
-                      color="primary"
-                      title="Gestionar sanciones"
-                    >
-                      <Badge
-                        badgeContent={
-                          sancionesByEncuentro[encuentro.id!]?.length || 0
-                        }
-                        color="error"
-                      >
-                        <GavelIcon />
-                      </Badge>
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      <DataTable
+        columns={[
+          {
+            id: "fechaHora",
+            label: "Fecha y Hora",
+            format: (value: string) => new Date(value).toLocaleString(),
+            sortable: true,
+          },
+          {
+            id: "titulo",
+            label: "Partido",
+            sortable: true,
+          },
+          {
+            id: "subcategoriaNombre",
+            label: "Subcategoría",
+            sortable: true,
+          },
+          {
+            id: "estadioNombre",
+            label: "Estadio",
+            sortable: true,
+          },
+          {
+            id: "estado",
+            label: "Estado",
+            format: (value: string) => (
+              <Chip
+                label={value}
+                color={
+                  value === "FINALIZADO"
+                    ? "success"
+                    : value === "EN_JUEGO"
+                    ? "primary"
+                    : "default"
+                }
+                size="small"
+              />
+            ),
+            sortable: true,
+          },
+          {
+            id: "acciones",
+            label: "Acciones",
+            align: "right",
+            format: (_: any, row: any) => (
+              <>
+                <IconButton
+                  size="small"
+                  onClick={() => onEdit(row)}
+                  color="primary"
+                >
+                  <EditIcon />
+                </IconButton>
+                <IconButton
+                  size="small"
+                  onClick={() => handleDeleteClick(row)}
+                  color="error"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </>
+            ),
+          },
+          {
+            id: "sanciones",
+            label: "Sancionar Jugador",
+            align: "center",
+            format: (_: any, row: any) => (
+              <IconButton
+                onClick={() => handleOpenSancionesDialog(row)}
+                color="primary"
+                title="Gestionar sanciones"
+              >
+                <Badge
+                  badgeContent={sancionesByEncuentro[row.id!]?.length || 0}
+                  color="error"
+                >
+                  <GavelIcon />
+                </Badge>
+              </IconButton>
+            ),
+          },
+        ]}
+        data={encuentros}
+        loading={loading}
+        emptyMessage="No se encontraron encuentros"
+        onRowClick={onEdit}
+        page={searchParams.page}
+        rowsPerPage={searchParams.size}
+        totalRows={totalElements}
+        onPageChange={(newPage) => handlePageChange(null, newPage)}
+        onRowsPerPageChange={handleDataTableRowsPerPageChange}
+      />
 
       {/* Sanciones Dialog */}
       <SancionDialog
@@ -843,7 +858,7 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
         rowsPerPage={searchParams.size}
         page={searchParams.page}
         onPageChange={handlePageChange}
-        onRowsPerPageChange={handleRowsPerPageChange}
+        onRowsPerPageChange={handleTablePaginationRowsPerPageChange}
       />
 
       {/* Delete Confirmation Dialog */}
