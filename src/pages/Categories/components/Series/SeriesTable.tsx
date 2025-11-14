@@ -4,7 +4,6 @@ import {
   TextField,
   InputAdornment,
   Box,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -264,31 +263,6 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
                 subcategorias.find(
                   (s) => s.subcategoriaId === row.subcategoriaId
                 )?.nombre || "Sin categoría",
-            },
-            {
-              id: "estado",
-              label: "Estado",
-              minWidth: 100,
-              align: "center" as const,
-              format: (row: Serie) => (
-                <Chip
-                  label={row.estado ? "Activo" : "Inactivo"}
-                  color={row.estado ? "success" : "default"}
-                  size="small"
-                  sx={{
-                    fontWeight: 500,
-                    minWidth: 80,
-                    "&.MuiChip-colorSuccess": {
-                      bgcolor: "accent2.light",
-                      color: "accent2.dark",
-                      "&:hover": {
-                        bgcolor: "accent2.main",
-                        color: "white",
-                      },
-                    },
-                  }}
-                />
-              ),
             },
             {
               id: "acciones",

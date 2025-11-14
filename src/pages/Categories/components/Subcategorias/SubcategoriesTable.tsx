@@ -4,7 +4,6 @@ import {
   TextField,
   InputAdornment,
   Box,
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -249,28 +248,6 @@ const SubcategoriesTable: React.FC<SubcategoriesTableProps> = ({
             id: "categoria",
             label: "Categoría",
             format: (_, row: Subcategoria) => getCategoryName(row.categoriaId),
-          },
-          {
-            id: "estado",
-            label: "Estado",
-            format: (row: Subcategoria) => (
-              <Chip
-                label={row.estado ? "Activo" : "Inactivo"}
-                color={row.estado ? "success" : "default"}
-                size="small"
-                sx={{
-                  fontWeight: 500,
-                  "&.MuiChip-colorSuccess": {
-                    bgcolor: "accent2.light",
-                    color: "accent2.dark",
-                    "&:hover": {
-                      bgcolor: "accent2.main",
-                      color: "white",
-                    },
-                  },
-                }}
-              />
-            ),
           },
           {
             id: "acciones",

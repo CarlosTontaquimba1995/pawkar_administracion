@@ -4,7 +4,6 @@ import {
   TextField,
   InputAdornment,
   Box,
-  Chip,
   Button,
   Dialog,
   DialogTitle,
@@ -179,29 +178,6 @@ const CategoriesTable: React.FC<CategoriesTableProps> = ({
             id: "nombre",
             label: "Nombre",
           },
-          {
-            id: "estado",
-            label: "Estado",
-            format: (row: Categoria) => (
-              <Chip
-                label={row.estado ? "Activo" : "Inactivo"}
-                color={row.estado ? "success" : "default"}
-                size="small"
-                sx={{
-                  fontWeight: 500,
-                  "&.MuiChip-colorSuccess": {
-                    bgcolor: "accent2.light",
-                    color: "accent2.dark",
-                    "&:hover": {
-                      bgcolor: "accent2.main",
-                      color: "white",
-                    },
-                  },
-                }}
-              />
-            ),
-          },
-
           {
             id: "acciones",
             label: "Acciones",
