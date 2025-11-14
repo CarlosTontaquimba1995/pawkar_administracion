@@ -1,21 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TablePagination,
   IconButton,
   TextField,
   InputAdornment,
-  CircularProgress,
-  Paper,
   Tooltip,
-  Chip,
-  Typography,
   Dialog,
   DialogActions,
   DialogContent,
@@ -25,6 +14,8 @@ import {
   Snackbar,
   Alert,
   Avatar,
+  Typography,
+  useTheme,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -35,6 +26,7 @@ import {
 } from "@mui/icons-material";
 import { Player } from "@/types/player.types";
 import playerService from "@/api/playerService";
+import DataTable, { Column } from "@/components/common/DataTable/DataTable";
 
 interface PlayerTableProps {
   refreshKey: number;
@@ -71,12 +63,17 @@ const PlayerTable: React.FC<PlayerTableProps> = ({
       const response = await playerService.getPlayers({
         page,
         size: rowsPerPage,
-        search: searchTerm,
+        search: searchTerm.trim(),
       });
 
-      if (response.success && response.data) {
-        setPlayers(response.data.content || []);
-        setTotalElements(response.data.totalElements || 0);
+      if (response?.success) {
+        setPlayers(
+          Array.isArray(response.data?.content) ? response.data.content : []
+        );
+        setTotalElements(Number(response.data?.totalElements) || 0);
+      } else {
+        setPlayers([]);
+        setTotalElements(0);
       }
     } catch (error) {
       console.error("Error loading players:", error);
@@ -85,6 +82,8 @@ const PlayerTable: React.FC<PlayerTableProps> = ({
         message: "Error al cargar los jugadores",
         severity: "error",
       });
+      setPlayers([]);
+      setTotalElements(0);
     } finally {
       setIsLoading(false);
     }
@@ -94,16 +93,14 @@ const PlayerTable: React.FC<PlayerTableProps> = ({
     fetchPlayers();
   }, [fetchPlayers, refreshKey]);
 
-  const handleChangePage = (_event: unknown, newPage: number) => {
+  const handlePageChange = useCallback((newPage: number) => {
     setPage(newPage);
-  };
+  }, []);
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleRowsPerPageChange = useCallback((newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
-  };
+  }, []);
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value);
@@ -154,157 +151,139 @@ const PlayerTable: React.FC<PlayerTableProps> = ({
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
-  const paginatedData = useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return players.slice(startIndex, startIndex + rowsPerPage);
-  }, [players, page, rowsPerPage]);
+  const columns: Column[] = [
+    {
+      id: "index",
+      label: "#",
+      align: "center",
+      minWidth: 50,
+      format: (_: any, row: Player) => {
+        const index = players.findIndex((p) => p.id === row.id);
+        return page * rowsPerPage + index + 1;
+      },
+    },
+    {
+      id: "nombre",
+      label: "Jugador",
+      minWidth: 200,
+      format: (_: string, row: Player) => (
+        <Box display="flex" alignItems="center" gap={2}>
+          <Avatar sx={{ width: 32, height: 32, bgcolor: "primary.main" }}>
+            <PersonIcon fontSize="small" />
+          </Avatar>
+          <Box>
+            <Typography variant="body2" fontWeight="medium">
+              {row.nombre} {row.apellido}
+            </Typography>
+            <Typography variant="caption" color="textSecondary">
+              {row.nombreEquipo || "Sin equipo"}
+            </Typography>
+          </Box>
+        </Box>
+      ),
+    },
+    {
+      id: "documentoIdentidad",
+      label: "Documento",
+      minWidth: 150,
+      hideOnMobile: true,
+    },
+    {
+      id: "fechaNacimiento",
+      label: "Fecha Nacimiento",
+      minWidth: 150,
+      format: (value: string) => new Date(value).toLocaleDateString(),
+      hideOnMobile: true,
+    },
+    {
+      id: "acciones",
+      label: "Acciones",
+      align: "right",
+      minWidth: 120,
+      format: (_: unknown, row: Player) => (
+        <Box display="flex" justifyContent="flex-end" gap={1}>
+          <Tooltip title="Editar">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(row);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Eliminar">
+            <IconButton
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteClick(row);
+              }}
+              color="error"
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      ),
+    },
+  ];
 
   return (
     <Box>
       {/* Search Bar */}
-      <Box mb={3}>
-        <TextField
-          variant="outlined"
-          size="small"
-          placeholder="Buscar jugadores..."
-          value={searchTerm}
-          onChange={handleSearchChange}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
-            endAdornment: searchTerm && (
-              <InputAdornment position="end">
-                <IconButton size="small" onClick={handleClearSearch}>
-                  <ClearIcon fontSize="small" />
-                </IconButton>
-              </InputAdornment>
-            ),
-            sx: { minWidth: 300 },
-          }}
-        />
+      <Box
+        mb={3}
+        display="flex"
+        alignItems="center"
+        gap={2}
+        flexDirection={{ xs: "column", sm: "row" }}
+      >
+        <Box flex={1} width="100%">
+          <TextField
+            variant="outlined"
+            size="small"
+            placeholder="Buscar jugadores..."
+            value={searchTerm}
+            onChange={handleSearchChange}
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: searchTerm && (
+                <InputAdornment position="end">
+                  <IconButton
+                    size="small"
+                    onClick={handleClearSearch}
+                    edge="end"
+                  >
+                    <ClearIcon fontSize="small" />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Box>
       </Box>
 
       {/* Data Table */}
-      <TableContainer component={Paper} sx={{ flex: 1, mb: 3 }}>
-        <Table
-          size="small"
-          sx={{ minWidth: 650 }}
-          aria-label="tabla de jugadores"
-        >
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>Jugador</TableCell>
-              <TableCell>Documento</TableCell>
-              <TableCell>Fecha Nacimiento</TableCell>
-              <TableCell align="center">Estado</TableCell>
-              <TableCell align="center">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                  <CircularProgress />
-                </TableCell>
-              </TableRow>
-            ) : players.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    No se encontraron jugadores
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedData.map((player, index) => (
-                <TableRow
-                  key={player.id}
-                  hover
-                  sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                >
-                  <TableCell component="th" scope="row">
-                    {index + 1 + page * rowsPerPage}
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Avatar
-                        sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
-                      >
-                        {player.nombre?.charAt(0) || (
-                          <PersonIcon fontSize="small" />
-                        )}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body2" fontWeight={500}>
-                          {player.nombre} {player.apellido}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  </TableCell>
-                  <TableCell>{player.documentoIdentidad}</TableCell>
-                  <TableCell>
-                    {new Date(player.fechaNacimiento).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label="Activo"
-                      color="success"
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box display="flex" gap={1} justifyContent="center">
-                      <Tooltip title="Editar">
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(player)}
-                          color="primary"
-                        >
-                          <EditIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Eliminar">
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => handleDeleteClick(player)}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Pagination */}
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        component="div"
-        count={totalElements}
-        rowsPerPage={rowsPerPage}
+      <DataTable
+        columns={columns}
+        data={players}
+        loading={isLoading}
         page={page}
-        onPageChange={handleChangePage}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
-        sx={{
-          "& .MuiTablePagination-toolbar": {
-            paddingLeft: 0,
-            paddingRight: 0,
-          },
-        }}
+        rowsPerPage={rowsPerPage}
+        totalRows={totalElements}
+        onPageChange={handlePageChange}
+        onRowsPerPageChange={handleRowsPerPageChange}
+        emptyMessage="No se encontraron jugadores"
+        hover
+        stickyHeader
       />
 
       {/* Delete Confirmation Dialog */}
