@@ -24,12 +24,14 @@ import {
   Button,
   Snackbar,
   Alert,
+  Avatar,
 } from "@mui/material";
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
   Clear as ClearIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import { Player } from "@/types/player.types";
 import playerService from "@/api/playerService";
@@ -195,8 +197,7 @@ const PlayerTable: React.FC<PlayerTableProps> = ({
           <TableHead>
             <TableRow>
               <TableCell>#</TableCell>
-              <TableCell>Nombre</TableCell>
-              <TableCell>Apellido</TableCell>
+              <TableCell>Jugador</TableCell>
               <TableCell>Documento</TableCell>
               <TableCell>Fecha Nacimiento</TableCell>
               <TableCell align="center">Estado</TableCell>
@@ -228,8 +229,22 @@ const PlayerTable: React.FC<PlayerTableProps> = ({
                   <TableCell component="th" scope="row">
                     {index + 1 + page * rowsPerPage}
                   </TableCell>
-                  <TableCell>{player.nombre}</TableCell>
-                  <TableCell>{player.apellido}</TableCell>
+                  <TableCell>
+                    <Box display="flex" alignItems="center" gap={1}>
+                      <Avatar
+                        sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
+                      >
+                        {player.nombre?.charAt(0) || (
+                          <PersonIcon fontSize="small" />
+                        )}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2" fontWeight={500}>
+                          {player.nombre} {player.apellido}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </TableCell>
                   <TableCell>{player.documentoIdentidad}</TableCell>
                   <TableCell>
                     {new Date(player.fechaNacimiento).toLocaleDateString()}
