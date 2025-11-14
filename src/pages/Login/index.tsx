@@ -11,8 +11,7 @@ import {
   IconButton,
   Fade,
   Slide,
-  useTheme,
-} from '@mui/material';
+} from "@mui/material";
 import {
   Visibility,
   VisibilityOff,
@@ -20,20 +19,23 @@ import {
   Person as PersonIcon,
   Lock as LockIcon,
   SportsSoccer as SportsIcon,
-} from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import { authService } from '../../api/authService';
+} from "@mui/icons-material";
+import { useAuth } from "../../contexts/AuthContext";
+import { authService } from "../../api/authService";
+import { useTheme as useMuiTheme } from "@mui/material/styles";
+import { useThemeConfig } from "@/contexts/ThemeContext";
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const theme = useTheme();
-  
+  const theme = useMuiTheme();
+  const { colors } = useThemeConfig();
+
   const [formData, setFormData] = useState({
-    username: '',
-    password: '',
+    username: "",
+    password: "",
   });
-  
+
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,12 +55,12 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log('🔐 Intentando iniciar sesión...');
+      console.log("🔐 Intentando iniciar sesión...");
       const response = await authService.login(formData);
 
       if (response.success && response.data) {
-        console.log('✅ Login exitoso');
-        
+        console.log("✅ Login exitoso");
+
         // Guardar token y datos de usuario en el contexto
         login(response.data.accessToken, {
           id: response.data.id,
@@ -68,14 +70,14 @@ const Login = () => {
         });
 
         // Redirigir al dashboard
-        navigate('/dashboard');
+        navigate("/dashboard");
       } else {
-        console.log('❌ Login fallido:', response.message);
-        setError(response.message || 'Error al iniciar sesión');
+        console.log("❌ Login fallido:", response.message);
+        setError(response.message || "Error al iniciar sesión");
       }
     } catch (err: any) {
-      console.error('❌ Error en login:', err);
-      setError('Error de conexión. Verifica que el servidor esté activo.');
+      console.error("❌ Error en login:", err);
+      setError("Error de conexión. Verifica que el servidor esté activo.");
     } finally {
       setIsLoading(false);
     }
@@ -98,7 +100,10 @@ const Login = () => {
           display: { xs: "none", md: "flex" },
           width: "50vw",
           minHeight: "100vh",
-          background: theme.custom.colors.gradients.primary,
+          background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+          backgroundImage: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%),
+                          linear-gradient(135deg, ${colors.primary} 30%, transparent 100%)`,
+          backgroundBlendMode: "overlay",
           flexDirection: "column",
           justifyContent: "center",
           alignItems: "center",
@@ -112,20 +117,21 @@ const Login = () => {
             left: 0,
             right: 0,
             bottom: 0,
-            background: `radial-gradient(circle at 20% 50%, ${theme.custom.colorWithOpacity.secondary[30]} 0%, transparent 50%),
-                       radial-gradient(circle at 80% 80%, ${theme.custom.colorWithOpacity.accent2[20]} 0%, transparent 50%)`,
+            background: `radial-gradient(circle at 20% 50%, ${colors.white}10 0%, transparent 50%),
+                       radial-gradient(circle at 80% 80%, ${colors.white}15 0%, transparent 50%)`,
+            opacity: 0.8,
           },
         }}
       >
         <Fade in timeout={1000}>
           <Box sx={{ textAlign: "center", zIndex: 1 }}>
             <SportsIcon
-              sx={{ fontSize: 120, color: "white", mb: 3, opacity: 0.9 }}
+              sx={{ fontSize: 120, color: colors.white, mb: 3, opacity: 0.9 }}
             />
             <Typography
               variant="h2"
               sx={{
-                color: "white",
+                color: colors.white,
                 fontWeight: 800,
                 mb: 2,
                 fontSize: "3rem",
@@ -137,7 +143,7 @@ const Login = () => {
             <Typography
               variant="h6"
               sx={{
-                color: "white",
+                color: colors.white,
                 opacity: 0.95,
                 fontWeight: 300,
                 maxWidth: 400,
@@ -182,7 +188,7 @@ const Login = () => {
                 mb: 4,
               }}
             >
-              <SportsIcon sx={{ fontSize: 80, color: "primary.main" }} />
+              <SportsIcon sx={{ fontSize: 80, color: colors.primary }} />
             </Box>
 
             {/* Título */}
@@ -193,7 +199,7 @@ const Login = () => {
                 gutterBottom
                 sx={{
                   fontWeight: 700,
-                  color: "primary.main",
+                  color: colors.primary,
                   textAlign: { xs: "center", md: "left" },
                 }}
               >
@@ -241,7 +247,7 @@ const Login = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <PersonIcon sx={{ color: "primary.main" }} />
+                      <PersonIcon sx={{ color: colors.primary }} />
                     </InputAdornment>
                   ),
                 }}
@@ -250,7 +256,7 @@ const Login = () => {
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
                     "&:hover fieldset": {
-                      borderColor: "primary.main",
+                      borderColor: colors.primary,
                     },
                   },
                   "& .MuiInputBase-input": {
@@ -276,7 +282,7 @@ const Login = () => {
                 InputProps={{
                   startAdornment: (
                     <InputAdornment position="start">
-                      <LockIcon sx={{ color: "primary.main" }} />
+                      <LockIcon sx={{ color: colors.primary }} />
                     </InputAdornment>
                   ),
                   endAdornment: (
@@ -285,7 +291,7 @@ const Login = () => {
                         onClick={() => setShowPassword(!showPassword)}
                         edge="end"
                         disabled={isLoading}
-                        sx={{ color: "primary.main" }}
+                        sx={{ color: colors.primary }}
                       >
                         {showPassword ? <VisibilityOff /> : <Visibility />}
                       </IconButton>
@@ -297,7 +303,7 @@ const Login = () => {
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 2,
                     "&:hover fieldset": {
-                      borderColor: "primary.main",
+                      borderColor: colors.primary,
                     },
                   },
                 }}
@@ -323,11 +329,11 @@ const Login = () => {
                   fontWeight: 600,
                   minHeight: "48px", // Tamaño mínimo para mejor accesibilidad táctil
                   textTransform: "none",
-                  background: theme.custom.colors.gradients.primary,
-                  boxShadow: theme.custom.colors.shadows.primary,
+                  background: colors.primary,
+                  boxShadow: `0 4px 20px ${colors.primary}26`,
                   "&:hover": {
-                    background: theme.custom.colors.gradients.primary,
-                    boxShadow: theme.custom.colors.shadows.medium,
+                    background: colors.secondary,
+                    boxShadow: `0 8px 32px ${colors.secondary}33`,
                     transform: "translateY(-2px)",
                   },
                   transition: "all 0.3s ease",
