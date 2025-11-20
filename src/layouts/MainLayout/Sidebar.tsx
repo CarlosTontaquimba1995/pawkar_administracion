@@ -17,6 +17,13 @@ import {
   Tooltip,
   Alert,
   Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+  Button,
+  CircularProgress,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -78,11 +85,6 @@ const menuItems = [
   },
 ];
 
-const bottomMenuItems = [
-  { text: "Configuración", icon: <SettingsIcon />, path: "/settings" },
-  { text: "Cerrar Sesión", icon: <LogoutIcon />, path: "/logout" },
-];
-
 const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -100,6 +102,8 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     message: "",
     severity: "success" as "success" | "error",
   });
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -249,9 +253,17 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     navigate(path);
   };
 
-  const handleLogout = async () => {
+  const handleLogoutCancel = () => {
+    if (!isLoggingOut) {
+      setLogoutDialogOpen(false);
+    }
+  };
+
+  const handleLogoutConfirm = async () => {
     try {
+      setIsLoggingOut(true);
       await logout();
+      setLogoutDialogOpen(false);
       navigate("/login");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -260,6 +272,8 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
         message: "Error al cerrar sesión",
         severity: "error",
       });
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -386,12 +400,23 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       <Box sx={{ mt: "auto" }}>
         <Divider sx={{ my: 2 }} />
         <List>
-          {bottomMenuItems.map((item) => (
+          {[
+            {
+              text: "Cerrar Sesión",
+              icon: <LogoutIcon />,
+              path: "/logout",
+            },
+            {
+              text: "Configuración",
+              icon: <SettingsIcon />,
+              path: "/settings",
+            },
+          ].map((item) => (
             <ListItem key={item.text} disablePadding>
               <ListItemButton
                 onClick={() => {
-                  if (item.path === "/logout") {
-                    handleLogout();
+                  if (item.text === "Cerrar Sesión") {
+                    setLogoutDialogOpen(true);
                   } else if (item.path === "/settings") {
                     handleSettingsClick();
                   } else {
@@ -473,6 +498,39 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       >
         {drawer}
       </StyledDrawer>
+
+      {/* Logout Confirmation Dialog */}
+      <Dialog
+        open={logoutDialogOpen}
+        onClose={handleLogoutCancel}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">Cerrar Sesión</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            ¿Está seguro de que desea cerrar sesión?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleLogoutCancel}
+            disabled={isLoggingOut}
+            color="primary"
+          >
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleLogoutConfirm}
+            color="error"
+            variant="contained"
+            disabled={isLoggingOut}
+            startIcon={isLoggingOut ? <CircularProgress size={20} /> : null}
+          >
+            {isLoggingOut ? "Cerrando sesión..." : "Cerrar Sesión"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
