@@ -622,24 +622,28 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
           </FormControl>
 
           {/* Clear Filters Button */}
-          {isFilterActive() && (
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              startIcon={<ClearIcon />}
-              onClick={clearFilters}
-              sx={{
-                textTransform: "none",
-                height: "40px",
-                whiteSpace: "nowrap",
-                alignSelf: "flex-end",
-                mb: 1,
-              }}
-            >
-              Limpiar filtros
-            </Button>
-          )}
+          <Button
+            variant="outlined"
+            color="primary"
+            size="small"
+            startIcon={<ClearIcon />}
+            onClick={clearFilters}
+            disabled={!isFilterActive()}
+            sx={{
+              textTransform: "none",
+              height: "40px",
+              whiteSpace: "nowrap",
+              alignSelf: "flex-end",
+              mb: 1,
+              mt: 0.9,
+              opacity: isFilterActive() ? 1 : 0.5,
+              "&:hover": {
+                opacity: isFilterActive() ? 0.8 : 0.5,
+              },
+            }}
+          >
+            Limpiar filtros
+          </Button>
         </Box>
       </Box>
 
@@ -647,11 +651,17 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
       <Box
         sx={{
           width: "100%",
+          maxWidth: "none",
           overflowX: "auto",
+          "& .MuiTable-root": {
+            minWidth: "max-content",
+            width: "100%",
+          },
           "& .MuiTableCell": {
             py: 1,
-            px: { xs: 0.5, sm: 1 },
+            px: { xs: 1, sm: 2 },
             fontSize: { xs: "0.75rem", sm: "0.875rem" },
+            whiteSpace: "nowrap",
           },
         }}
       >

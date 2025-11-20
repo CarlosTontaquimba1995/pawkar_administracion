@@ -101,6 +101,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     message: "",
     severity: "error" as "error" | "success" | "info" | "warning",
   });
+  const [_, setIsVerificationActive] = useState(true);
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -117,37 +118,25 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     });
   };
 
-  useEffect(() => {
-    const checkRequiredData = async () => {
-      if (!token) return;
+  const checkAllRequiredData = async () => {
+    if (!token) return;
 
+    try {
+      // Check general required data
+      const hasData = await verificationService.checkRequiredRegistrations();
+      setHasRequiredData(hasData);
+
+      // Check for roles required data (same validation as Teams and Players)
       try {
-        const hasData = await verificationService.checkRequiredRegistrations();
-        setHasRequiredData(hasData);
-
-        // Check for roles required data
-        try {
-          // Check for required categories for roles
-          await Promise.all([
-            categoriaService.getCategoriaByNemonico("ADMINISTRADOR"),
-            categoriaService.getCategoriaByNemonico("USUARIO"),
-          ]);
-          setHasRolesRequiredData(true);
-        } catch (error) {
-          console.log("Categorías requeridas para Roles no encontradas");
-          setHasRolesRequiredData(false);
-        }
+        const hasRolesData =
+          await verificationService.checkRequiredRegistrations();
+        setHasRolesRequiredData(hasRolesData);
       } catch (error) {
-        console.error("Error verificando datos requeridos:", error);
-        setHasRequiredData(false);
+        console.log("Error verificando datos requeridos para Roles:", error);
         setHasRolesRequiredData(false);
       }
-    };
 
-    checkRequiredData();
-
-    // Check if EVENTS category exists
-    const checkEventsCategory = async () => {
+      // Check for events category
       try {
         await categoriaService.getCategoriaByNemonico("EVENTOS");
         setHasEventsCategory(true);
@@ -155,10 +144,54 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
         console.log("Categoría EVENTOS no encontrada");
         setHasEventsCategory(false);
       }
+    } catch (error) {
+      console.error("Error verificando datos requeridos:", error);
+      setHasRequiredData(false);
+      setHasRolesRequiredData(false);
+      setHasEventsCategory(false);
+    }
+  };
+
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const checkAndUpdate = async () => {
+      await checkAllRequiredData();
+
+      // Verificar si todos los módulos están habilitados
+      const allModulesActive =
+        hasRequiredData !== false &&
+        hasRolesRequiredData !== false &&
+        hasEventsCategory !== false;
+
+      // Si todos los módulos están activos, detener el intervalo
+      if (allModulesActive && intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+        setIsVerificationActive(false);
+      }
     };
 
-    checkEventsCategory();
-  }, [token]);
+    // Verificación inicial
+    checkAndUpdate().catch(console.error);
+
+    // Configurar el intervalo solo si hay módulos deshabilitados
+    if (
+      hasRequiredData === false ||
+      hasRolesRequiredData === false ||
+      hasEventsCategory === false
+    ) {
+      intervalId = setInterval(checkAndUpdate, 5000);
+      setIsVerificationActive(true);
+    }
+
+    // Limpieza al desmontar
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [token, hasRequiredData, hasRolesRequiredData, hasEventsCategory]);
 
   const handleNavigation = async (path: string) => {
     if (path === "/logout") {
@@ -169,60 +202,50 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
     // Verificar si se está accediendo al módulo de roles
     if (path === "/roles") {
-      try {
-        const hasData = await verificationService.checkRequiredRegistrations();
-        if (!hasData) {
-          showSnackbar(
-            "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
-            "error"
-          );
-          return;
-        }
-      } catch (error) {
-        console.error("Error verificando datos requeridos:", error);
-        showSnackbar("Error al verificar los datos requeridos", "error");
-        return;
-      }
-    }
-
-    // Check if trying to access Events module
-    if (path === "/events") {
-      try {
-        await categoriaService.getCategoriaByNemonico("EVENTOS");
-      } catch (error) {
-        toast.error(
-          "No se encontró la categoría 'EVENTOS'. Por favor, regístrela primero."
+      if (hasRolesRequiredData === false) {
+        showSnackbar(
+          "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+          "error"
         );
         return;
       }
     }
 
+    // Check if trying to access Events module
+    if (path === "/events" && hasEventsCategory === false) {
+      showSnackbar(
+        "No se encontró la categoría 'EVENTOS'. Por favor, regístrela primero.",
+        "error"
+      );
+      return;
+    }
+
     // Check if trying to access Teams or Players module
-    if (path === "/teams" || path === "/players") {
+    if (
+      (path === "/teams" || path === "/players") &&
+      hasRequiredData === false
+    ) {
+      showSnackbar(
+        "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+        "error"
+      );
+      return;
+    }
+
+    // For players, also check if there are teams
+    if (path === "/players") {
       try {
-        const hasData = await verificationService.checkRequiredRegistrations();
-        if (!hasData) {
+        const exists = await teamService.checkTeamsExist();
+        if (!exists) {
           showSnackbar(
-            "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+            "Debe registrar al menos un equipo antes de acceder a Jugadores",
             "error"
           );
           return;
         }
-
-        // For players, also check if there are teams
-        if (path === "/players") {
-          const exists = await teamService.checkTeamsExist();
-          if (!exists) {
-            showSnackbar(
-              "Debe registrar al menos un equipo antes de acceder a Jugadores",
-              "error"
-            );
-            return;
-          }
-        }
       } catch (error) {
-        console.error("Error verificando datos requeridos:", error);
-        toast.error("Error al verificar los datos requeridos");
+        console.error("Error verificando equipos:", error);
+        showSnackbar("Error al verificar los equipos existentes", "error");
         return;
       }
     }
@@ -332,7 +355,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
                               item.text === "Eventos"
                                 ? "Se requiere registrar la categoría 'EVENTOS' primero"
                                 : item.text === "Roles"
-                                ? "Se requieren las categorías 'ADMINISTRADOR' y 'USUARIO'"
+                                ? "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo"
                                 : "Se requiere registrar Subcategorías y Series primero"
                             }
                             arrow
