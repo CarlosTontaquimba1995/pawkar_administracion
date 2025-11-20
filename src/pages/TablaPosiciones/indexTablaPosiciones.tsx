@@ -27,14 +27,38 @@ const TablaPosiciones: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box mb={4} />
+    <Container
+      maxWidth="xl"
+      sx={{
+        py: { xs: 2, sm: 3, md: 4 },
+        px: { xs: 1, sm: 2, md: 3 },
+        width: "100%",
+        maxWidth: "100%",
+        overflow: "hidden",
+      }}
+    >
+      <Box mb={{ xs: 2, sm: 3, md: 4 }} />
 
-      <TablaPosicionesTable
-        refreshKey={refreshKey}
-        onEdit={handleEdit}
-        onRefresh={handleSuccess}
-      />
+      <Box
+        sx={{
+          width: "100%",
+          overflowX: "auto",
+          WebkitOverflowScrolling: "touch",
+          "&::-webkit-scrollbar": {
+            height: "6px",
+          },
+          "&::-webkit-scrollbar-thumb": {
+            backgroundColor: "rgba(0,0,0,0.2)",
+            borderRadius: "3px",
+          },
+        }}
+      >
+        <TablaPosicionesTable
+          refreshKey={refreshKey}
+          onEdit={handleEdit}
+          onRefresh={handleSuccess}
+        />
+      </Box>
 
       <TablaPosicionRegisterForm
         open={openRegister}

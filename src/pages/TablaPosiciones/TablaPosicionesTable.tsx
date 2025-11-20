@@ -1,15 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
   IconButton,
-  TablePagination,
   Typography,
   Chip,
   CircularProgress,
@@ -22,6 +14,7 @@ import {
   SelectChangeEvent,
   Button,
   Avatar,
+  useTheme,
 } from "@mui/material";
 import {
   Edit as EditIcon,
@@ -31,6 +24,7 @@ import {
 import { TablaPosicion } from "@/types/tablaPosicion.types";
 import type { Serie } from "@/types/serie.types";
 import type { Subcategoria } from "@/types/subcategoria.types";
+import DataTable, { Column } from "@/components/common/DataTable/DataTable";
 import tablaPosicionService from "@/api/tablaPosicionService";
 import categoriaService from "@/api/categoriaService";
 import subcategoriaService from "@/api/subcategoriaService";
@@ -203,8 +197,10 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     fetchTeams();
   }, [serieSeleccionada]);
 
+  const theme = useTheme();
+
   // Filter data based on search term and filters
-  const filteredData = React.useMemo(() => {
+  const filteredData = useMemo(() => {
     return posiciones.filter((posicion) => {
       const matchesSearch =
         !searchTerm ||
@@ -240,11 +236,181 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     equipoSeleccionado,
   ]);
 
-  // Get paginated data
-  const paginatedData = React.useMemo(() => {
-    const startIndex = page * rowsPerPage;
-    return filteredData.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredData, page, rowsPerPage]);
+  // Define columns for DataTable
+  const columns: Column[] = [
+    {
+      id: "posicion",
+      label: "#",
+      align: "center",
+      minWidth: 60,
+      format: (_, row) => {
+        const rowIndex = posiciones.findIndex(
+          (p) => p.posicion === row.posicion
+        );
+        return (
+          <Box
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: "50%",
+              bgcolor:
+                rowIndex < 3
+                  ? rowIndex === 0
+                    ? "gold"
+                    : rowIndex === 1
+                    ? "silver"
+                    : "#cd7f32"
+                  : theme.palette.grey[300],
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              margin: "0 auto",
+            }}
+          >
+            <Typography variant="body2" color="text.primary">
+              {rowIndex + 1}
+            </Typography>
+          </Box>
+        );
+      },
+    },
+    {
+      id: "equipoNombre",
+      label: "Equipo",
+      minWidth: 200,
+      format: (_, row) => (
+        <Box display="flex" alignItems="center" gap={1}>
+          <Avatar
+            src={`/team-logos/${row.equipoNombre
+              ?.toLowerCase()
+              .replace(/\s+/g, "-")}.png`}
+            alt={row.equipoNombre}
+            sx={{ width: 32, height: 32, fontSize: "0.875rem" }}
+          >
+            {row.equipoNombre?.charAt(0) || "T"}
+          </Avatar>
+          <Typography variant="body2" fontWeight={500}>
+            {row.equipoNombre}
+          </Typography>
+        </Box>
+      ),
+    },
+    {
+      id: "puntos",
+      label: "PTS",
+      align: "right",
+      minWidth: 70,
+      format: (value) => (
+        <Typography fontWeight="bold" color="primary">
+          {value || 0}
+        </Typography>
+      ),
+    },
+    {
+      id: "partidosJugados",
+      label: "PJ",
+      align: "center",
+      minWidth: 50,
+      hideOnMobile: true,
+    },
+    {
+      id: "victorias",
+      label: "PG",
+      align: "center",
+      minWidth: 50,
+      hideOnMobile: true,
+      format: (value) => (
+        <Chip
+          label={value || 0}
+          size="small"
+          color="success"
+          variant="outlined"
+          sx={{ minWidth: 30 }}
+        />
+      ),
+    },
+    {
+      id: "empates",
+      label: "PE",
+      align: "center",
+      minWidth: 50,
+      hideOnMobile: true,
+      format: (value) => (
+        <Chip
+          label={value || 0}
+          size="small"
+          color="warning"
+          variant="outlined"
+          sx={{ minWidth: 30 }}
+        />
+      ),
+    },
+    {
+      id: "derrotas",
+      label: "PP",
+      align: "center",
+      minWidth: 50,
+      hideOnMobile: true,
+      format: (value) => (
+        <Chip
+          label={value || 0}
+          size="small"
+          color="error"
+          variant="outlined"
+          sx={{ minWidth: 30 }}
+        />
+      ),
+    },
+    {
+      id: "golesAFavor",
+      label: "GF",
+      align: "center",
+      minWidth: 50,
+      hideOnMobile: true,
+    },
+    {
+      id: "golesEnContra",
+      label: "GC",
+      align: "center",
+      minWidth: 50,
+      hideOnMobile: true,
+    },
+    {
+      id: "diferenciaGoles",
+      label: "+/-",
+      align: "center",
+      minWidth: 70,
+      format: (value) => (
+        <Typography
+          sx={{
+            color: (value || 0) >= 0 ? "success.main" : "error.main",
+            fontWeight: "bold",
+          }}
+        >
+          {(value || 0) > 0 ? "+" : ""}
+          {value || 0}
+        </Typography>
+      ),
+    },
+    {
+      id: "acciones",
+      label: "Acciones",
+      align: "center",
+      minWidth: 80,
+      format: (_, row) => (
+        <IconButton
+          size="small"
+          onClick={(e) => {
+            e.stopPropagation();
+            onEdit(row);
+          }}
+          color="primary"
+        >
+          <EditIcon fontSize="small" />
+        </IconButton>
+      ),
+    },
+  ];
 
   // Event handlers
   const handleSearch = (value: string) => {
@@ -288,14 +454,12 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
     );
   };
 
-  const handleChangePage = (_: unknown, newPage: number) => {
+  const handlePageChange = (newPage: number) => {
     setPage(newPage);
   };
 
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
     setPage(0);
   };
 
@@ -466,169 +630,18 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
         </Box>
       </Box>
 
-      {/* Data Table */}
-      <TableContainer component={Paper} sx={{ flex: 1, mb: 3 }}>
-        <Table
-          size="small"
-          sx={{ minWidth: 650 }}
-          aria-label="tabla de posiciones"
-        >
-          <TableHead>
-            <TableRow>
-              <TableCell>#</TableCell>
-              <TableCell>Equipo</TableCell>
-              <TableCell align="right">PTS</TableCell>
-              <TableCell align="center">PJ</TableCell>
-              <TableCell align="center">PG</TableCell>
-              <TableCell align="center">PE</TableCell>
-              <TableCell align="center">PP</TableCell>
-              <TableCell align="center">GF</TableCell>
-              <TableCell align="center">GC</TableCell>
-              <TableCell align="center">+/-</TableCell>
-              <TableCell align="center">Acciones</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredData.length > 0 ? (
-              paginatedData.map((posicion, index) => (
-                <TableRow
-                  key={`${posicion.equipoId}-${posicion.subcategoriaId}`}
-                  sx={{
-                    "&:last-child td, &:last-child th": { border: 0 },
-                    bgcolor: index < 3 ? "rgba(25, 118, 210, 0.04)" : "inherit",
-                  }}
-                >
-                  <TableCell component="th" scope="row">
-                    <Box
-                      sx={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        bgcolor:
-                          index === 0
-                            ? "gold"
-                            : index === 1
-                            ? "silver"
-                            : index === 2
-                            ? "#cd7f32"
-                            : "transparent",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        color: index < 3 ? "white" : "inherit",
-                        fontWeight: index < 3 ? "bold" : "normal",
-                      }}
-                    >
-                      {index + 1}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Box display="flex" alignItems="center" gap={1}>
-                      <Avatar
-                        src={`/team-logos/${posicion.equipoNombre
-                          ?.toLowerCase()
-                          .replace(/\s+/g, "-")}.png`}
-                        alt={posicion.equipoNombre}
-                        sx={{ width: 28, height: 28, fontSize: "0.75rem" }}
-                      >
-                        {posicion.equipoNombre?.charAt(0) || "T"}
-                      </Avatar>
-                      <Typography variant="body2" fontWeight={500}>
-                        {posicion.equipoNombre}
-                      </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell align="right">
-                    <Typography fontWeight="bold" color="primary">
-                      {posicion.puntos}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    {posicion.partidosJugados || 0}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={posicion.victorias || 0}
-                      size="small"
-                      color="success"
-                      variant="outlined"
-                      sx={{ minWidth: 30 }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={posicion.empates || 0}
-                      size="small"
-                      color="warning"
-                      variant="outlined"
-                      sx={{ minWidth: 30 }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <Chip
-                      label={posicion.derrotas || 0}
-                      size="small"
-                      color="error"
-                      variant="outlined"
-                      sx={{ minWidth: 30 }}
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    {posicion.golesAFavor || 0}
-                  </TableCell>
-                  <TableCell align="center">
-                    {posicion.golesEnContra || 0}
-                  </TableCell>
-                  <TableCell
-                    align="center"
-                    sx={{
-                      color:
-                        (posicion.diferenciaGoles || 0) >= 0
-                          ? "success.main"
-                          : "error.main",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {(posicion.diferenciaGoles || 0) > 0 ? "+" : ""}
-                    {posicion.diferenciaGoles || 0}
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={() => onEdit(posicion)}
-                      color="primary"
-                    >
-                      <EditIcon />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={11} align="center" sx={{ py: 3 }}>
-                  <Typography variant="body2" color="text.secondary">
-                    No hay datos disponibles
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Pagination */}
-      <TablePagination
-        rowsPerPageOptions={[10, 25, 50, 100]}
-        component="div"
-        count={filteredData.length}
-        rowsPerPage={rowsPerPage}
+      {/* DataTable */}
+      <DataTable
+        columns={columns}
+        data={filteredData}
+        loading={loading}
         page={page}
-        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        totalRows={filteredData.length}
+        onPageChange={handlePageChange}
         onRowsPerPageChange={handleChangeRowsPerPage}
-        labelRowsPerPage="Filas por página:"
-        labelDisplayedRows={({ from, to, count }) =>
-          `${from}-${to} de ${count !== -1 ? count : `más de ${to}`}`
-        }
+        onRowClick={(row) => onEdit(row)}
+        emptyMessage="No se encontraron posiciones"
       />
     </Box>
   );
