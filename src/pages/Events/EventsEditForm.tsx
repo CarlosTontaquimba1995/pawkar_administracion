@@ -11,6 +11,9 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Switch,
+  FormControlLabel,
+  FormGroup,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
 import { useAuth } from "@/contexts/AuthContext";
@@ -248,7 +251,7 @@ const EventsEditForm: React.FC<EventsEditFormProps> = ({
                 required
                 fullWidth
                 multiline
-                rows={4}
+                rows={2}
                 margin="normal"
                 disabled={loading}
               />
@@ -266,6 +269,21 @@ const EventsEditForm: React.FC<EventsEditFormProps> = ({
                 }}
                 disabled={loading}
               />
+
+              <FormGroup>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={formData.proximo || false}
+                      onChange={(e) =>
+                        handleChange("proximo", e.target.checked)
+                      }
+                      disabled={loading}
+                    />
+                  }
+                  label="¿Es un evento próximo?"
+                />
+              </FormGroup>
 
               <TextField
                 label="Ubicación"

@@ -144,68 +144,35 @@ const Dashboard = () => {
       // Fetch teams data
       try {
         setLoading((prev) => ({ ...prev, teams: true }));
-        const teamsData = await teamService.getTeamsCount();
-        setTeamsCount(teamsData.data.equiposActivos);
 
-        // Datos de ejemplo (reemplazar con llamada real a la API)
-        const teamsStatsData = [
-          {
-            id: 1,
-            nombre: "Los Tigres",
-            puntos: 12,
-            partidosJugados: 5,
-            partidosGanados: 4,
-            partidosPerdidos: 1,
-            golesAFavor: 15,
-            golesEnContra: 5,
-            diferenciaGoles: 10,
-          },
-          {
-            id: 2,
-            nombre: "Águilas FC",
-            puntos: 10,
-            partidosJugados: 5,
-            partidosGanados: 3,
-            partidosPerdidos: 2,
-            golesAFavor: 12,
-            golesEnContra: 8,
-            diferenciaGoles: 4,
-          },
-          {
-            id: 3,
-            nombre: "Leones del Sur",
-            puntos: 9,
-            partidosJugados: 5,
-            partidosGanados: 3,
-            partidosPerdidos: 2,
-            golesAFavor: 10,
-            golesEnContra: 7,
-            diferenciaGoles: 3,
-          },
-          {
-            id: 4,
-            nombre: "Cóndores FC",
-            puntos: 7,
-            partidosJugados: 5,
-            partidosGanados: 2,
-            partidosPerdidos: 3,
-            golesAFavor: 8,
-            golesEnContra: 10,
-            diferenciaGoles: -2,
-          },
-          {
-            id: 5,
-            nombre: "Halcones Rojos",
-            puntos: 1,
-            partidosJugados: 4,
-            partidosGanados: 0,
-            partidosPerdidos: 4,
-            golesAFavor: 3,
-            golesEnContra: 15,
-            diferenciaGoles: -12,
-          },
-        ];
+        // Get teams count
+        const teamsCountData = await teamService.getTeamsCount();
+        setTeamsCount(teamsCountData.data.equiposActivos);
 
+        // Get first 5 teams
+        const teamsResponse = await teamService.getTeams({
+          page: 0,
+          size: 5,
+          sort: "id,desc", // Or any other sorting you prefer
+        });
+
+        // Map the API response to match the TeamStats interface
+        const teamsData = Array.isArray(teamsResponse)
+          ? teamsResponse.slice(0, 5)
+          : teamsResponse.data?.content?.slice(0, 5) || [];
+
+        const teamsStatsData = teamsData.map((team: any) => ({
+          id: team.id,
+          nombre: team.nombre || "Sin nombre",
+          puntos: team.puntos || 0,
+          partidosJugados: team.partidosJugados || 0,
+          partidosGanados: team.partidosGanados || 0,
+          partidosPerdidos: team.partidosPerdidos || 0,
+          golesAFavor: team.golesAFavor || 0,
+          golesEnContra: team.golesEnContra || 0,
+          diferenciaGoles: (team.golesAFavor || 0) - (team.golesEnContra || 0),
+        }));
+        
         setTeamsStats(teamsStatsData);
       } catch (err) {
         console.error("Error fetching teams data:", err);

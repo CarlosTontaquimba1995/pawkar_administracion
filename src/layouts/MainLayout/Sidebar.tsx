@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { toast } from 'react-toastify';
+import { useAuth } from "@/contexts/AuthContext";
 import verificationService from "../../api/verificationApiService";
 import ThemeConfigDialog from "@/components/theme/ThemeConfigDialog";
 import {
@@ -99,9 +98,8 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
-    severity: "error" as "error" | "success" | "info" | "warning",
+    severity: "success" as "success" | "error",
   });
-  const [_, setIsVerificationActive] = useState(true);
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, open: false }));
@@ -109,7 +107,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
   const showSnackbar = (
     message: string,
-    severity: "error" | "success" | "info" | "warning" = "error"
+    severity: "error" | "success" = "error"
   ) => {
     setSnackbar({
       open: true,
@@ -168,7 +166,6 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       if (allModulesActive && intervalId) {
         clearInterval(intervalId);
         intervalId = null;
-        setIsVerificationActive(false);
       }
     };
 
@@ -182,7 +179,6 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       hasEventsCategory === false
     ) {
       intervalId = setInterval(checkAndUpdate, 5000);
-      setIsVerificationActive(true);
     }
 
     // Limpieza al desmontar
@@ -257,10 +253,13 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     try {
       await logout();
       navigate("/login");
-      toast.success("Sesión cerrada correctamente");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
-      toast.error("Error al cerrar sesión");
+      setSnackbar({
+        open: true,
+        message: "Error al cerrar sesión",
+        severity: "error",
+      });
     }
   };
 
