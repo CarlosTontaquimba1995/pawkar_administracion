@@ -472,10 +472,23 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
   }
 
   return (
-    <Box>
+    <Box sx={{ width: "100%", maxWidth: "100vw", overflowX: "hidden" }}>
       {/* Search and Filter Bar */}
-      <Box mb={3}>
-        <Box display="flex" gap={2} flexWrap="wrap" alignItems="center">
+      <Box mb={3} sx={{ px: { xs: 1, sm: 0 } }}>
+        <Box
+          display="flex"
+          gap={2}
+          flexWrap="wrap"
+          alignItems="center"
+          sx={{
+            "& > *": {
+              flex: "1 1 auto",
+              minWidth: { xs: "100%", sm: "200px" },
+              maxWidth: { xs: "100%", sm: "none" },
+              mb: { xs: 1, sm: 0 },
+            },
+          }}
+        >
           <TextField
             variant="outlined"
             size="small"
@@ -631,18 +644,30 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
       </Box>
 
       {/* DataTable */}
-      <DataTable
-        columns={columns}
-        data={filteredData}
-        loading={loading}
-        page={page}
-        rowsPerPage={rowsPerPage}
-        totalRows={filteredData.length}
-        onPageChange={handlePageChange}
-        onRowsPerPageChange={handleChangeRowsPerPage}
-        onRowClick={(row) => onEdit(row)}
-        emptyMessage="No se encontraron posiciones"
-      />
+      <Box
+        sx={{
+          width: "100%",
+          overflowX: "auto",
+          "& .MuiTableCell": {
+            py: 1,
+            px: { xs: 0.5, sm: 1 },
+            fontSize: { xs: "0.75rem", sm: "0.875rem" },
+          },
+        }}
+      >
+        <DataTable
+          columns={columns}
+          data={filteredData}
+          loading={loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRows={filteredData.length}
+          onPageChange={handlePageChange}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          onRowClick={(row) => onEdit(row)}
+          emptyMessage="No se encontraron posiciones"
+        />
+      </Box>
     </Box>
   );
 };
