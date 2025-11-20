@@ -290,23 +290,31 @@ const Events = () => {
         mb={4}
       >
         <Box>
-          <Typography variant="h4" component="h1" gutterBottom fontWeight={600}>
-            Eventos
-          </Typography>
           <Typography variant="body1" color="text.secondary">
             Gestiona los eventos programados
           </Typography>
         </Box>
         <Button
-          variant="outlined"
+          variant="contained"
           color="primary"
           startIcon={<AddIcon />}
           onClick={handleOpenRegisterForm}
+          size="large"
           sx={{
+            whiteSpace: "nowrap",
+            minWidth: "220px",
+            textTransform: "none",
+            fontWeight: 500,
+            borderRadius: 2,
+            boxShadow: "none",
+            px: 3,
+            justifyContent: "center",
             "&:hover": {
-              backgroundColor: colors.primary,
-              color: colors.white,
-              borderColor: colors.primary,
+              boxShadow: theme.shadows[3],
+              backgroundColor: "primary.dark",
+            },
+            "& .MuiButton-startIcon": {
+              marginRight: 1,
             },
           }}
         >

@@ -40,6 +40,7 @@ import teamService from "@/api/teamService";
 interface TablaPosicionesTableProps {
   refreshKey: number;
   onEdit: (posicion: TablaPosicion) => void;
+  onRefresh: () => void;
 }
 
 const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({

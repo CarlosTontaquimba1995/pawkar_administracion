@@ -16,6 +16,8 @@ import {
   Box,
   styled,
   Tooltip,
+  Alert,
+  Snackbar,
 } from "@mui/material";
 import {
   Dashboard as DashboardIcon,
@@ -90,7 +92,30 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const [hasEventsCategory, setHasEventsCategory] = useState<boolean | null>(
     null
   );
+  const [hasRolesRequiredData, setHasRolesRequiredData] = useState<
+    boolean | null
+  >(null);
   const [themeDialogOpen, setThemeDialogOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "error" as "error" | "success" | "info" | "warning",
+  });
+
+  const handleCloseSnackbar = () => {
+    setSnackbar((prev) => ({ ...prev, open: false }));
+  };
+
+  const showSnackbar = (
+    message: string,
+    severity: "error" | "success" | "info" | "warning" = "error"
+  ) => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    });
+  };
 
   useEffect(() => {
     const checkRequiredData = async () => {
@@ -99,9 +124,23 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       try {
         const hasData = await verificationService.checkRequiredRegistrations();
         setHasRequiredData(hasData);
+
+        // Check for roles required data
+        try {
+          // Check for required categories for roles
+          await Promise.all([
+            categoriaService.getCategoriaByNemonico("ADMINISTRADOR"),
+            categoriaService.getCategoriaByNemonico("USUARIO"),
+          ]);
+          setHasRolesRequiredData(true);
+        } catch (error) {
+          console.log("Categorías requeridas para Roles no encontradas");
+          setHasRolesRequiredData(false);
+        }
       } catch (error) {
         console.error("Error verificando datos requeridos:", error);
         setHasRequiredData(false);
+        setHasRolesRequiredData(false);
       }
     };
 
@@ -133,14 +172,15 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       try {
         const hasData = await verificationService.checkRequiredRegistrations();
         if (!hasData) {
-          toast.error(
-            "Debe existir al menos una categoría registrada para acceder a este módulo"
+          showSnackbar(
+            "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+            "error"
           );
           return;
         }
       } catch (error) {
         console.error("Error verificando datos requeridos:", error);
-        alert("Error al verificar los datos requeridos");
+        showSnackbar("Error al verificar los datos requeridos", "error");
         return;
       }
     }
@@ -162,8 +202,9 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       try {
         const hasData = await verificationService.checkRequiredRegistrations();
         if (!hasData) {
-          toast.error(
-            "Primero debe registrar Subcategorías y Series para poder proceder"
+          showSnackbar(
+            "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+            "error"
           );
           return;
         }
@@ -172,8 +213,9 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
         if (path === "/players") {
           const exists = await teamService.checkTeamsExist();
           if (!exists) {
-            toast.error(
-              "Debe registrar al menos un equipo antes de acceder a Jugadores"
+            showSnackbar(
+              "Debe registrar al menos un equipo antes de acceder a Jugadores",
+              "error"
             );
             return;
           }
@@ -203,7 +245,6 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     setThemeDialogOpen(true);
   };
 
-
   const drawer = (
     <div>
       <LogoContainer>
@@ -221,14 +262,16 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
           const handleItemClick = () => {
             if ((isTeamsItem || isPlayersItem) && hasRequiredData === false) {
-              toast.warning(
-                "Se requiere registrar Subcategorías y Series primero"
+              showSnackbar(
+                "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+                "error"
               );
               return;
             }
             if (isEventsItem && hasEventsCategory === false) {
-              toast.warning(
-                "Se requiere registrar la categoría 'EVENTOS' primero"
+              showSnackbar(
+                "Debe existir al menos una categoría, subcategoría y serie registrada para acceder a este módulo",
+                "error"
               );
               return;
             }
@@ -256,7 +299,8 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
                   opacity:
                     ((isTeamsItem || isPlayersItem) &&
                       hasRequiredData === false) ||
-                    (isEventsItem && hasEventsCategory === false)
+                    (isEventsItem && hasEventsCategory === false) ||
+                    (item.path === "/roles" && hasRolesRequiredData === false)
                       ? 0.7
                       : 1,
                 }}
@@ -272,7 +316,9 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
                         item.text === "Equipos") &&
                         hasRequiredData === false) ||
                       (item.text === "Eventos" &&
-                        hasEventsCategory === false) ? (
+                        hasEventsCategory === false) ||
+                      (item.text === "Roles" &&
+                        hasRolesRequiredData === false) ? (
                         <Box
                           component="span"
                           sx={{
@@ -285,6 +331,8 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
                             title={
                               item.text === "Eventos"
                                 ? "Se requiere registrar la categoría 'EVENTOS' primero"
+                                : item.text === "Roles"
+                                ? "Se requieren las categorías 'ADMINISTRADOR' y 'USUARIO'"
                                 : "Se requiere registrar Subcategorías y Series primero"
                             }
                             arrow
@@ -358,18 +406,28 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   );
 
   return (
-    <Box
-      component="nav"
-      sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-      aria-label="mailbox folders"
-    >
-      {/* Mobile drawer */}
+    <>
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={handleCloseSnackbar}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
       <Drawer
         variant="temporary"
         open={mobileOpen}
         onClose={onDrawerToggle}
         ModalProps={{
-          keepMounted: true, // Better open performance on mobile.
+          keepMounted: true,
         }}
         sx={{
           display: { xs: "block", sm: "none" },
@@ -384,17 +442,16 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
         onClose={() => setThemeDialogOpen(false)}
       />
 
-      {/* Desktop drawer */}
       <StyledDrawer
         variant="permanent"
         sx={{
           display: { xs: "none", sm: "block" },
+          "& .MuiDrawer-paper": { boxSizing: "border-box", width: drawerWidth },
         }}
-        open
       >
         {drawer}
       </StyledDrawer>
-    </Box>
+    </>
   );
 };
 

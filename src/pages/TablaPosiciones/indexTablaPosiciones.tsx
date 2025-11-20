@@ -1,6 +1,5 @@
 import React, { useState } from "react";
-import { Box, Button, Typography } from "@mui/material";
-import { Add as AddIcon } from "@mui/icons-material";
+import { Box, Container } from "@mui/material";
 import TablaPosicionesTable from "./TablaPosicionesTable";
 import TablaPosicionRegisterForm from "./TablaPosicionRegisterForm";
 import TablaPosicionEditForm from "./TablaPosicionEditForm";
@@ -13,7 +12,6 @@ const TablaPosiciones: React.FC = () => {
   );
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleOpenRegister = () => setOpenRegister(true);
   const handleCloseRegister = () => setOpenRegister(false);
 
   const handleEdit = (posicion: TablaPosicion) => {
@@ -29,31 +27,8 @@ const TablaPosiciones: React.FC = () => {
   };
 
   return (
-    <Box>
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="center"
-        mb={3}
-      >
-        <Typography variant="h4">Tabla de Posiciones</Typography>
-        <Button
-          variant="outlined"
-          color="primary"
-          startIcon={<AddIcon />}
-          onClick={handleOpenRegister}
-          sx={{
-            "&:hover": {
-              backgroundColor: "primary.main",
-              color: "white",
-              borderColor: "primary.main",
-            },
-            textTransform: "none",
-          }}
-        >
-          Nueva Posición
-        </Button>
-      </Box>
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <Box mb={4} />
 
       <TablaPosicionesTable
         refreshKey={refreshKey}
@@ -75,7 +50,7 @@ const TablaPosiciones: React.FC = () => {
           posicion={editingPosicion}
         />
       )}
-    </Box>
+    </Container>
   );
 };
 

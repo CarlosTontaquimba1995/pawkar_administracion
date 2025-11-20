@@ -120,21 +120,21 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
       PaperProps={{
         sx: {
           borderRadius: 3,
-          bgcolor: 'background.paper',
-          backgroundImage: 'none',
+          bgcolor: "background.paper",
+          backgroundImage: "none",
           boxShadow: 24,
-          maxHeight: '95vh',
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
+          maxHeight: "95vh",
+          display: "flex",
+          flexDirection: "column",
+          overflow: "hidden",
           border: `1px solid ${theme.palette.divider}`,
-          width: { xs: '98vw', sm: '95vw', md: '90vw', lg: '85vw' },
+          width: { xs: "98vw", sm: "95vw", md: "90vw", lg: "85vw" },
           maxWidth: 1400,
           m: 1,
-          '& .MuiDialog-container': {
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100%',
+          "& .MuiDialog-container": {
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100%",
             p: 2,
           },
         },
@@ -143,18 +143,18 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
     >
       <DialogTitle
         sx={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          borderBottom: '1px solid',
-          borderColor: 'divider',
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          borderBottom: "1px solid",
+          borderColor: "divider",
           p: { xs: 1.5, sm: 2 },
-          bgcolor: 'background.default',
-          position: 'sticky',
+          bgcolor: "background.default",
+          position: "sticky",
           top: 0,
           zIndex: 1,
-          backdropFilter: 'blur(8px)',
-          WebkitBackdropFilter: 'blur(8px)',
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
         }}
       >
         <Box display="flex" alignItems="center" gap={1.5}>
@@ -181,12 +181,12 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
           sx={{
             display: "flex",
             flexDirection: { xs: "column", lg: "row" },
-            width: '100%',
-            maxHeight: 'calc(95vh - 150px)',
-            overflow: 'hidden',
-            '& > *': {
-              flex: '1 1 auto',
-              overflow: 'hidden',
+            width: "100%",
+            maxHeight: "calc(95vh - 150px)",
+            overflow: "hidden",
+            "& > *": {
+              flex: "1 1 auto",
+              overflow: "hidden",
               minWidth: 0,
             },
           }}
@@ -194,15 +194,15 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
           {/* Sidebar de navegación */}
           <Box
             sx={{
-              display: 'flex',
-              flexDirection: 'column',
+              display: "flex",
+              flexDirection: "column",
               flex: 1,
-              overflow: 'hidden',
-              borderRight: '1px solid',
-              borderColor: { xs: 'divider', sm: 'divider' },
-              maxWidth: { xs: '100%', sm: 300 },
-              minWidth: { xs: '100%', sm: 250 },
-              borderBottom: { xs: '1px solid', sm: 'none' },
+              overflow: "hidden",
+              borderRight: "1px solid",
+              borderColor: { xs: "divider", sm: "divider" },
+              maxWidth: { xs: "100%", sm: 300 },
+              minWidth: { xs: "100%", sm: 250 },
+              borderBottom: { xs: "1px solid", sm: "none" },
             }}
           >
             <List disablePadding sx={{ p: 1.5 }}>
@@ -214,23 +214,23 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                   mb: 1,
                   px: 2,
                   py: 1.5,
-                  transition: 'all 0.2s ease-in-out',
-                  '&.Mui-selected': {
+                  transition: "all 0.2s ease-in-out",
+                  "&.Mui-selected": {
                     bgcolor: alpha(theme.palette.primary.main, 0.08),
-                    color: 'primary.main',
-                    '& .MuiListItemIcon-root': {
-                      color: 'primary.main',
+                    color: "primary.main",
+                    "& .MuiListItemIcon-root": {
+                      color: "primary.main",
                     },
-                    '&:hover': {
+                    "&:hover": {
                       bgcolor: alpha(theme.palette.primary.main, 0.12),
                     },
                   },
-                  '&:hover': {
-                    bgcolor: 'action.hover',
+                  "&:hover": {
+                    bgcolor: "action.hover",
                   },
                 }}
               >
-                <ListItemIcon sx={{ minWidth: 36, color: 'text.secondary' }}>
+                <ListItemIcon sx={{ minWidth: 36, color: "text.secondary" }}>
                   <PaletteIcon fontSize="small" />
                 </ListItemIcon>
                 <ListItemText
@@ -244,10 +244,10 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                   sx={{
                     width: 8,
                     height: 8,
-                    borderRadius: '50%',
-                    bgcolor: 'primary.main',
-                    opacity: activeTab === 'colors' ? 1 : 0,
-                    transition: 'opacity 0.2s ease-in-out',
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    opacity: activeTab === "colors" ? 1 : 0,
+                    transition: "opacity 0.2s ease-in-out",
                     ml: 1,
                   }}
                 />
@@ -261,9 +261,9 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                   px: 2,
                   py: 1.5,
                   opacity: 0.6,
-                  '&:hover': {
-                    bgcolor: 'transparent',
-                    cursor: 'not-allowed',
+                  "&:hover": {
+                    bgcolor: "transparent",
+                    cursor: "not-allowed",
                   },
                 }}
               >
@@ -272,15 +272,15 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                 </ListItemIcon>
                 <ListItemText
                   primary={
-                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
                       <span>Tipografía</span>
                       <Box
                         sx={{
                           ml: 1,
                           fontSize: 10,
                           fontWeight: 600,
-                          bgcolor: 'divider',
-                          color: 'text.secondary',
+                          bgcolor: "divider",
+                          color: "text.secondary",
                           px: 0.75,
                           py: 0.25,
                           borderRadius: 4,
@@ -293,7 +293,8 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                   }
                   primaryTypographyProps={{
                     variant: "body2",
-                    color: 'text.secondary',
+                    color: "text.secondary",
+                    component: "div",
                   }}
                 />
               </ListItemButton>
@@ -301,52 +302,56 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
           </Box>
 
           {/* Contenido principal */}
-          <Box sx={{ 
-            flex: 1, 
-            p: { xs: 1.5, sm: 2, md: 3 },
-            overflowY: "auto",
-            overflowX: 'hidden',
-            width: '100%',
-            maxWidth: '100%',
-            '& > *': {
-              minWidth: 0, // Evita desbordamiento horizontal
-            },
-            '&::-webkit-scrollbar': {
-              width: '6px',
-            },
-            '&::-webkit-scrollbar-track': {
-              background: 'transparent',
-            },
-            '&::-webkit-scrollbar-thumb': {
-              background: theme.palette.divider,
-              borderRadius: '3px',
-              '&:hover': {
-                background: theme.palette.text.secondary,
+          <Box
+            sx={{
+              flex: 1,
+              p: { xs: 1.5, sm: 2, md: 3 },
+              overflowY: "auto",
+              overflowX: "hidden",
+              width: "100%",
+              maxWidth: "100%",
+              "& > *": {
+                minWidth: 0, // Evita desbordamiento horizontal
               },
-            },
-          }}>
+              "&::-webkit-scrollbar": {
+                width: "6px",
+              },
+              "&::-webkit-scrollbar-track": {
+                background: "transparent",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                background: theme.palette.divider,
+                borderRadius: "3px",
+                "&:hover": {
+                  background: theme.palette.text.secondary,
+                },
+              },
+            }}
+          >
             {activeTab === "colors" && (
               <Box
                 sx={{
                   display: "flex",
                   flexDirection: { xs: "column", lg: "row" },
                   gap: { xs: 2, md: 3 },
-                  width: '100%',
-                  '& > *': {
+                  width: "100%",
+                  "& > *": {
                     flex: 1,
                     minWidth: 0, // Evita desbordamiento
                   },
                 }}
               >
-                <Box sx={{
-                  width: '100%',
-                  flex: '1 1 50%',
-                  minWidth: 0, // Asegura que el contenido no desborde
-                  pr: { md: 1.5 },
-                  '& > *': {
-                    maxWidth: '100%',
-                  },
-                }}>
+                <Box
+                  sx={{
+                    width: "100%",
+                    flex: "1 1 50%",
+                    minWidth: 0, // Asegura que el contenido no desborde
+                    pr: { md: 1.5 },
+                    "& > *": {
+                      maxWidth: "100%",
+                    },
+                  }}
+                >
                   <Card
                     variant="outlined"
                     sx={{
@@ -376,16 +381,16 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                           <Box
                             key={field.id}
                             sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'space-between',
-                              width: '100%',
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              width: "100%",
                               mb: 1.5,
                               p: 0.5,
                               borderRadius: 1,
-                              transition: 'all 0.2s ease-in-out',
-                              '&:hover': {
-                                bgcolor: 'action.hover',
+                              transition: "all 0.2s ease-in-out",
+                              "&:hover": {
+                                bgcolor: "action.hover",
                               },
                             }}
                           >
@@ -399,8 +404,8 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                               </Typography>
                               <Box
                                 sx={{
-                                  display: 'flex',
-                                  alignItems: 'center',
+                                  display: "flex",
+                                  alignItems: "center",
                                   gap: 1.5,
                                   flex: 1,
                                   minWidth: 0,
@@ -419,13 +424,13 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                                 <Typography
                                   variant="caption"
                                   sx={{
-                                    fontFamily: 'monospace',
+                                    fontFamily: "monospace",
                                     fontSize: 11,
-                                    bgcolor: 'action.selected',
+                                    bgcolor: "action.selected",
                                     px: 0.75,
                                     py: 0.25,
                                     borderRadius: 0.5,
-                                    color: 'text.secondary',
+                                    color: "text.secondary",
                                   }}
                                 >
                                   {field.value.toUpperCase()}
@@ -436,11 +441,11 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                               <Tooltip title="Cambiar color">
                                 <Box
                                   sx={{
-                                    position: 'relative',
+                                    position: "relative",
                                     width: 40,
                                     height: 40,
                                     borderRadius: 1,
-                                    overflow: 'hidden',
+                                    overflow: "hidden",
                                     flexShrink: 0,
                                   }}
                                 >
@@ -451,7 +456,10 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                                     onChange={(
                                       e: React.ChangeEvent<HTMLInputElement>
                                     ) =>
-                                      handleColorChange(field.id, e.target.value)
+                                      handleColorChange(
+                                        field.id,
+                                        e.target.value
+                                      )
                                     }
                                     style={{
                                       position: "absolute",
@@ -464,45 +472,50 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                                   />
                                   <Box
                                     sx={{
-                                      position: 'relative',
-                                      width: '100%',
-                                      height: '100%',
-                                      border: '1px solid',
-                                      borderColor: 'divider',
+                                      position: "relative",
+                                      width: "100%",
+                                      height: "100%",
+                                      border: "1px solid",
+                                      borderColor: "divider",
                                       backgroundColor: field.value,
-                                      borderRadius: 'inherit',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.2s ease-in-out',
-                                      '&:hover': {
-                                        transform: 'scale(1.05)',
-                                        boxShadow: `0 4px 12px ${alpha(field.value, 0.3)}`,
-                                        borderColor: 'primary.main',
+                                      borderRadius: "inherit",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      transition: "all 0.2s ease-in-out",
+                                      "&:hover": {
+                                        transform: "scale(1.05)",
+                                        boxShadow: `0 4px 12px ${alpha(
+                                          field.value,
+                                          0.3
+                                        )}`,
+                                        borderColor: "primary.main",
                                       },
-                                      '&:active': {
-                                        transform: 'scale(0.98)',
+                                      "&:active": {
+                                        transform: "scale(0.98)",
                                       },
                                     }}
                                   >
                                     <Box
                                       sx={{
-                                        position: 'absolute',
+                                        position: "absolute",
                                         top: 0,
                                         left: 0,
                                         right: 0,
                                         bottom: 0,
-                                        background: 'linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.2) 100%)',
+                                        background:
+                                          "linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(0,0,0,0.2) 100%)",
                                         opacity: 0.5,
-                                        pointerEvents: 'none',
+                                        pointerEvents: "none",
                                       }}
                                     />
                                     <ColorLensIcon
                                       fontSize="small"
                                       sx={{
                                         color: "common.white",
-                                        filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
-                                        position: 'relative',
+                                        filter:
+                                          "drop-shadow(0 1px 2px rgba(0,0,0,0.3))",
+                                        position: "relative",
                                         zIndex: 1,
                                       }}
                                     />
@@ -512,9 +525,7 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                               <Tooltip title="Copiar color">
                                 <IconButton
                                   size="small"
-                                  onClick={() =>
-                                    copyToClipboard(field.value)
-                                  }
+                                  onClick={() => copyToClipboard(field.value)}
                                   sx={{
                                     "&:hover": {
                                       bgcolor: "action.hover",
@@ -579,16 +590,16 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                             <Box
                               key={field.id}
                               sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                width: '100%',
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                width: "100%",
                                 mb: 1.5,
                                 p: 0.5,
                                 borderRadius: 1,
-                                transition: 'all 0.2s ease-in-out',
-                                '&:hover': {
-                                  bgcolor: 'action.hover',
+                                transition: "all 0.2s ease-in-out",
+                                "&:hover": {
+                                  bgcolor: "action.hover",
                                 },
                               }}
                             >
@@ -602,8 +613,8 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                                 </Typography>
                                 <Box
                                   sx={{
-                                    display: 'flex',
-                                    alignItems: 'center',
+                                    display: "flex",
+                                    alignItems: "center",
                                     gap: 1.5,
                                     flex: 1,
                                     minWidth: 0,
@@ -622,13 +633,13 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                                   <Typography
                                     variant="caption"
                                     sx={{
-                                      fontFamily: 'monospace',
+                                      fontFamily: "monospace",
                                       fontSize: 11,
-                                      bgcolor: 'action.selected',
+                                      bgcolor: "action.selected",
                                       px: 0.75,
                                       py: 0.25,
                                       borderRadius: 0.5,
-                                      color: 'text.secondary',
+                                      color: "text.secondary",
                                     }}
                                   >
                                     {currentColor.toUpperCase()}
@@ -638,7 +649,7 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                               <Box display="flex" alignItems="center" gap={1}>
                                 <Box
                                   sx={{
-                                    position: 'relative',
+                                    position: "relative",
                                     width: 36,
                                     height: 36,
                                     mr: 1,
@@ -666,17 +677,17 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                                   />
                                   <Box
                                     sx={{
-                                      width: '100%',
-                                      height: '100%',
-                                      border: '1px solid',
-                                      borderColor: 'divider',
+                                      width: "100%",
+                                      height: "100%",
+                                      border: "1px solid",
+                                      borderColor: "divider",
                                       backgroundColor: currentColor,
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      transition: 'all 0.2s ease-in-out',
-                                      '&:hover': {
-                                        borderColor: 'primary.main',
+                                      display: "flex",
+                                      alignItems: "center",
+                                      justifyContent: "center",
+                                      transition: "all 0.2s ease-in-out",
+                                      "&:hover": {
+                                        borderColor: "primary.main",
                                         boxShadow: `0 0 0 2px ${theme.palette.primary.light}`,
                                       },
                                     }}
@@ -716,15 +727,17 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
                   </Card>
                 </Box>
 
-                <Box sx={{
-                  width: '100%',
-                  flex: '1 1 50%',
-                  minWidth: 0, // Asegura que el contenido no desborde
-                  pr: { md: 1.5 },
-                  '& > *': {
-                    maxWidth: '100%',
-                  },
-                }}>
+                <Box
+                  sx={{
+                    width: "100%",
+                    flex: "1 1 50%",
+                    minWidth: 0, // Asegura que el contenido no desborde
+                    pr: { md: 1.5 },
+                    "& > *": {
+                      maxWidth: "100%",
+                    },
+                  }}
+                >
                   <Card
                     variant="outlined"
                     sx={{
@@ -1030,12 +1043,12 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
         open={snackbarOpen}
         autoHideDuration={3000}
         onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
         sx={{
-          '& .MuiPaper-root': {
+          "& .MuiPaper-root": {
             borderRadius: 2,
             boxShadow: theme.shadows[6],
-            minWidth: 'auto',
+            minWidth: "auto",
           },
         }}
       >
@@ -1044,9 +1057,9 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
           severity={snackbarSeverity}
           variant="filled"
           sx={{
-            width: '100%',
-            alignItems: 'center',
-            '& .MuiAlert-message': {
+            width: "100%",
+            alignItems: "center",
+            "& .MuiAlert-message": {
               py: 1,
             },
           }}
@@ -1056,10 +1069,10 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
           }}
         >
           {snackbarMessage}
-            {snackbarSeverity === "success" && (
-              <CheckCircleIcon fontSize="inherit" sx={{ mr: 1 }} />
-            )}
-            {snackbarMessage}
+          {snackbarSeverity === "success" && (
+            <CheckCircleIcon fontSize="inherit" sx={{ mr: 1 }} />
+          )}
+          {snackbarMessage}
         </Alert>
       </Snackbar>
     </Dialog>

@@ -15,7 +15,6 @@ import {
   Alert,
   Avatar,
   Typography,
-  useTheme,
 } from "@mui/material";
 import {
   Edit as EditIcon,
