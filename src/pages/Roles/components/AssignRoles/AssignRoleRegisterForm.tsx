@@ -394,107 +394,133 @@ const AssignRoleRegisterForm: React.FC<AssignRoleRegisterFormProps> = ({
                   </Button>
                 </Box>
 
-                {roleAssignments.length === 0 && (
+                {roleAssignments.length === 0 ? (
                   <Box textAlign="center" py={3}>
                     <Typography variant="body2" color="textSecondary">
                       No hay roles asignados. Haga clic en "Agregar Rol" para
                       comenzar.
                     </Typography>
                   </Box>
-                )}
-
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                  {roleAssignments.map((assignment) => (
-                    <Box
-                      key={assignment.id}
-                      sx={{
-                        position: "relative",
-                        mb: 2,
-                        "&:hover .delete-button": {
-                          opacity: 1,
-                          visibility: "visible",
-                        },
-                      }}
-                    >
-                      <Paper
+                ) : (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                      maxHeight: "400px",
+                      overflowY: "auto",
+                      pr: 1,
+                      "&::-webkit-scrollbar": {
+                        width: "6px",
+                      },
+                      "&::-webkit-scrollbar-track": {
+                        background: "transparent",
+                      },
+                      "&::-webkit-scrollbar-thumb": {
+                        backgroundColor: "rgba(0,0,0,0.2)",
+                        borderRadius: "3px",
+                      },
+                    }}
+                  >
+                    {roleAssignments.map((assignment) => (
+                      <Box
+                        key={assignment.id}
                         sx={{
-                          p: 2,
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 2,
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            gap: 2,
-                            alignItems: "center",
-                            width: "100%",
-                          }}
-                        >
-                          <FormControl fullWidth size="small">
-                            <Autocomplete<Role, false, false, false>
-                              options={roles}
-                              getOptionLabel={(option) =>
-                                option
-                                  ? `${option.name} - ${option.detail || ""}`
-                                  : ""
-                              }
-                              value={
-                                roles.find((r) => r.id === assignment.rolId) ||
-                                null
-                              }
-                              onChange={(_, newValue) =>
-                                handleRoleChange(assignment.id, newValue)
-                              }
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  label="Rol *"
-                                  variant="outlined"
-                                  size="small"
-                                  required
-                                />
-                              )}
-                              isOptionEqualToValue={(option, value) =>
-                                option.id === value.id
-                              }
-                              noOptionsText="No se encontraron roles"
-                              loading={roleLoading}
-                              loadingText="Cargando roles..."
-                              disabled={loading}
-                              fullWidth
-                            />
-                          </FormControl>
-                        </Box>
-                      </Paper>
-
-                      <IconButton
-                        className="delete-button"
-                        size="small"
-                        onClick={() =>
-                          assignment.id && handleRemoveRole(assignment.id)
-                        }
-                        sx={{
-                          position: "absolute",
-                          top: -12,
-                          right: -12,
-                          backgroundColor: "error.main",
-                          color: "white",
-                          opacity: 0,
-                          visibility: "hidden",
-                          transition: "all 0.2s ease",
-                          "&:hover": {
-                            backgroundColor: "error.dark",
+                          position: "relative",
+                          mb: 2,
+                          "&:hover .delete-button": {
+                            opacity: 1,
+                            visibility: "visible",
                           },
                         }}
-                        aria-label="eliminar rol"
                       >
-                        <CloseIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Box>
+                        <Paper
+                          sx={{
+                            p: 2,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              gap: 2,
+                              alignItems: "center",
+                              width: "100%",
+                            }}
+                          >
+                            <FormControl fullWidth size="small">
+                              <Autocomplete<Role, false, false, false>
+                                options={roles.filter(
+                                  (role) =>
+                                    !roleAssignments.some(
+                                      (ra) =>
+                                        ra.rolId === role.id &&
+                                        ra.id !== assignment.id
+                                    )
+                                )}
+                                getOptionLabel={(option) =>
+                                  option
+                                    ? `${option.name} - ${option.detail || ""}`
+                                    : ""
+                                }
+                                value={
+                                  roles.find(
+                                    (r) => r.id === assignment.rolId
+                                  ) || null
+                                }
+                                onChange={(_, newValue) =>
+                                  handleRoleChange(assignment.id, newValue)
+                                }
+                                isOptionEqualToValue={(option, value) =>
+                                  option.id === value?.id
+                                }
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    label="Rol *"
+                                    variant="outlined"
+                                    size="small"
+                                  />
+                                )}
+                                noOptionsText="No se encontraron roles"
+                                loading={roleLoading}
+                                loadingText="Cargando roles..."
+                                disabled={loading}
+                                fullWidth
+                              />
+                            </FormControl>
+                          </Box>
+                        </Paper>
+
+                        <IconButton
+                          className="delete-button"
+                          size="small"
+                          onClick={() =>
+                            assignment.id && handleRemoveRole(assignment.id)
+                          }
+                          sx={{
+                            position: "absolute",
+                            top: -12,
+                            right: -12,
+                            backgroundColor: "error.main",
+                            color: "white",
+                            opacity: 0,
+                            visibility: "hidden",
+                            transition: "all 0.2s ease",
+                            "&:hover": {
+                              backgroundColor: "error.dark",
+                            },
+                          }}
+                          aria-label="eliminar rol"
+                        >
+                          <CloseIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    ))}
+                  </Box>
+                )}
               </Box>
             </Box>
 

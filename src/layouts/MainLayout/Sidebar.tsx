@@ -37,6 +37,7 @@ import {
   ErrorOutline as ErrorIcon,
   RollerShades,
   Watch as MatchIcon,
+  PictureAsPdf as ReportsIcon,
 } from "@mui/icons-material";
 import teamService from "../../api/teamService";
 import categoriaService from "../../api/categoriaService";
@@ -83,6 +84,7 @@ const menuItems = [
     path: "/eventos",
     requiresEventsCategory: true,
   },
+  { text: "Reportes", icon: <ReportsIcon />, path: "/reportes" },
 ];
 
 const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {

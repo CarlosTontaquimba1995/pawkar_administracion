@@ -19,6 +19,7 @@ const EncuentrosPage = lazy(() => import("@/pages/Encuentros/indexEncuentros"));
 const TablaPosicionesPage = lazy(
   () => import("@/pages/TablaPosiciones/indexTablaPosiciones")
 );
+const ReportsPage = lazy(() => import("@/pages/Reports"));
 const NotFoundPage = lazy(() => import("@/pages/NotFound"));
 
 const LoadingSpinner = () => (
@@ -64,6 +65,7 @@ const AppRoutes = () => {
           <Route path="roles" element={<RolesPage />} />
           <Route path="encuentros" element={<EncuentrosPage />} />
           <Route path="posiciones" element={<TablaPosicionesPage />} />
+          <Route path="reportes" element={<ReportsPage />} />
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

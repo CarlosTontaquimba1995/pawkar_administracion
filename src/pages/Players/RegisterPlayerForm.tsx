@@ -1001,17 +1001,16 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
           </form>
         </DialogContent>
       </Dialog>
-
+      PARTE SUPERIOR DERECHA DE LA PANTALLA
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
           onClose={handleCloseSnackbar}
           severity={snackbar.severity}
-          variant="filled"
           sx={{ width: "100%" }}
         >
           {snackbar.message}

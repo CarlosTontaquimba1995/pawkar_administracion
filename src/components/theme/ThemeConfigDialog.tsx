@@ -33,6 +33,7 @@ import {
   ColorLens as ColorLensIcon,
 } from "@mui/icons-material";
 import { useThemeConfig } from "@/contexts/ThemeContext";
+import { generateThemePdf } from "@/utils/generateThemePdf";
 
 interface ColorField {
   id: string;
@@ -814,21 +815,39 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
             borderRadius: "0 0 12px 12px",
           }}
         >
-          <Tooltip title="Restablecer a los valores por defecto">
-            <Button
-              onClick={handleReset}
-              startIcon={<ResetIcon />}
-              color="inherit"
-              sx={{
-                textTransform: "none",
-                "&:hover": {
-                  bgcolor: "action.hover",
-                },
-              }}
-            >
-              Restablecer
-            </Button>
-          </Tooltip>
+          <Box display="flex" gap={1}>
+            <Tooltip title="Restablecer a los valores por defecto">
+              <Button
+                onClick={handleReset}
+                startIcon={<ResetIcon />}
+                color="inherit"
+                sx={{
+                  textTransform: "none",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                Restablecer
+              </Button>
+            </Tooltip>
+            <Tooltip title="Exportar colores a PDF">
+              <Button
+                onClick={() => generateThemePdf(colors)}
+                startIcon={<ContentCopyIcon />}
+                color="primary"
+                variant="outlined"
+                sx={{
+                  textTransform: "none",
+                  "&:hover": {
+                    bgcolor: "action.hover",
+                  },
+                }}
+              >
+                Exportar PDF
+              </Button>
+            </Tooltip>
+          </Box>
           <Box display="flex" gap={1}>
             <Button
               onClick={onClose}

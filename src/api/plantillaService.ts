@@ -70,7 +70,7 @@ const plantillaService = {
    * Obtiene todas las plantillas registradas
    */
   async getAllPlantillas(): Promise<PlantillaListResponse> {
-    const response = await api.get<PlantillaListResponse>('/');
+    const response = await api.get<PlantillaListResponse>('');
     return response.data;
   },
 
