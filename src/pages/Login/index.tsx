@@ -56,20 +56,26 @@ const Login = () => {
 
     try {
       console.log("🔐 Intentando iniciar sesión...");
-      const response = await authService.login(formData);
+      const response = await authService.login({
+        username: formData.username,
+        password: formData.password,
+      });
 
       if (response.success && response.data) {
         console.log("✅ Login exitoso");
 
-        // Guardar token y datos de usuario en el contexto
+        // Store username in localStorage for the header
+        localStorage.setItem("username", formData.username);
+
+        // Call login with the token and user data
         login(response.data.accessToken, {
           id: response.data.id,
           username: response.data.username,
-          email: response.data.email,
-          roles: response.data.roles,
+          email: response.data.email || `${formData.username}@example.com`, // Provide a fallback email
+          roles: response.data.roles || ["ROLE_USER"], // Default role if not provided
         });
 
-        // Redirigir al dashboard
+        // Redirect to dashboard
         navigate("/panel");
       } else {
         console.log("❌ Login fallido:", response.message);
@@ -138,20 +144,20 @@ const Login = () => {
                 textShadow: "0 2px 20px rgba(0,0,0,0.2)",
               }}
             >
-              Pawkar Admin
+              SISTEMA DE GESTIÓN
             </Typography>
             <Typography
               variant="h6"
               sx={{
                 color: colors.white,
                 opacity: 0.95,
-                fontWeight: 300,
-                maxWidth: 400,
+                fontWeight: 700,
+                maxWidth: 900,
                 mx: "auto",
                 fontSize: "1.25rem",
               }}
             >
-              Sistema de Gestión Deportiva Profesional
+              Pawkar Peguche 2026
             </Typography>
           </Box>
         </Fade>
