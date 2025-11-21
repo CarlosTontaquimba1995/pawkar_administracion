@@ -9,8 +9,9 @@ import {
     EncuentroPageResponse,
     EncuentroSearchParams
 } from '../types/encuentro.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/encuentros';
+const API_URL = getApiUrl('/api/encuentros');
 
 // Create axios instance with default config
 const api = axios.create({

@@ -7,8 +7,9 @@ import {
     UpdateCategoriaRequest,
     DeleteCategoriaResponse
 } from '../types/categoria.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/categorias';
+const API_URL = getApiUrl('/api/categorias');
 
 // Create axios instance with default config
 const api = axios.create({

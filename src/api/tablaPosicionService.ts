@@ -6,8 +6,9 @@ import {
     SearchParams,
     EquipoPosicionResponse
 } from '@/types/tablaPosicion.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/tabla-posicion';
+const API_URL = getApiUrl('/api/tabla-posicion');
 
 // Create axios instance with default config
 const api = axios.create({

@@ -9,8 +9,9 @@ import {
     ActualizarRelacionRequest,
     ActualizarRelacionResponse,
 } from '../types/subcategoriaRoles.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/subcategoria-roles';
+const API_URL = getApiUrl('/api/subcategoria-roles');
 
 // Create axios instance with default config
 const api = axios.create({

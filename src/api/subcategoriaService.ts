@@ -7,8 +7,9 @@ import {
   SubcategoriaListResponse,
   DeleteSubcategoriaResponse,
 } from '../types/subcategoria.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/subcategorias';
+const API_URL = getApiUrl('/api/subcategorias');
 
 // Create axios instance with default config
 const api = axios.create({
@@ -139,7 +140,7 @@ const subcategoriaService = {
   // Métodos legacy para mantener compatibilidad
   async getCategories(): Promise<SubcategoriaListResponse> {
     try {
-      const response = await api.get<SubcategoriaListResponse>(API_URL);
+      const response = await api.get<SubcategoriaListResponse>('');
       return response.data;
     } catch (error) {
       console.error('Error fetching subcategories:', error);
@@ -168,7 +169,7 @@ const subcategoriaService = {
   // Alias para mantener compatibilidad
   createCategory: async (categoryData: any) => {
     try {
-      const response = await api.post(API_URL, categoryData);
+      const response = await api.post('/', categoryData);
       return response.data;
     } catch (error) {
       console.error('Error creating category:', error);
@@ -179,7 +180,7 @@ const subcategoriaService = {
   // Alias para mantener compatibilidad
   updateCategory: async (id: number, categoryData: any) => {
     try {
-      const response = await api.put(`${API_URL}/${id}`, categoryData);
+      const response = await api.put(`/${id}`, categoryData);
       return response.data;
     } catch (error) {
       console.error(`Error updating category with id ${id}:`, error);
@@ -190,7 +191,7 @@ const subcategoriaService = {
   // Alias para mantener compatibilidad
   deleteCategory: async (id: number) => {
     try {
-      const response = await api.delete(`${API_URL}/${id}`);
+      const response = await api.delete(`/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error deleting category with id ${id}:`, error);
@@ -201,7 +202,7 @@ const subcategoriaService = {
   // Alias para mantener compatibilidad
   getCategoryById: async (id: number) => {
     try {
-      const response = await api.get(`${API_URL}/${id}`);
+      const response = await api.get(`/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Error fetching category with id ${id}:`, error);

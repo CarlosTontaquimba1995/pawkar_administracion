@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/verificacion';
+const API_URL = getApiUrl('/api/verificacion');
 
 export interface VerificationResponse {
   success: boolean;

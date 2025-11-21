@@ -7,8 +7,9 @@ import {
   SerieListResponse,
   DeleteSerieResponse
 } from '../types/serie.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/series';
+const API_URL = getApiUrl('/api/series');
 
 // Create axios instance with default config
 const api = axios.create({

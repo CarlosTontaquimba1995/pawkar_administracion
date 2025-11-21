@@ -1,3 +1,57 @@
+# Pawkar Administración
+
+Sports event management system built with React, TypeScript, and Vite.
+
+## Environment Setup
+
+This application uses environment variables to configure the API base URL for different environments (local, development, staging, production).
+
+### Quick Start
+
+1. **Copy the example environment file:**
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. **Update the API URL in `.env.local`:**
+   ```env
+   VITE_API_BASE_URL=http://localhost:8080
+   ```
+
+3. **Start the development server:**
+   ```bash
+   npm run dev
+   ```
+
+### Environment Files
+
+- **`.env.local`** - Local development (not tracked in git)
+- **`.env.development`** - Development server (not tracked in git)
+- **`.env.staging`** - Staging/QA environment (not tracked in git)
+- **`.env.production`** - Production environment (not tracked in git)
+- **`.env.example`** - Template file (tracked in git)
+
+### Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `VITE_API_BASE_URL` | Base URL for the API server (without trailing slash) | `http://localhost:8080` |
+
+### Switching Environments
+
+Vite automatically loads the appropriate environment file based on the mode:
+
+- **Development mode** (`npm run dev`): Uses `.env.local` or `.env.development`
+- **Production build** (`npm run build`): Uses `.env.production`
+
+To use a specific environment file, you can specify the mode:
+```bash
+# Use staging environment
+npm run build -- --mode staging
+```
+
+---
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

@@ -8,8 +8,9 @@ import {
     DeleteRoleResponse,
     UpdateRoleRequest
 } from '@/types/role.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/roles';
+const API_URL = getApiUrl('/api/roles');
 
 // Create axios instance with default config
 const api = axios.create({

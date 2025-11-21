@@ -8,8 +8,9 @@ import {
   CreateMultiplePlayersRequest,
   PlayerQueryParams
 } from '../types/player.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/jugadores';
+const API_URL = getApiUrl('/api/jugadores');
 
 // Create axios instance with default config
 const api = axios.create({

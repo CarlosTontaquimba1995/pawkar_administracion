@@ -3,8 +3,9 @@ import {
   GenerarEncuentrosRequest,
   GenerarEncuentrosResponse,
 } from '../types/generacionEncuentro.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/generacion-encuentros';
+const API_URL = getApiUrl('/api/generacion-encuentros');
 
 // Create axios instance with default config
 const api = axios.create({

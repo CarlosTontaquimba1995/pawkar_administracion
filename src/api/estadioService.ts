@@ -7,8 +7,9 @@ import {
     EstadioListResponse,
     DeleteEstadioResponse,
 } from '../types/estadio.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/estadios';
+const API_URL = getApiUrl('/api/estadios');
 
 // Create axios instance with default config
 const api = axios.create({

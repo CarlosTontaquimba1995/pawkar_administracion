@@ -1,7 +1,8 @@
 import axios, { AxiosError } from 'axios';
 import { VerificationResponse } from '@/types/verification.types';
+import { getApiUrl } from '../config/api.config';
 
-const API_URL = 'http://localhost:8080/api/verificacion';
+const API_URL = getApiUrl('/api/verificacion');
 
 // Create axios instance with default config
 const api = axios.create({
