@@ -209,6 +209,31 @@ const Reports: React.FC = () => {
     loadInitialData();
   }, []);
 
+  // Function to load series by subcategory
+  const loadSeriesBySubcategoria = async (subcategoriaId: number) => {
+    if (!subcategoriaId) return;
+
+    try {
+      setLoadingFilters(true);
+      const seriesData = await serieService.getSeriesBySubcategoria(
+        subcategoriaId
+      );
+
+      const formattedSeries = (seriesData.data || []).map((serie: any) => ({
+        serieId: serie.serieId,
+        nombre: serie.nombreSerie || serie.nombre || "",
+      }));
+
+      setSeries(formattedSeries);
+      return formattedSeries;
+    } catch (error) {
+      console.error("Error loading series:", error);
+      return [];
+    } finally {
+      setLoadingFilters(false);
+    }
+  };
+
   // Handle subcategory change
   const handleSubcategoriaChange = async (subcategoriaId: number) => {
     setSelectedSubcategoria(subcategoriaId);
@@ -217,22 +242,7 @@ const Reports: React.FC = () => {
     setPlantillas([]);
 
     if (subcategoriaId) {
-      try {
-        setLoadingFilters(true);
-        const seriesData = await serieService.getSeriesBySubcategoria(
-          subcategoriaId
-        );
-
-        const formattedSeries = (seriesData.data || []).map((serie: any) => ({
-          serieId: serie.serieId,
-          nombre: serie.nombreSerie || serie.nombre || "",
-        }));
-        setSeries(formattedSeries);
-      } catch (error) {
-        console.error("Error loading series:", error);
-      } finally {
-        setLoadingFilters(false);
-      }
+      await loadSeriesBySubcategoria(subcategoriaId);
     }
   };
 
@@ -329,15 +339,28 @@ const Reports: React.FC = () => {
       setTeamReportLoading(true);
       showSnackbar("Generando reporte de equipos, por favor espere...", "info");
 
-      const response = await teamService.getTeamsBySubcategoria(
-        Number(selectedSubcategoria)
-      );
-      const teamsData = response.data || [];
+      let response;
+      let teamsData = [];
+
+      if (selectedSerie) {
+        // If a series is selected, fetch teams by series
+        response = await teamService.getTeamsBySerie(Number(selectedSerie));
+        teamsData = response.data || [];
+      } else {
+        // Otherwise, fetch teams by subcategory
+        response = await teamService.getTeamsBySubcategoria(
+          Number(selectedSubcategoria)
+        );
+        teamsData = response.data || [];
+      }
+
       setTeamReportData(teamsData);
 
       if (teamsData.length === 0) {
         showSnackbar(
-          "No hay equipos registrados para esta subcategoría",
+          selectedSerie
+            ? "No hay equipos registrados en esta serie"
+            : "No hay equipos registrados para esta subcategoría",
           "warning"
         );
         return;
@@ -345,22 +368,39 @@ const Reports: React.FC = () => {
 
       // Generate PDF
       const doc = new jsPDF();
-      const title = "Reporte de Equipos por Subcategoría";
-      const subcategoria =
+      const title = selectedSerie
+        ? "Reporte de Equipos por Serie"
+        : "Reporte de Equipos por Subcategoría";
+
+      const subcategoriaName =
         teamsData[0]?.subcategoriaNombre ||
         subcategorias.find((s) => s.subcategoriaId === selectedSubcategoria)
           ?.nombre ||
         "";
+
+      const serieName = selectedSerie
+        ? series.find((s) => s.serieId === selectedSerie)?.nombre
+        : null;
+
       const date = new Date().toLocaleDateString();
 
       // Add title
       doc.setFontSize(18);
       doc.text(title, 14, 20);
 
-      // Add subcategory and date
+      // Add metadata
       doc.setFontSize(11);
-      doc.text(`Subcategoría: ${subcategoria}`, 14, 30);
-      doc.text(`Generado el: ${date}`, 14, 35);
+      let yOffset = 30;
+
+      if (serieName) {
+        doc.text(`Serie: ${serieName}`, 14, yOffset);
+        yOffset += 7;
+      }
+
+      doc.text(`Subcategoría: ${subcategoriaName}`, 14, yOffset);
+      yOffset += 7;
+      doc.text(`Generado el: ${date}`, 14, yOffset);
+      yOffset += 10;
 
       // Prepare data for the table
       const tableData = teamsData.map((team: any, index: number) => [
@@ -379,7 +419,7 @@ const Reports: React.FC = () => {
           ["#", "Nombre del Equipo", "Serie", "Fundación", "N° Jugadores"],
         ],
         body: tableData,
-        startY: 45,
+        startY: yOffset,
         headStyles: {
           fillColor: [41, 128, 185],
           textColor: 255,
@@ -414,13 +454,21 @@ const Reports: React.FC = () => {
         },
       });
 
-      // Save the PDF with a more descriptive name
-      const subcategoriaSlug = subcategoria.toLowerCase().replace(/\s+/g, "_");
-      doc.save(
-        `reporte_equipos_${subcategoriaSlug}_${
-          new Date().toISOString().split("T")[0]
-        }.pdf`
-      );
+      // Save the PDF with a descriptive name
+      let fileName = "reporte_equipos_";
+      const subcategoriaSlug = subcategoriaName
+        .toLowerCase()
+        .replace(/\s+/g, "_");
+
+      if (serieName) {
+        const serieSlug = serieName.toLowerCase().replace(/\s+/g, "_");
+        fileName += `serie_${serieSlug}_`;
+      } else {
+        fileName += `subcategoria_${subcategoriaSlug}_`;
+      }
+
+      fileName += `${new Date().toISOString().split("T")[0]}.pdf`;
+      doc.save(fileName);
       showSnackbar("Reporte de equipos generado exitosamente", "success");
     } catch (error) {
       console.error("Error generating team report:", error);
@@ -730,9 +778,18 @@ const Reports: React.FC = () => {
                 labelId="subcategoria-select-label"
                 value={selectedSubcategoria}
                 label="Subcategoría"
-                onChange={(e) =>
-                  setSelectedSubcategoria(Number(e.target.value))
-                }
+                onChange={async (e) => {
+                  const subcatId = Number(e.target.value);
+                  setSelectedSubcategoria(subcatId);
+                  setSelectedSerie(""); // Reset series selection when subcategory changes
+
+                  // Load series for the selected subcategory
+                  if (subcatId) {
+                    await loadSeriesBySubcategoria(subcatId);
+                  } else {
+                    setSeries([]);
+                  }
+                }}
                 disabled={loading || teamReportLoading}
               >
                 {subcategorias.map((subcategoria) => (
@@ -741,6 +798,35 @@ const Reports: React.FC = () => {
                     value={subcategoria.subcategoriaId}
                   >
                     {subcategoria.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Series Selector - Only enabled when a subcategory is selected */}
+            <FormControl
+              sx={{ minWidth: 250 }}
+              size="small"
+              disabled={
+                !selectedSubcategoria || loadingFilters || teamReportLoading
+              }
+            >
+              <InputLabel id="serie-select-label">
+                Filtrar por Serie (Opcional)
+              </InputLabel>
+              <Select
+                labelId="serie-select-label"
+                value={selectedSerie}
+                label="Filtrar por Serie (Opcional)"
+                onChange={(e) => setSelectedSerie(Number(e.target.value))}
+                disabled={!selectedSubcategoria || loadingFilters}
+              >
+                <MenuItem value="">
+                  <em>Todas las series</em>
+                </MenuItem>
+                {series.map((serie) => (
+                  <MenuItem key={serie.serieId} value={serie.serieId}>
+                    {serie.nombre}
                   </MenuItem>
                 ))}
               </Select>
@@ -767,6 +853,9 @@ const Reports: React.FC = () => {
                 gutterBottom
               >
                 {teamReportData.length} equipos encontrados
+                {selectedSerie
+                  ? " en la serie seleccionada"
+                  : " en la subcategoría"}
               </Typography>
               <Box sx={{ maxHeight: 300, overflow: "auto" }}>
                 {teamReportData.map((team, index) => (
