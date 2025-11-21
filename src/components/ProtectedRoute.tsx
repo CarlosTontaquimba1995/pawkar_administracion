@@ -10,7 +10,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
 
   if (!isAuthenticated) {
     console.log('🚫 Acceso denegado - Redirigiendo a login');
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/iniciar-sesion" replace />;
   }
 
   return <>{children}</>;

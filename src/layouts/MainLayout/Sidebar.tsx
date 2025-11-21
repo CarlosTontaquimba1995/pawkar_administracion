@@ -70,17 +70,17 @@ interface SidebarProps {
 }
 
 const menuItems = [
-  { text: "Dashboard", icon: <DashboardIcon />, path: "/dashboard" },
-  { text: "Categorías", icon: <CategoryIcon />, path: "/categories" },
+  { text: "Panel", icon: <DashboardIcon />, path: "/panel" },
+  { text: "Categorías", icon: <CategoryIcon />, path: "/categorias" },
   { text: "Roles", icon: <RollerShades />, path: "/roles" },
-  { text: "Equipos", icon: <TeamsIcon />, path: "/teams" },
-  { text: "Jugadores", icon: <PlayersIcon />, path: "/players" },
+  { text: "Equipos", icon: <TeamsIcon />, path: "/equipos" },
+  { text: "Jugadores", icon: <PlayersIcon />, path: "/jugadores" },
   { text: "Encuentros", icon: <MatchIcon />, path: "/encuentros" },
   { text: "Posiciones", icon: <EmojiEventsIcon />, path: "/posiciones" },
   {
     text: "Eventos",
     icon: <EventsIcon />,
-    path: "/events",
+    path: "/eventos",
     requiresEventsCategory: true,
   },
 ];
@@ -196,7 +196,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const handleNavigation = async (path: string) => {
     if (path === "/logout") {
       await logout();
-      navigate("/login");
+      navigate("/iniciar-sesion");
       return;
     }
 
@@ -212,7 +212,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     }
 
     // Check if trying to access Events module
-    if (path === "/events" && hasEventsCategory === false) {
+    if (path === "/eventos" && hasEventsCategory === false) {
       showSnackbar(
         "No se encontró la categoría 'EVENTOS'. Por favor, regístrela primero.",
         "error"
@@ -222,7 +222,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
 
     // Check if trying to access Teams or Players module
     if (
-      (path === "/teams" || path === "/players") &&
+      (path === "/equipos" || path === "/jugadores") &&
       hasRequiredData === false
     ) {
       showSnackbar(
@@ -233,7 +233,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
     }
 
     // For players, also check if there are teams
-    if (path === "/players") {
+    if (path === "/jugadores") {
       try {
         const exists = await teamService.checkTeamsExist();
         if (!exists) {
@@ -264,7 +264,7 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       setIsLoggingOut(true);
       await logout();
       setLogoutDialogOpen(false);
-      navigate("/login");
+      navigate("/iniciar-sesion");
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
       setSnackbar({
@@ -292,9 +292,9 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
       <List>
         {menuItems.map((item) => {
           // Handle navigation with validation
-          const isTeamsItem = item.path === "/teams";
-          const isEventsItem = item.path === "/events";
-          const isPlayersItem = item.path === "/players";
+          const isTeamsItem = item.path === "/equipos";
+          const isEventsItem = item.path === "/eventos";
+          const isPlayersItem = item.path === "/jugadores";
 
           const handleItemClick = () => {
             if ((isTeamsItem || isPlayersItem) && hasRequiredData === false) {

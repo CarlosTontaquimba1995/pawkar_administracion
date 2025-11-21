@@ -6,7 +6,7 @@ Se ha implementado un sistema completo de autenticación con las siguientes cara
 
 ### ✅ Características Implementadas
 
-1. **Página de Login** (`/login`)
+1. **Página de iniciar-sesion** (`/iniciar-sesion`)
    - Formulario con usuario y contraseña
    - Validación de credenciales contra la API
    - Manejo de errores con mensajes claros
@@ -19,13 +19,13 @@ Se ha implementado un sistema completo de autenticación con las siguientes cara
 
 3. **Rutas Protegidas**
    - Todas las rutas principales requieren autenticación
-   - Redirección automática a `/login` si no hay sesión
-   - Redirección a `/dashboard` después del login exitoso
+   - Redirección automática a `/iniciar-sesion` si no hay sesión
+   - Redirección a `/panel` después del iniciar-sesion exitoso
 
 4. **Funcionalidad de Logout**
    - Botón "Cerrar Sesión" en el sidebar
    - Limpia token y datos de usuario
-   - Redirige a la página de login
+   - Redirige a la página de iniciar-sesion
 
 ### 🔐 API de Autenticación
 
@@ -91,7 +91,7 @@ Se ha implementado un sistema completo de autenticación con las siguientes cara
 
 3. **⚠️ IMPORTANTE - Primera vez o si ya tenías la app corriendo:**
    
-   Si la aplicación va directamente a `/dashboard` en lugar de mostrar el login, necesitas limpiar el localStorage:
+   Si la aplicación va directamente a `/panel` en lugar de mostrar el iniciar-sesion, necesitas limpiar el localStorage:
    
    **Solución rápida:**
    - Abre la consola del navegador (F12)
@@ -106,33 +106,33 @@ Se ha implementado un sistema completo de autenticación con las siguientes cara
 
 4. **Acceder a la aplicación:**
    - Abre el navegador en `http://localhost:3001` (o el puerto que indique Vite)
-   - Serás redirigido automáticamente a `/login`
+   - Serás redirigido automáticamente a `/iniciar-sesion`
 
 4. **Iniciar sesión:**
    - Usuario: `testuser`
    - Contraseña: `password123` (o las credenciales que tengas configuradas)
 
 5. **Navegar por el sistema:**
-   - Después del login exitoso, serás redirigido al dashboard
+   - Después del iniciar-sesion exitoso, serás redirigido al panel
    - Puedes acceder a todos los módulos (Equipos, Jugadores, Eventos)
    - El token se guarda automáticamente y persiste entre recargas
 
 6. **Cerrar sesión:**
    - Haz clic en "Cerrar Sesión" en el sidebar
-   - Serás redirigido a la página de login
+   - Serás redirigido a la página de iniciar-sesion
    - El token y datos de usuario se eliminan
 
 ### 🔍 Validación de Acceso a Jugadores
 
 El módulo de jugadores tiene una validación adicional:
 - Verifica que existan equipos registrados antes de permitir el acceso
-- Si no hay equipos, muestra un mensaje y redirige a `/teams`
+- Si no hay equipos, muestra un mensaje y redirige a `/equipos`
 - La API consultada es: `GET http://localhost:8080/api/equipos/existen`
 
 ### 🐛 Debugging
 
 Los logs en la consola del navegador te mostrarán:
-- 🔐 Intentos de login
+- 🔐 Intentos de iniciar-sesion
 - ✅ Login exitoso con datos de usuario
 - 🚀 Navegación entre rutas
 - 🔍 Verificación de equipos
@@ -151,7 +151,7 @@ Los logs en la consola del navegador te mostrarán:
 
 ### 🎨 Personalización
 
-Para cambiar las credenciales de prueba mostradas en la página de login, edita:
+Para cambiar las credenciales de prueba mostradas en la página de iniciar-sesion, edita:
 ```tsx
 // src/pages/Login/index.tsx
 <Typography variant="caption" color="text.secondary" display="block">
@@ -165,7 +165,7 @@ Para cambiar las credenciales de prueba mostradas en la página de login, edita:
 ### ✨ Próximos Pasos Sugeridos
 
 1. Implementar refresh token automático
-2. Agregar "Recordarme" en el login
+2. Agregar "Recordarme" en el iniciar-sesion
 3. Implementar recuperación de contraseña
 4. Agregar página de perfil de usuario
 5. Implementar roles y permisos más granulares

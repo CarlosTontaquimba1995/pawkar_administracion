@@ -2,7 +2,7 @@
 
 ## ❗ Problema
 
-La aplicación va directamente a `/dashboard` en lugar de mostrar el login porque hay un token guardado de pruebas anteriores.
+La aplicación va directamente a `/panel` en lugar de mostrar el iniciar-sesion porque hay un token guardado de pruebas anteriores.
 
 ## ✅ Solución Rápida
 
@@ -24,7 +24,7 @@ La aplicación va directamente a `/dashboard` en lugar de mostrar el login porqu
    location.reload();
    ```
 
-4. **Presiona Enter** - La página se recargará y te llevará al login
+4. **Presiona Enter** - La página se recargará y te llevará al iniciar-sesion
 
 ### Opción 2: Usar DevTools Application
 
@@ -61,27 +61,27 @@ La aplicación va directamente a `/dashboard` en lugar de mostrar el login porqu
 Después de limpiar el storage:
 
 1. Recarga la aplicación: `http://localhost:3001`
-2. Deberías ser redirigido automáticamente a: `http://localhost:3001/login`
-3. Verás la página de login con el formulario
+2. Deberías ser redirigido automáticamente a: `http://localhost:3001/iniciar-sesion`
+3. Verás la página de iniciar-sesion con el formulario
 
 ## 🚀 Flujo Correcto Después de Limpiar
 
 ```
-1. Abrir app → Redirigido a /login ✅
+1. Abrir app → Redirigido a /iniciar-sesion ✅
 2. Ingresar credenciales
 3. Click en "Iniciar Sesión"
 4. Token guardado automáticamente
-5. Redirigido a /dashboard
+5. Redirigido a /panel
 6. Navegar por el sistema
 ```
 
 ## 📝 Nota Importante
 
-Este problema ocurrió porque el componente `DevTokenSetter` (que ya fue eliminado) guardó un token de prueba en localStorage. Una vez que limpies el storage, el flujo de login funcionará correctamente.
+Este problema ocurrió porque el componente `DevTokenSetter` (que ya fue eliminado) guardó un token de prueba en localStorage. Una vez que limpies el storage, el flujo de iniciar-sesion funcionará correctamente.
 
 ## 🐛 Si Aún No Funciona
 
-Si después de limpiar el storage sigues siendo redirigido al dashboard:
+Si después de limpiar el storage sigues siendo redirigido al panel:
 
 1. **Verifica en la consola del navegador:**
 
@@ -96,7 +96,7 @@ Si después de limpiar el storage sigues siendo redirigido al dashboard:
 
    - Abre una ventana de incógnito (Ctrl+Shift+N en Chrome)
    - Ve a `http://localhost:3001`
-   - Deberías ver el login directamente
+   - Deberías ver el iniciar-sesion directamente
 
 3. **Limpia todo el localStorage:**
    ```javascript

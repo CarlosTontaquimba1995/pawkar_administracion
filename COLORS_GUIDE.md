@@ -186,9 +186,9 @@ const MyComponent = () => {
 
 ## 📦 Componentes que Usan los Colores
 
-### Login Page
+### iniciar-sesion Page
 - Gradiente de fondo: `gradients.primary`
-- Botón de login: `gradients.primary`
+- Botón de iniciar-sesion: `gradients.primary`
 - Iconos: `primary`
 - Alertas de error: `accent1` con opacidad
 

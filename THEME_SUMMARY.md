@@ -235,7 +235,7 @@ const MyComponent = () => {
 - Variaciones light/dark automáticas
 
 ### 🔄 Próximos Componentes (Aplicar el mismo patrón)
-- Dashboard
+- Panel
 - Sidebar (ya usa algunos colores)
 - Formularios
 - Tablas
@@ -282,7 +282,7 @@ accent2: '#00897B',
 ## 🚀 Próximos Pasos Sugeridos
 
 1. **Aplicar colores a más componentes**
-   - Dashboard cards
+   - Panel cards
    - Tablas de datos
    - Formularios de registro
 

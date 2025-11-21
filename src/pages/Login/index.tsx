@@ -70,13 +70,13 @@ const Login = () => {
         });
 
         // Redirigir al dashboard
-        navigate("/dashboard");
+        navigate("/panel");
       } else {
         console.log("❌ Login fallido:", response.message);
         setError(response.message || "Error al iniciar sesión");
       }
     } catch (err: any) {
-      console.error("❌ Error en login:", err);
+      console.error("❌ Error en iniciar-sesion:", err);
       setError("Error de conexión. Verifica que el servidor esté activo.");
     } finally {
       setIsLoading(false);

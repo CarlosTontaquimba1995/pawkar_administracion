@@ -38,15 +38,11 @@ const AppRoutes = () => {
   return (
     <Suspense fallback={<LoadingSpinner />}>
       <Routes>
-        {/* Ruta pública de login */}
+        {/* Ruta pública de iniciar-sesion */}
         <Route
-          path="/login"
+          path="/iniciar-sesion"
           element={
-            isAuthenticated ? (
-              <Navigate to="/dashboard" replace />
-            ) : (
-              <LoginPage />
-            )
+            isAuthenticated ? <Navigate to="/panel" replace /> : <LoginPage />
           }
         />
 
@@ -59,12 +55,12 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="teams" element={<TeamsPage />} />
-          <Route path="players" element={<PlayersPage />} />
-          <Route path="events" element={<EventsPage />} />
-          <Route path="categories" element={<CategoriesPage />} />
+          <Route index element={<Navigate to="/panel" replace />} />
+          <Route path="panel" element={<DashboardPage />} />
+          <Route path="equipos" element={<TeamsPage />} />
+          <Route path="jugadores" element={<PlayersPage />} />
+          <Route path="eventos" element={<EventsPage />} />
+          <Route path="categorias" element={<CategoriesPage />} />
           <Route path="roles" element={<RolesPage />} />
           <Route path="encuentros" element={<EncuentrosPage />} />
           <Route path="posiciones" element={<TablaPosicionesPage />} />

@@ -102,7 +102,7 @@ const TeamTable: React.FC<TeamTableProps> = ({
   // Fetch teams with filters
   const fetchTeams = useCallback(async () => {
     if (!token) {
-      navigate("/login");
+      navigate("/iniciar-sesiongin");
       return;
     }
 
