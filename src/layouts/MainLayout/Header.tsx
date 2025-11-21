@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   AppBar,
   IconButton,
@@ -7,6 +8,8 @@ import {
   Avatar,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
+import userService from "@/api/userService";
+import { User } from "@/types/user.types";
 import { styled } from "@mui/material/styles";
 
 const StyledAppBar = styled(AppBar)(({ theme }) => ({
@@ -17,6 +20,31 @@ const StyledAppBar = styled(AppBar)(({ theme }) => ({
 }));
 
 const Header = ({ onDrawerToggle }: { onDrawerToggle: () => void }) => {
+  const [userData, setUserData] = useState<User | null>(null);
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        // Get username from localStorage or your auth context
+        const username = localStorage.getItem("username");
+        if (username) {
+          const response = await userService.getUserByUsername(username);
+          setUserData(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  const getHighestRole = () => {
+    if (!userData?.roles?.length) return "Usuario";
+    const roles = userData.roles.map((role) => role.name.replace("ROLE_", ""));
+    return roles[0] || "Usuario";
+  };
+
   return (
     <StyledAppBar
       position="fixed"
@@ -49,10 +77,10 @@ const Header = ({ onDrawerToggle }: { onDrawerToggle: () => void }) => {
             />
             <Box sx={{ ml: 1, display: { xs: "none", md: "block" } }}>
               <Typography variant="body2" color="text.primary">
-                Admin User
+                {userData?.username || "Usuario"}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Administrator
+                {getHighestRole()}
               </Typography>
             </Box>
           </Box>
