@@ -12,6 +12,9 @@ import {
   Paper,
   Tooltip,
   IconButton,
+  Snackbar,
+  Alert,
+  AlertColor,
 } from "@mui/material";
 // Import jsPDF with autoTable plugin
 import jsPDF from "jspdf";
@@ -39,6 +42,17 @@ import { TeamListResponse } from "../../types/team.types";
 import { Plantilla } from "../../types/plantilla.types";
 
 const Reports: React.FC = () => {
+  // Snackbar state
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info" as AlertColor,
+  });
+
+  const showSnackbar = (message: string, severity: AlertColor = "info") => {
+    setSnackbar({ open: true, message, severity });
+  };
+
   // State for categories, subcategories, series, teams, and plantillas
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [series, setSeries] = useState<
@@ -105,24 +119,41 @@ const Reports: React.FC = () => {
     setPage(0);
   };
 
-  // Handle report generation
-  const handleGenerateReport = async () => {
+  // Handle report generation for a specific team
+  const handleGenerateTeamReport = async () => {
     if (!selectedTeam) return;
 
     try {
       setLoading(true);
-
-      // Get the plantillas for the selected team
       const plantillasData = await plantillaService.getPlantillasByEquipo(
         selectedTeam
       );
-      setPlantillas(plantillasData.data || []);
-
-      // Generate the PDF with the plantillas data
-      generatePDF();
+      const plantillasList = plantillasData.data || [];
+      setPlantillas(plantillasList);
+      setTotalRows(plantillasList.length);
+      generatePDF("team", plantillasList);
     } catch (error) {
-      console.error("Error generating report:", error);
-      // You might want to show an error message to the user here
+      showSnackbar("Error al generar el reporte del equipo", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle report generation for all plantillas in subcategoría
+  const handleGenerateAllReport = async () => {
+    if (!selectedSubcategoria) return;
+
+    try {
+      setLoading(true);
+      const plantillasData = await plantillaService.getPlantillasBySubcategoria(
+        selectedSubcategoria
+      );
+      const plantillasList = plantillasData.data || [];
+      setPlantillas(plantillasList);
+      setTotalRows(plantillasList.length);
+      generatePDF("all", plantillasList);
+    } catch (error) {
+      showSnackbar("Error al generar el reporte", "error");
     } finally {
       setLoading(false);
     }
@@ -286,8 +317,26 @@ const Reports: React.FC = () => {
   };
 
   // Generate PDF report
-  const generatePDF = () => {
+  const generatePDF = async (
+    reportType: "team" | "all" = "team",
+    plantillasData?: any[]
+  ) => {
     try {
+      showSnackbar("Generando reporte, por favor espere...", "info");
+
+      // Use the passed data or fall back to the state
+      const dataToUse = plantillasData || plantillas;
+
+      // Check if there's any data
+      if (!dataToUse || dataToUse.length === 0) {
+        showSnackbar(
+          "No hay datos disponibles para generar el reporte",
+          "warning"
+        );
+        return;
+      }
+
+      // Initialize jsPDF
       // Initialize jsPDF
       const doc = new jsPDF();
       const title = "Reporte de Plantillas";
@@ -315,10 +364,12 @@ const Reports: React.FC = () => {
         yOffset += 8;
       }
 
-      // Add team info if a specific team is selected
-      if (selectedTeam) {
+      // Add report type specific information
+      if (reportType === "team" && selectedTeam) {
         const team = teams.data.find((t) => t.equipoId === selectedTeam);
         if (team) {
+          doc.text(`Tipo de Reporte: Por Equipo`, 14, yOffset);
+          yOffset += 8;
           doc.text(`Equipo: ${team.nombre}`, 14, yOffset);
           yOffset += 8;
           const serieName =
@@ -326,10 +377,18 @@ const Reports: React.FC = () => {
           doc.text(`Serie: ${serieName}`, 14, yOffset);
           yOffset += 15; // Extra space before the table
         }
+      } else if (reportType === "all" && selectedSubcategoria) {
+        const subcategoria = subcategorias.find(
+          (s) => s.subcategoriaId === selectedSubcategoria
+        );
+        doc.text(`Tipo de Reporte: Todas las Plantillas`, 14, yOffset);
+        yOffset += 8;
+        doc.text(`Subcategoría: ${subcategoria?.nombre || ""}`, 14, yOffset);
+        yOffset += 15; // Extra space before the table
       }
 
       // Prepare data for the table
-      const tableData = plantillas.map((plantilla) => ({
+      const tableData = dataToUse.map((plantilla) => ({
         jugador: plantilla?.jugadorNombreCompleto || "Sin nombre",
         equipo: plantilla?.equipoNombre || "Sin equipo",
         rol: plantilla?.rolNombre || "Sin rol",
@@ -389,7 +448,7 @@ const Reports: React.FC = () => {
           <Box>
             <Tooltip title="Generar PDF">
               <IconButton
-                onClick={generatePDF}
+                onClick={() => generatePDF("all")}
                 disabled={plantillas.length === 0 || loading}
                 color="primary"
                 sx={{ mr: 1 }}
@@ -518,31 +577,79 @@ const Reports: React.FC = () => {
               </FormControl>
             </Box>
 
-            <Box>
+            <Box display="flex" gap={2}>
               <Button
                 variant="contained"
-                onClick={handleGenerateReport}
+                color="primary"
+                onClick={handleGenerateTeamReport}
                 disabled={!selectedTeam || loading}
                 startIcon={<DescriptionIcon />}
+                sx={{ minWidth: 200 }}
               >
-                {loading ? "Generando..." : "Generar Reporte"}
+                {loading ? "Generando..." : "Reporte por Equipo"}
+              </Button>
+              <Button
+                variant="outlined"
+                color="primary"
+                onClick={handleGenerateAllReport}
+                disabled={!selectedSubcategoria || loading}
+                startIcon={<DescriptionIcon />}
+                sx={{ minWidth: 200 }}
+              >
+                {loading ? "Generando..." : "Todas las Plantillas"}
               </Button>
             </Box>
           </Box>
         </Paper>
 
-        <DataTable
-          columns={columns}
-          data={plantillas}
-          loading={loading}
-          page={page}
-          rowsPerPage={rowsPerPage}
-          totalRows={totalRows}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-          emptyMessage="No hay datos para mostrar. Seleccione un equipo o haga clic en 'Mostrar Todos'."
-        />
+        <Box mt={2}>
+          <Typography variant="h6" gutterBottom>
+            {selectedTeam
+              ? `Viendo plantillas del equipo: ${
+                  teams.data.find((t) => t.equipoId === selectedTeam)?.nombre ||
+                  ""
+                }`
+              : selectedSubcategoria
+              ? `Viendo todas las plantillas de: ${
+                  subcategorias.find(
+                    (s) => s.subcategoriaId === selectedSubcategoria
+                  )?.nombre || "la subcategoría seleccionada"
+                }`
+              : "Seleccione una subcategoría para ver las plantillas"}
+          </Typography>
+          <DataTable
+            columns={columns}
+            data={plantillas}
+            loading={loading}
+            page={page}
+            rowsPerPage={rowsPerPage}
+            totalRows={totalRows}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            emptyMessage={
+              selectedTeam || selectedSubcategoria
+                ? "No se encontraron plantillas para los filtros seleccionados."
+                : "Seleccione una subcategoría para ver las plantillas disponibles."
+            }
+          />
+        </Box>
       </Box>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Container>
   );
 };

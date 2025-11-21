@@ -119,6 +119,19 @@ const plantillaService = {
   async deletePlantilla(equipoId: number, jugadorId: number): Promise<DeletePlantillaResponse> {
     const response = await api.delete<DeletePlantillaResponse>(`/${equipoId}/${jugadorId}`);
     return response.data;
+  },
+
+  /**
+   * Obtiene todas las plantillas de una subcategoría específica
+   * @param subcategoriaId ID de la subcategoría
+   */
+  async getPlantillasBySubcategoria(subcategoriaId: number): Promise<PlantillaListResponse> {
+    try {
+      const response = await api.get<PlantillaListResponse>(`/subcategoria/${subcategoriaId}`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 
