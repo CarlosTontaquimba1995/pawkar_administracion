@@ -9,20 +9,14 @@ import {
   MenuItem,
   Select,
   Typography,
-  CircularProgress,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  IconButton,
   Tooltip,
+  IconButton,
 } from "@mui/material";
 // Import jsPDF with autoTable plugin
 import jsPDF from "jspdf";
 import autoTable, { UserOptions } from "jspdf-autotable";
+import DataTable from "@/components/common/DataTable/DataTable";
 
 declare module "jspdf" {
   interface jsPDF {
@@ -58,6 +52,11 @@ const Reports: React.FC = () => {
   });
   const [plantillas, setPlantillas] = useState<Plantilla[]>([]);
 
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalRows, setTotalRows] = useState(0);
+
   // Selected values
   const [_, setSelectedCategoria] = useState<string>("");
   const [selectedSubcategoria, setSelectedSubcategoria] = useState<number | "">(
@@ -69,6 +68,42 @@ const Reports: React.FC = () => {
   // Loading states
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingFilters, setLoadingFilters] = useState<boolean>(false);
+
+  // Table columns
+  const columns = [
+    {
+      id: "jugadorNombreCompleto",
+      label: "Jugador",
+      minWidth: 200,
+    },
+    {
+      id: "equipoNombre",
+      label: "Equipo",
+      minWidth: 150,
+    },
+    {
+      id: "rolNombre",
+      label: "Rol",
+      minWidth: 120,
+    },
+    {
+      id: "numeroCamiseta",
+      label: "Camiseta",
+      align: "center" as const,
+      minWidth: 100,
+    },
+  ];
+
+  // Handle page change
+  const handleChangePage = (newPage: number) => {
+    setPage(newPage);
+  };
+
+  // Handle rows per page change
+  const handleChangeRowsPerPage = (newRowsPerPage: number) => {
+    setRowsPerPage(newRowsPerPage);
+    setPage(0);
+  };
 
   // Handle report generation
   const handleGenerateReport = async () => {
@@ -212,6 +247,7 @@ const Reports: React.FC = () => {
   // Handle team change
   const handleTeamChange = async (teamId: number) => {
     setSelectedTeam(teamId);
+    setPage(0); // Reset to first page when team changes
 
     if (teamId) {
       try {
@@ -220,6 +256,7 @@ const Reports: React.FC = () => {
           teamId
         );
         setPlantillas(plantillasData.data || []);
+        setTotalRows(plantillasData.data?.length || 0);
       } catch (error) {
         console.error("Error loading plantillas:", error);
       } finally {
@@ -227,6 +264,7 @@ const Reports: React.FC = () => {
       }
     } else {
       setPlantillas([]);
+      setTotalRows(0);
     }
   };
 
@@ -255,24 +293,38 @@ const Reports: React.FC = () => {
       const title = "Reporte de Plantillas";
       const date = new Date().toLocaleDateString();
       const pageWidth = doc.internal.pageSize.getWidth();
+      let yOffset = 20;
 
       // Add title
       doc.setFontSize(18);
       const titleWidth = doc.getTextWidth(title);
-      doc.text(title, (pageWidth - titleWidth) / 2, 20);
+      doc.text(title, (pageWidth - titleWidth) / 2, yOffset);
+      yOffset += 10;
 
       // Add date
       doc.setFontSize(11);
-      doc.text(`Generado el: ${date}`, 14, 30);
+      doc.text(`Generado el: ${date}`, 14, yOffset);
+      yOffset += 10;
+
+      // Add subcategory info if available
+      const selectedSubcat = subcategorias.find(
+        (s) => s.subcategoriaId === selectedSubcategoria
+      );
+      if (selectedSubcat) {
+        doc.text(`Subcategoría: ${selectedSubcat.nombre}`, 14, yOffset);
+        yOffset += 8;
+      }
 
       // Add team info if a specific team is selected
       if (selectedTeam) {
         const team = teams.data.find((t) => t.equipoId === selectedTeam);
         if (team) {
-          doc.text(`Equipo: ${team.nombre}`, 14, 40);
+          doc.text(`Equipo: ${team.nombre}`, 14, yOffset);
+          yOffset += 8;
           const serieName =
             series.find((s) => s.serieId === selectedSerie)?.nombre || "";
-          doc.text(`Serie: ${serieName}`, 14, 48);
+          doc.text(`Serie: ${serieName}`, 14, yOffset);
+          yOffset += 15; // Extra space before the table
         }
       }
 
@@ -479,47 +531,17 @@ const Reports: React.FC = () => {
           </Box>
         </Paper>
 
-        {loading ? (
-          <Box display="flex" justifyContent="center" my={4}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Jugador</TableCell>
-                  <TableCell>Equipo</TableCell>
-                  <TableCell>Rol</TableCell>
-                  <TableCell>Camiseta</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {plantillas.length > 0 ? (
-                  plantillas.map((plantilla) => (
-                    <TableRow
-                      key={`${plantilla.equipoId}-${plantilla.jugadorId}`}
-                    >
-                      <TableCell>
-                        {plantilla.jugadorNombreCompleto || ""}
-                      </TableCell>
-                      <TableCell>{plantilla.equipoNombre || ""}</TableCell>
-                      <TableCell>{plantilla.rolNombre || ""}</TableCell>
-                      <TableCell>{plantilla.numeroCamiseta || ""}</TableCell>
-                    </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      No hay datos para mostrar. Seleccione un equipo o haga
-                      clic en "Mostrar Todos".
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+        <DataTable
+          columns={columns}
+          data={plantillas}
+          loading={loading}
+          page={page}
+          rowsPerPage={rowsPerPage}
+          totalRows={totalRows}
+          onPageChange={handleChangePage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          emptyMessage="No hay datos para mostrar. Seleccione un equipo o haga clic en 'Mostrar Todos'."
+        />
       </Box>
     </Container>
   );
