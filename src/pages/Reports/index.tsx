@@ -82,6 +82,8 @@ const Reports: React.FC = () => {
   // Loading states
   const [loading, setLoading] = useState<boolean>(false);
   const [loadingFilters, setLoadingFilters] = useState<boolean>(false);
+  const [teamReportData, setTeamReportData] = useState<any[]>([]);
+  const [teamReportLoading, setTeamReportLoading] = useState<boolean>(false);
 
   // Table columns
   const columns = [
@@ -313,6 +315,118 @@ const Reports: React.FC = () => {
       console.error("Error fetching all plantillas:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Generate Team Report
+  const generateTeamReport = async () => {
+    if (!selectedSubcategoria) {
+      showSnackbar("Por favor seleccione una subcategoría", "warning");
+      return;
+    }
+
+    try {
+      setTeamReportLoading(true);
+      showSnackbar("Generando reporte de equipos, por favor espere...", "info");
+
+      const response = await teamService.getTeamsBySubcategoria(
+        Number(selectedSubcategoria)
+      );
+      const teamsData = response.data || [];
+      setTeamReportData(teamsData);
+
+      if (teamsData.length === 0) {
+        showSnackbar(
+          "No hay equipos registrados para esta subcategoría",
+          "warning"
+        );
+        return;
+      }
+
+      // Generate PDF
+      const doc = new jsPDF();
+      const title = "Reporte de Equipos por Subcategoría";
+      const subcategoria =
+        teamsData[0]?.subcategoriaNombre ||
+        subcategorias.find((s) => s.subcategoriaId === selectedSubcategoria)
+          ?.nombre ||
+        "";
+      const date = new Date().toLocaleDateString();
+
+      // Add title
+      doc.setFontSize(18);
+      doc.text(title, 14, 20);
+
+      // Add subcategory and date
+      doc.setFontSize(11);
+      doc.text(`Subcategoría: ${subcategoria}`, 14, 30);
+      doc.text(`Generado el: ${date}`, 14, 35);
+
+      // Prepare data for the table
+      const tableData = teamsData.map((team: any, index: number) => [
+        index + 1,
+        team.nombre || "Sin nombre",
+        team.serieNombre || "No especificado",
+        team.fundacion
+          ? new Date(team.fundacion).toLocaleDateString()
+          : "No especificada",
+        team.jugadoresCount || 0,
+      ]);
+
+      // Add table
+      autoTable(doc, {
+        head: [
+          ["#", "Nombre del Equipo", "Serie", "Fundación", "N° Jugadores"],
+        ],
+        body: tableData,
+        startY: 45,
+        headStyles: {
+          fillColor: [41, 128, 185],
+          textColor: 255,
+          fontStyle: "bold",
+        },
+        columnStyles: {
+          0: { cellWidth: "auto" }, // #
+          1: { cellWidth: "auto" }, // Nombre del Equipo
+          2: { cellWidth: "auto" }, // Serie
+          3: { cellWidth: "auto" }, // Fundación
+          4: { cellWidth: "auto" }, // N° Jugadores
+        },
+        styles: {
+          fontSize: 10,
+          cellPadding: 3,
+          overflow: "linebreak",
+          cellWidth: "wrap",
+          valign: "middle",
+        },
+        margin: { top: 10 },
+        didDrawPage: function (data) {
+          // Footer
+          const pageSize = doc.internal.pageSize;
+          const pageHeight = pageSize.height
+            ? pageSize.height
+            : pageSize.getHeight();
+          doc.text(
+            `Página ${data.pageNumber}`,
+            data.settings.margin.left,
+            pageHeight - 10
+          );
+        },
+      });
+
+      // Save the PDF with a more descriptive name
+      const subcategoriaSlug = subcategoria.toLowerCase().replace(/\s+/g, "_");
+      doc.save(
+        `reporte_equipos_${subcategoriaSlug}_${
+          new Date().toISOString().split("T")[0]
+        }.pdf`
+      );
+      showSnackbar("Reporte de equipos generado exitosamente", "success");
+    } catch (error) {
+      console.error("Error generating team report:", error);
+      showSnackbar("Error al generar el reporte de equipos", "error");
+    } finally {
+      setTeamReportLoading(false);
     }
   };
 
@@ -600,6 +714,75 @@ const Reports: React.FC = () => {
               </Button>
             </Box>
           </Box>
+        </Paper>
+
+        {/* Team Report Section */}
+        <Paper sx={{ p: 3, mb: 4, mt: 4 }}>
+          <Typography variant="h6" gutterBottom>
+            Reporte de Equipos por Subcategoría
+          </Typography>
+          <Box display="flex" gap={2} flexWrap="wrap" mb={2}>
+            <FormControl sx={{ minWidth: 250 }} size="small">
+              <InputLabel id="subcategoria-select-label">
+                Subcategoría
+              </InputLabel>
+              <Select
+                labelId="subcategoria-select-label"
+                value={selectedSubcategoria}
+                label="Subcategoría"
+                onChange={(e) =>
+                  setSelectedSubcategoria(Number(e.target.value))
+                }
+                disabled={loading || teamReportLoading}
+              >
+                {subcategorias.map((subcategoria) => (
+                  <MenuItem
+                    key={subcategoria.subcategoriaId}
+                    value={subcategoria.subcategoriaId}
+                  >
+                    {subcategoria.nombre}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={generateTeamReport}
+              disabled={!selectedSubcategoria || teamReportLoading}
+              startIcon={<PrintIcon />}
+            >
+              {teamReportLoading
+                ? "Generando..."
+                : "Generar Reporte de Equipos"}
+            </Button>
+          </Box>
+
+          {teamReportData.length > 0 && (
+            <Box mt={2}>
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                gutterBottom
+              >
+                {teamReportData.length} equipos encontrados
+              </Typography>
+              <Box sx={{ maxHeight: 300, overflow: "auto" }}>
+                {teamReportData.map((team, index) => (
+                  <Box
+                    key={team.equipoId}
+                    sx={{ py: 1, borderBottom: "1px solid #eee" }}
+                  >
+                    <Typography variant="body2">
+                      {index + 1}. {team.nombre} -{" "}
+                      {team.representante || "Sin representante"}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+            </Box>
+          )}
         </Paper>
 
         <Box mt={2}>
