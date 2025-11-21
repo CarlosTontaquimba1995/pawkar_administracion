@@ -20,8 +20,15 @@ import {
   Event as EventIcon,
   EmojiEvents as TrophyIcon,
 } from '@mui/icons-material';
-import RecentActivities from "./components/RecentActivities";
-import PerformanceChart from "./components/PerformanceChart";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from 'recharts';
 import teamService from "../../api/teamService";
 import { useAuth } from "@/contexts/AuthContext";
 import playerService from "@/api/playerService";
@@ -104,11 +111,13 @@ const Dashboard = () => {
     null
   );
   const [tournamentsCount, setTournamentsCount] = useState<number | null>(null);
+  const [proximosEventos, setProximosEventos] = useState<any[]>([]);
   const [loading, setLoading] = useState({
     players: true,
     teams: true,
     events: true,
     tournaments: true,
+    proximosEventos: true,
   });
   const [error, setError] = useState<{
     players: string | null;
@@ -245,6 +254,20 @@ const Dashboard = () => {
         }));
       } finally {
         setLoading((prev) => ({ ...prev, tournaments: false }));
+      }
+
+      // Fetch próximos eventos
+      try {
+        setLoading((prev) => ({ ...prev, proximosEventos: true }));
+        const eventosResponse = await subcategoriaService.getProximosEventos();
+        
+        if (eventosResponse.success && eventosResponse.data) {
+          setProximosEventos(eventosResponse.data.slice(0, 3)); // Show only first 3 events
+        }
+      } catch (err) {
+        console.error('Error fetching próximos eventos:', err);
+      } finally {
+        setLoading((prev) => ({ ...prev, proximosEventos: false }));
       }
     };
 
@@ -608,12 +631,12 @@ const Dashboard = () => {
           </Paper>
         </Box>
 
-        {/* Right Column - Performance Chart */}
+        {/* Right Column - Próximos Eventos */}
         <Box>
           <Paper
             elevation={0}
             sx={{
-              p: { xs: 2, sm: 3 },
+              p: 3,
               borderRadius: 2,
               border: "1px solid",
               borderColor: "divider",
@@ -622,68 +645,200 @@ const Dashboard = () => {
               flexDirection: "column",
             }}
           >
-            <Typography variant="h6" mb={2}>
-              Rendimiento de Equipos
+            <Typography variant="h6" gutterBottom fontWeight={600}>
+              Próximos Eventos
             </Typography>
-            <Box
-              sx={{
-                flex: 1,
-                minHeight: "300px",
-                width: "100%",
-                overflow: "hidden",
-              }}
-            >
-              <PerformanceChart
-                data={[
-                  {
-                    name: "Estadísticas",
-                    jugadores: totalPlayers || 0,
-                    equipos: teamsCount || 0,
-                    total: (totalPlayers || 0) + (teamsCount || 0),
-                  },
-                ]}
-                loading={loading.teams || loading.players}
-              />
-            </Box>
+            
+            {loading.proximosEventos ? (
+              <Box textAlign="center" py={4}>
+                <CircularProgress />
+              </Box>
+            ) : proximosEventos.length === 0 ? (
+              <Box textAlign="center" py={4} color="text.secondary">
+                <Typography>No hay eventos próximos programados</Typography>
+              </Box>
+            ) : (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                {proximosEventos.map((evento, index) => (
+                  <Box
+                    key={evento.subcategoriaId || evento.id || index}
+                    sx={{
+                      p: 2,
+                      borderRadius: 2,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2,
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        borderColor: colors.primary,
+                        backgroundColor: `${colors.primary}05`,
+                        transform: 'translateX(4px)',
+                      },
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 2,
+                        background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <Typography variant="h6" fontWeight={700}>
+                        {evento.fechaHora ? new Date(evento.fechaHora).getDate() : '?'}
+                      </Typography>
+                      <Typography variant="caption" sx={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
+                        {evento.fechaHora ? new Date(evento.fechaHora).toLocaleDateString('es', { month: 'short' }) : ''}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography variant="subtitle1" fontWeight={600} noWrap>
+                        {evento.nombre}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary" noWrap>
+                        {evento.descripcion || 'Sin descripción'}
+                      </Typography>
+                      {evento.fechaHora && (
+                        <Typography variant="caption" color="text.secondary">
+                          {new Date(evento.fechaHora).toLocaleString('es', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </Typography>
+                      )}
+                    </Box>
+                    <Chip
+                      label={evento.categoriaNombre || 'Evento'}
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  </Box>
+                ))}
+              </Box>
+            )}
           </Paper>
         </Box>
       </Box>
 
-      {/* Recent Activities */}
+      {/* Team Performance Charts - Full Width */}
       <Box mb={4}>
         <Paper
           elevation={0}
           sx={{
-            p: 3,
+            p: { xs: 2, sm: 3 },
             borderRadius: 2,
             border: "1px solid",
             borderColor: "divider",
           }}
         >
-          <Typography variant="h6" gutterBottom fontWeight={600}>
-            Actividad Reciente
+          <Typography variant="h6" mb={3} fontWeight={600}>
+            Rendimiento de Equipos
           </Typography>
-          <RecentActivities />
-        </Paper>
-      </Box>
+          
+          {loading.teams ? (
+            <Box textAlign="center" py={4}>
+              <CircularProgress />
+            </Box>
+          ) : teamsStats.length === 0 ? (
+            <Box textAlign="center" py={4} color="text.secondary">
+              <Typography>No hay datos de equipos disponibles</Typography>
+            </Box>
+          ) : (
+            <Box>
+              {/* Team Performance Comparison Chart */}
+              <Box sx={{ mb: 4 }}>
+                <Typography variant="subtitle1" fontWeight={600} mb={2} color="text.secondary">
+                  Comparación de Rendimiento - Top 5 Equipos
+                </Typography>
+                <Box sx={{ width: '100%', height: 400 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={teamsStats.slice(0, 5).map(team => ({
+                        nombre: team.nombre.length > 15 ? team.nombre.substring(0, 15) + '...' : team.nombre,
+                        'Partidos Ganados': team.partidosGanados,
+                        'Partidos Perdidos': team.partidosPerdidos,
+                        'Goles a Favor': team.golesAFavor,
+                        'Goles en Contra': team.golesEnContra,
+                      }))}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                      <XAxis 
+                        dataKey="nombre" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                      />
+                      <YAxis tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: theme.palette.background.paper,
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 8,
+                          boxShadow: theme.shadows[3],
+                        }}
+                      />
+                      <Bar dataKey="Partidos Ganados" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Partidos Perdidos" fill={theme.palette.error.main} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </Box>
 
-      {/* Upcoming Events */}
-      <Box mb={4}>
-        <Paper
-          elevation={0}
-          sx={{
-            p: 3,
-            borderRadius: 2,
-            border: "1px solid",
-            borderColor: "divider",
-          }}
-        >
-          <Typography variant="h6" gutterBottom fontWeight={600}>
-            Próximos Eventos
-          </Typography>
-          <Box textAlign="center" py={4} color="text.secondary">
-            <Typography>No hay eventos próximos programados</Typography>
-          </Box>
+              {/* Goals Comparison Chart */}
+              <Box>
+                <Typography variant="subtitle1" fontWeight={600} mb={2} color="text.secondary">
+                  Comparación de Goles - Top 5 Equipos
+                </Typography>
+                <Box sx={{ width: '100%', height: 400 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={teamsStats.slice(0, 5).map(team => ({
+                        nombre: team.nombre.length > 15 ? team.nombre.substring(0, 15) + '...' : team.nombre,
+                        'Goles a Favor': team.golesAFavor,
+                        'Goles en Contra': team.golesEnContra,
+                      }))}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
+                      <XAxis 
+                        dataKey="nombre" 
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                      />
+                      <YAxis tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: theme.palette.background.paper,
+                          border: `1px solid ${theme.palette.divider}`,
+                          borderRadius: 8,
+                          boxShadow: theme.shadows[3],
+                        }}
+                      />
+                      <Bar dataKey="Goles a Favor" fill={theme.palette.warning.main} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="Goles en Contra" fill={theme.palette.info.main} radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </Box>
+              </Box>
+            </Box>
+          )}
         </Paper>
       </Box>
     </Box>
