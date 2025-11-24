@@ -174,6 +174,11 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
     setSnackbar((prev) => ({ ...prev, open: false }));
   };
 
+  // Filter out the "EVENTOS" category
+  const filteredCategorias = categorias.filter(
+    (cat) => cat.nemonico !== "EVENTOS"
+  );
+
   return (
     <>
       <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
@@ -230,7 +235,7 @@ const SubcategoriaEditForm: React.FC<SubcategoriaEditFormProps> = ({
                   <MenuItem value={0} disabled>
                     Seleccione una categoría
                   </MenuItem>
-                  {categorias.map((categoria) => (
+                  {filteredCategorias.map((categoria) => (
                     <MenuItem
                       key={categoria.categoriaId}
                       value={categoria.categoriaId}

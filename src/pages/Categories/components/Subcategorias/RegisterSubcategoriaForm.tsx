@@ -84,9 +84,10 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
 
     try {
       const response = await categoriaService.getCategorias();
-      // The API returns data in the response.data array
-      // Each item has categoriaId and nombre
-      const categoriesData = Array.isArray(response.data) ? response.data : [];
+      // Filter out the "EVENTOS" category
+      const categoriesData = Array.isArray(response.data)
+        ? response.data.filter((cat: Categoria) => cat.nemonico !== "EVENTOS")
+        : [];
       setCategorias(categoriesData);
     } catch (error) {
       console.error("Error fetching categories:", error);

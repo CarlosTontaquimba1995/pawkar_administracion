@@ -3,6 +3,7 @@
 export interface Categoria {
   categoriaId: number;
   nombre: string;
+  nemonico?: string;
   estado?: boolean;
 }
 

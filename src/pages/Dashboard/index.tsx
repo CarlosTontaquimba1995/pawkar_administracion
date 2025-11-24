@@ -112,6 +112,10 @@ const Dashboard = () => {
   );
   const [tournamentsCount, setTournamentsCount] = useState<number | null>(null);
   const [proximosEventos, setProximosEventos] = useState<any[]>([]);
+  const [categoriesExist, setCategoriesExist] = useState({
+    eventos: false,
+    torneos: false,
+  });
   const [loading, setLoading] = useState({
     players: true,
     teams: true,
@@ -181,7 +185,7 @@ const Dashboard = () => {
           golesEnContra: team.golesEnContra || 0,
           diferenciaGoles: (team.golesAFavor || 0) - (team.golesEnContra || 0),
         }));
-        
+
         setTeamsStats(teamsStatsData);
       } catch (err) {
         console.error("Error fetching teams data:", err);
@@ -197,24 +201,24 @@ const Dashboard = () => {
       try {
         setLoading((prev) => ({ ...prev, events: true }));
 
-        // 1. Get EVENTOS category by nemonico
-        const eventosResponse = await categoriaService.getCategoriaByNemonico(
-          "EVENTOS"
+        // 1. Get all categories first
+        const categoriasResponse = await categoriaService.getCategorias();
+        const eventosCategory = categoriasResponse.data.find(
+          (cat: any) => cat.nemonico === "EVENTOS"
         );
-        if (
-          eventosResponse &&
-          eventosResponse.data &&
-          eventosResponse.data.categoriaId
-        ) {
+
+        if (eventosCategory) {
           // 2. Get subcategories for EVENTOS
           const subcategoriasResponse =
             await subcategoriaService.getSubcategoriasByCategoria(
-              eventosResponse.data.categoriaId
+              eventosCategory.categoriaId
             );
           // 3. Set the count of subcategories as active events
-          setActiveEventsCount(subcategoriasResponse.data.length);
+          setActiveEventsCount(subcategoriasResponse.data?.length || 0);
+          setCategoriesExist((prev) => ({ ...prev, eventos: true }));
         } else {
           setActiveEventsCount(0);
+          setCategoriesExist((prev) => ({ ...prev, eventos: false }));
         }
       } catch (err) {
         console.error("Error fetching active events count:", err);
@@ -230,21 +234,24 @@ const Dashboard = () => {
       try {
         setLoading((prev) => ({ ...prev, tournaments: true }));
 
-        // 1. Get DEPORTES category by nemonico
-        const deportesResponse = await categoriaService.getCategoriaByNemonico(
-          "DEPORTES"
+        // 1. Get all categories first
+        const categoriasResponse = await categoriaService.getCategorias();
+        const deportesCategory = categoriasResponse.data.find(
+          (cat: any) => cat.nemonico === "DEPORTES"
         );
 
-        if (deportesResponse?.success && deportesResponse.data?.categoriaId) {
+        if (deportesCategory) {
           // 2. Get subcategories for DEPORTES
           const subcategoriasResponse =
             await subcategoriaService.getSubcategoriasByCategoria(
-              deportesResponse.data.categoriaId
+              deportesCategory.categoriaId
             );
           // 3. Set the count of subcategories as tournaments count
           setTournamentsCount(subcategoriasResponse.data?.length || 0);
+          setCategoriesExist((prev) => ({ ...prev, torneos: true }));
         } else {
           setTournamentsCount(0);
+          setCategoriesExist((prev) => ({ ...prev, torneos: false }));
         }
       } catch (err) {
         console.error("Error fetching tournaments count:", err);
@@ -260,12 +267,12 @@ const Dashboard = () => {
       try {
         setLoading((prev) => ({ ...prev, proximosEventos: true }));
         const eventosResponse = await subcategoriaService.getProximosEventos();
-        
+
         if (eventosResponse.success && eventosResponse.data) {
           setProximosEventos(eventosResponse.data.slice(0, 3)); // Show only first 3 events
         }
       } catch (err) {
-        console.error('Error fetching próximos eventos:', err);
+        console.error("Error fetching próximos eventos:", err);
       } finally {
         setLoading((prev) => ({ ...prev, proximosEventos: false }));
       }
@@ -361,42 +368,46 @@ const Dashboard = () => {
             color={theme.palette.secondary.main}
           />
         </Box>
-        <Box>
-          <StatCard
-            title="Eventos Activos"
-            value={
-              loading.events ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : error.events ? (
-                <Typography variant="body2" color="error">
-                  Error
-                </Typography>
-              ) : (
-                formatNumber(activeEventsCount)
-              )
-            }
-            icon={<EventIcon />}
-            color={theme.palette.success.main}
-          />
-        </Box>
-        <Box>
-          <StatCard
-            title="Torneos habilitados"
-            value={
-              loading.tournaments ? (
-                <CircularProgress size={24} color="inherit" />
-              ) : error.tournaments ? (
-                <Typography variant="body2" color="error">
-                  Error
-                </Typography>
-              ) : (
-                formatNumber(tournamentsCount)
-              )
-            }
-            icon={<TrophyIcon />}
-            color={theme.palette.warning.main}
-          />
-        </Box>
+        {categoriesExist.eventos && (
+          <Box>
+            <StatCard
+              title="Eventos Activos"
+              value={
+                loading.events ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : error.events ? (
+                  <Typography variant="body2" color="error">
+                    Error
+                  </Typography>
+                ) : (
+                  formatNumber(activeEventsCount)
+                )
+              }
+              icon={<EventIcon />}
+              color={theme.palette.success.main}
+            />
+          </Box>
+        )}
+        {categoriesExist.torneos && (
+          <Box>
+            <StatCard
+              title="Torneos habilitados"
+              value={
+                loading.tournaments ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : error.tournaments ? (
+                  <Typography variant="body2" color="error">
+                    Error
+                  </Typography>
+                ) : (
+                  formatNumber(tournamentsCount)
+                )
+              }
+              icon={<TrophyIcon />}
+              color={theme.palette.warning.main}
+            />
+          </Box>
+        )}
       </Box>
 
       {/* Main Content */}
@@ -648,7 +659,7 @@ const Dashboard = () => {
             <Typography variant="h6" gutterBottom fontWeight={600}>
               Próximos Eventos
             </Typography>
-            
+
             {loading.proximosEventos ? (
               <Box textAlign="center" py={4}>
                 <CircularProgress />
@@ -658,23 +669,23 @@ const Dashboard = () => {
                 <Typography>No hay eventos próximos programados</Typography>
               </Box>
             ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {proximosEventos.map((evento, index) => (
                   <Box
                     key={evento.subcategoriaId || evento.id || index}
                     sx={{
                       p: 2,
                       borderRadius: 2,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      display: 'flex',
-                      alignItems: 'center',
+                      border: "1px solid",
+                      borderColor: "divider",
+                      display: "flex",
+                      alignItems: "center",
                       gap: 2,
-                      transition: 'all 0.2s ease',
-                      '&:hover': {
+                      transition: "all 0.2s ease",
+                      "&:hover": {
                         borderColor: colors.primary,
                         backgroundColor: `${colors.primary}05`,
-                        transform: 'translateX(4px)',
+                        transform: "translateX(4px)",
                       },
                     }}
                   >
@@ -684,19 +695,29 @@ const Dashboard = () => {
                         height: 60,
                         borderRadius: 2,
                         background: `linear-gradient(135deg, ${colors.primary} 0%, ${colors.secondary} 100%)`,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
                         flexShrink: 0,
                       }}
                     >
                       <Typography variant="h6" fontWeight={700}>
-                        {evento.fechaHora ? new Date(evento.fechaHora).getDate() : '?'}
+                        {evento.fechaHora
+                          ? new Date(evento.fechaHora).getDate()
+                          : "?"}
                       </Typography>
-                      <Typography variant="caption" sx={{ textTransform: 'uppercase', fontSize: '0.65rem' }}>
-                        {evento.fechaHora ? new Date(evento.fechaHora).toLocaleDateString('es', { month: 'short' }) : ''}
+                      <Typography
+                        variant="caption"
+                        sx={{ textTransform: "uppercase", fontSize: "0.65rem" }}
+                      >
+                        {evento.fechaHora
+                          ? new Date(evento.fechaHora).toLocaleDateString(
+                              "es",
+                              { month: "short" }
+                            )
+                          : ""}
                       </Typography>
                     </Box>
                     <Box sx={{ flex: 1, minWidth: 0 }}>
@@ -704,23 +725,23 @@ const Dashboard = () => {
                         {evento.nombre}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" noWrap>
-                        {evento.descripcion || 'Sin descripción'}
+                        {evento.descripcion || "Sin descripción"}
                       </Typography>
                       {evento.fechaHora && (
                         <Typography variant="caption" color="text.secondary">
-                          {new Date(evento.fechaHora).toLocaleString('es', {
-                            weekday: 'long',
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
+                          {new Date(evento.fechaHora).toLocaleString("es", {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
                           })}
                         </Typography>
                       )}
                     </Box>
                     <Chip
-                      label={evento.categoriaNombre || 'Evento'}
+                      label={evento.categoriaNombre || "Evento"}
                       size="small"
                       color="primary"
                       variant="outlined"
@@ -747,7 +768,7 @@ const Dashboard = () => {
           <Typography variant="h6" mb={3} fontWeight={600}>
             Rendimiento de Equipos
           </Typography>
-          
+
           {loading.teams ? (
             <Box textAlign="center" py={4}>
               <CircularProgress />
@@ -760,30 +781,49 @@ const Dashboard = () => {
             <Box>
               {/* Team Performance Comparison Chart */}
               <Box sx={{ mb: 4 }}>
-                <Typography variant="subtitle1" fontWeight={600} mb={2} color="text.secondary">
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  mb={2}
+                  color="text.secondary"
+                >
                   Comparación de Rendimiento - Top 5 Equipos
                 </Typography>
-                <Box sx={{ width: '100%', height: 400 }}>
+                <Box sx={{ width: "100%", height: 400 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={teamsStats.slice(0, 5).map(team => ({
-                        nombre: team.nombre.length > 15 ? team.nombre.substring(0, 15) + '...' : team.nombre,
-                        'Partidos Ganados': team.partidosGanados,
-                        'Partidos Perdidos': team.partidosPerdidos,
-                        'Goles a Favor': team.golesAFavor,
-                        'Goles en Contra': team.golesEnContra,
+                      data={teamsStats.slice(0, 5).map((team) => ({
+                        nombre:
+                          team.nombre.length > 15
+                            ? team.nombre.substring(0, 15) + "..."
+                            : team.nombre,
+                        "Partidos Ganados": team.partidosGanados,
+                        "Partidos Perdidos": team.partidosPerdidos,
+                        "Goles a Favor": team.golesAFavor,
+                        "Goles en Contra": team.golesEnContra,
                       }))}
                       margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                      <XAxis 
-                        dataKey="nombre" 
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={theme.palette.divider}
+                      />
+                      <XAxis
+                        dataKey="nombre"
                         angle={-45}
                         textAnchor="end"
                         height={80}
-                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                        tick={{
+                          fill: theme.palette.text.primary,
+                          fontSize: 12,
+                        }}
                       />
-                      <YAxis tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                      <YAxis
+                        tick={{
+                          fill: theme.palette.text.secondary,
+                          fontSize: 12,
+                        }}
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: theme.palette.background.paper,
@@ -792,8 +832,16 @@ const Dashboard = () => {
                           boxShadow: theme.shadows[3],
                         }}
                       />
-                      <Bar dataKey="Partidos Ganados" fill={theme.palette.success.main} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Partidos Perdidos" fill={theme.palette.error.main} radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="Partidos Ganados"
+                        fill={theme.palette.success.main}
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Partidos Perdidos"
+                        fill={theme.palette.error.main}
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
@@ -801,28 +849,47 @@ const Dashboard = () => {
 
               {/* Goals Comparison Chart */}
               <Box>
-                <Typography variant="subtitle1" fontWeight={600} mb={2} color="text.secondary">
+                <Typography
+                  variant="subtitle1"
+                  fontWeight={600}
+                  mb={2}
+                  color="text.secondary"
+                >
                   Comparación de Goles - Top 5 Equipos
                 </Typography>
-                <Box sx={{ width: '100%', height: 400 }}>
+                <Box sx={{ width: "100%", height: 400 }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart
-                      data={teamsStats.slice(0, 5).map(team => ({
-                        nombre: team.nombre.length > 15 ? team.nombre.substring(0, 15) + '...' : team.nombre,
-                        'Goles a Favor': team.golesAFavor,
-                        'Goles en Contra': team.golesEnContra,
+                      data={teamsStats.slice(0, 5).map((team) => ({
+                        nombre:
+                          team.nombre.length > 15
+                            ? team.nombre.substring(0, 15) + "..."
+                            : team.nombre,
+                        "Goles a Favor": team.golesAFavor,
+                        "Goles en Contra": team.golesEnContra,
                       }))}
                       margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                     >
-                      <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
-                      <XAxis 
-                        dataKey="nombre" 
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={theme.palette.divider}
+                      />
+                      <XAxis
+                        dataKey="nombre"
                         angle={-45}
                         textAnchor="end"
                         height={80}
-                        tick={{ fill: theme.palette.text.primary, fontSize: 12 }}
+                        tick={{
+                          fill: theme.palette.text.primary,
+                          fontSize: 12,
+                        }}
                       />
-                      <YAxis tick={{ fill: theme.palette.text.secondary, fontSize: 12 }} />
+                      <YAxis
+                        tick={{
+                          fill: theme.palette.text.secondary,
+                          fontSize: 12,
+                        }}
+                      />
                       <Tooltip
                         contentStyle={{
                           backgroundColor: theme.palette.background.paper,
@@ -831,8 +898,16 @@ const Dashboard = () => {
                           boxShadow: theme.shadows[3],
                         }}
                       />
-                      <Bar dataKey="Goles a Favor" fill={theme.palette.warning.main} radius={[4, 4, 0, 0]} />
-                      <Bar dataKey="Goles en Contra" fill={theme.palette.info.main} radius={[4, 4, 0, 0]} />
+                      <Bar
+                        dataKey="Goles a Favor"
+                        fill={theme.palette.warning.main}
+                        radius={[4, 4, 0, 0]}
+                      />
+                      <Bar
+                        dataKey="Goles en Contra"
+                        fill={theme.palette.info.main}
+                        radius={[4, 4, 0, 0]}
+                      />
                     </BarChart>
                   </ResponsiveContainer>
                 </Box>
