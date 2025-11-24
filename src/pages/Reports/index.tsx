@@ -3,7 +3,6 @@ import DescriptionIcon from "@mui/icons-material/Description";
 import {
   Box,
   Button,
-  Container,
   FormControl,
   InputLabel,
   MenuItem,
@@ -12,9 +11,12 @@ import {
   Paper,
   Tooltip,
   IconButton,
+  AlertColor,
+  useTheme,
+  useMediaQuery,
+  styled,
   Snackbar,
   Alert,
-  AlertColor,
 } from "@mui/material";
 // Import jsPDF with autoTable plugin
 import jsPDF from "jspdf";
@@ -41,7 +43,29 @@ import { Subcategoria } from "../../types/subcategoria.types";
 import { TeamListResponse } from "../../types/team.types";
 import { Plantilla } from "../../types/plantilla.types";
 
+// Styled components for responsive layout
+const PageContainer = styled(Box)(({ theme }) => ({
+  width: "100%",
+  padding: theme.spacing(3),
+  maxWidth: "100vw",
+  overflowX: "hidden",
+  [theme.breakpoints.down("sm")]: {
+    padding: theme.spacing(1),
+  },
+}));
+
+const StyledCard = styled(Paper)(({ theme }) => ({
+  borderRadius: theme.shape.borderRadius,
+  boxShadow: theme.shadows[1],
+  [theme.breakpoints.down("sm")]: {
+    boxShadow: "none",
+    borderRadius: 0,
+  },
+}));
+
 const Reports: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   // Snackbar state
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -588,17 +612,14 @@ const Reports: React.FC = () => {
   };
 
   return (
-    <Container maxWidth="lg">
-      <Box sx={{ my: 4 }}>
+    <>
+      <PageContainer>
         <Box
           display="flex"
           justifyContent="space-between"
           alignItems="center"
           mb={4}
         >
-          <Typography variant="h4" component="h1" gutterBottom>
-            Reportes de Plantillas
-          </Typography>
           <Box>
             <Tooltip title="Generar PDF">
               <IconButton
@@ -622,16 +643,27 @@ const Reports: React.FC = () => {
           </Box>
         </Box>
 
-        <Paper sx={{ p: 3, mb: 4 }}>
+        <StyledCard sx={{ p: { xs: 2, sm: 3 }, mb: 4 }}>
           <Typography variant="h6" gutterBottom>
             Filtros de Búsqueda
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
-            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+            <Box
+              sx={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 2,
+                flexDirection: isMobile ? "column" : "row",
+                "& > *": {
+                  flex: isMobile ? "1 1 100%" : "1 1 auto",
+                  minWidth: isMobile ? "100%" : 200,
+                },
+              }}
+            >
               <FormControl
-                sx={{ minWidth: 200 }}
                 size="small"
                 disabled={loadingFilters}
+                fullWidth={isMobile}
               >
                 <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
                 <Select
@@ -655,9 +687,9 @@ const Reports: React.FC = () => {
               </FormControl>
 
               <FormControl
-                sx={{ minWidth: 200 }}
                 size="small"
                 disabled={loadingFilters || !selectedSubcategoria}
+                fullWidth={isMobile}
               >
                 <InputLabel id="serie-label">Serie</InputLabel>
                 <Select
@@ -677,11 +709,11 @@ const Reports: React.FC = () => {
 
               <FormControl
                 variant="outlined"
-                sx={{ minWidth: 200 }}
                 size="small"
                 disabled={
                   loadingFilters || !selectedSubcategoria || !selectedSerie
                 }
+                fullWidth={isMobile}
               >
                 <InputLabel
                   id="team-label"
@@ -731,7 +763,12 @@ const Reports: React.FC = () => {
               </FormControl>
             </Box>
 
-            <Box display="flex" gap={2}>
+            <Box
+              display="flex"
+              gap={2}
+              flexDirection={isMobile ? "column" : "row"}
+              width="100%"
+            >
               <Button
                 variant="contained"
                 color="primary"
@@ -754,15 +791,28 @@ const Reports: React.FC = () => {
               </Button>
             </Box>
           </Box>
-        </Paper>
+        </StyledCard>
 
         {/* Team Report Section */}
-        <Paper sx={{ p: 3, mb: 4, mt: 4 }}>
+        <StyledCard sx={{ p: { xs: 2, sm: 3 }, mb: 4, mt: 4 }}>
           <Typography variant="h6" gutterBottom>
             Reporte de Equipos por Subcategoría
           </Typography>
-          <Box display="flex" gap={2} flexWrap="wrap" mb={2}>
-            <FormControl sx={{ minWidth: 250 }} size="small">
+          <Box
+            display="flex"
+            gap={2}
+            flexWrap="wrap"
+            mb={2}
+            flexDirection={isMobile ? "column" : "row"}
+            alignItems={isMobile ? "stretch" : "flex-end"}
+          >
+            <FormControl
+              size="small"
+              sx={{
+                flex: isMobile ? "1 1 100%" : "1 1 auto",
+                minWidth: isMobile ? "100%" : 250,
+              }}
+            >
               <InputLabel id="subcategoria-select-label">
                 Subcategoría
               </InputLabel>
@@ -797,11 +847,14 @@ const Reports: React.FC = () => {
 
             {/* Series Selector - Only enabled when a subcategory is selected */}
             <FormControl
-              sx={{ minWidth: 250 }}
               size="small"
               disabled={
                 !selectedSubcategoria || loadingFilters || teamReportLoading
               }
+              sx={{
+                flex: isMobile ? "1 1 100%" : "1 1 auto",
+                minWidth: isMobile ? "100%" : 250,
+              }}
             >
               <InputLabel id="serie-select-label">
                 Filtrar por Serie (Opcional)
@@ -830,6 +883,11 @@ const Reports: React.FC = () => {
               onClick={generateTeamReport}
               disabled={!selectedSubcategoria || teamReportLoading}
               startIcon={<PrintIcon />}
+              fullWidth={isMobile}
+              sx={{
+                minWidth: isMobile ? "100%" : 200,
+                mt: isMobile ? 0 : "auto",
+              }}
             >
               {teamReportLoading
                 ? "Generando..."
@@ -864,7 +922,7 @@ const Reports: React.FC = () => {
               </Box>
             </Box>
           )}
-        </Paper>
+        </StyledCard>
 
         <Box mt={2}>
           <Typography variant="h6" gutterBottom>
@@ -897,24 +955,22 @@ const Reports: React.FC = () => {
             }
           />
         </Box>
-      </Box>
-
-      {/* Snackbar for notifications */}
+      </PageContainer>
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
           severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Container>
+    </>
   );
 };
 
