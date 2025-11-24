@@ -286,7 +286,16 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
   const drawer = (
     <div>
       <LogoContainer>
-        <Typography variant="h6" color="primary" fontWeight="bold">
+        <Typography
+          variant="h6"
+          color="primary"
+          fontWeight="bold"
+          sx={{
+            px: 2,
+            py: { xs: 1, sm: 2 },
+            fontSize: { xs: "1rem", sm: "1.25rem" },
+          }}
+        >
           Pawkar Admin
         </Typography>
       </LogoContainer>

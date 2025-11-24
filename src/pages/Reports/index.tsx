@@ -339,20 +339,12 @@ const Reports: React.FC = () => {
       setTeamReportLoading(true);
       showSnackbar("Generando reporte de equipos, por favor espere...", "info");
 
-      let response;
-      let teamsData = [];
-
-      if (selectedSerie) {
-        // If a series is selected, fetch teams by series
-        response = await teamService.getTeamsBySerie(Number(selectedSerie));
-        teamsData = response.data || [];
-      } else {
-        // Otherwise, fetch teams by subcategory
-        response = await teamService.getTeamsBySubcategoria(
-          Number(selectedSubcategoria)
-        );
-        teamsData = response.data || [];
-      }
+      // Fetch teams by subcategory, with optional serie filter
+      const response = await teamService.getTeamsBySubcategoria(
+        Number(selectedSubcategoria),
+        selectedSerie ? { serieId: Number(selectedSerie) } : undefined
+      );
+      const teamsData = response.data || [];
 
       setTeamReportData(teamsData);
 
