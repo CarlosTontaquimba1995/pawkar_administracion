@@ -110,26 +110,51 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const theme = createTheme({
     components: {
       MuiButton: {
+        defaultProps: {
+          disableElevation: true,
+          variant: "contained",
+          color: "primary",
+        },
         styleOverrides: {
           // Base styles for all buttons
           root: {
             textTransform: "none",
             fontWeight: 500,
             borderRadius: 8,
+            transition: "all 0.2s ease-in-out",
             "&:hover": {
               boxShadow: "none",
+              transform: "translateY(-1px)",
+            },
+            "&.Mui-disabled": {
+              backgroundColor: "action.disabledBackground",
+              color: "action.disabled",
             },
           },
           // Contained buttons (primary action)
           contained: {
+            backgroundColor: colors.primary,
+            color: colors.white,
             "&:hover": {
               backgroundColor: colors.secondary,
+              color: colors.white,
+            },
+            "&.MuiButton-containedPrimary": {
+              "&:hover": {
+                backgroundColor: colors.secondary,
+              },
+            },
+            "&.MuiButton-containedSecondary": {
+              "&:hover": {
+                backgroundColor: colors.primary,
+              },
             },
           },
           // Outlined buttons
           outlined: {
             borderColor: colors.primary,
             color: colors.primary,
+            backgroundColor: "transparent",
             "&:hover": {
               backgroundColor: "transparent",
               borderColor: colors.secondary,
