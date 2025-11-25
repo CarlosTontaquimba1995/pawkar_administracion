@@ -58,8 +58,8 @@ const StyledDrawer = styled(Drawer)({
 const LogoContainer = styled(Box)(({ theme }) => ({
   display: "flex",
   alignItems: "center",
-  justifyContent: "center",
-  padding: theme.spacing(3, 2),
+  minHeight: "64px",
+  padding: theme.spacing(0, 2),
   borderBottom: `1px solid ${theme.palette.divider}`,
   marginBottom: theme.spacing(2),
 }));
@@ -291,9 +291,14 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
           color="primary"
           fontWeight="bold"
           sx={{
-            px: 2,
-            py: { xs: 1, sm: 2 },
-            fontSize: { xs: "1rem", sm: "1.25rem" },
+            fontSize: "1.25rem",
+            lineHeight: 1.6,
+            letterSpacing: "0.0075em",
+            display: "flex",
+            alignItems: "center",
+            height: "100%",
+            padding: (theme) => theme.spacing(0, 2),
+            margin: 0,
           }}
         >
           Pawkar Admin
