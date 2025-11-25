@@ -108,6 +108,45 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   // Create theme with current colors
   const theme = createTheme({
+    components: {
+      MuiButton: {
+        styleOverrides: {
+          // Base styles for all buttons
+          root: {
+            textTransform: "none",
+            fontWeight: 500,
+            borderRadius: 8,
+            "&:hover": {
+              boxShadow: "none",
+            },
+          },
+          // Contained buttons (primary action)
+          contained: {
+            "&:hover": {
+              backgroundColor: colors.secondary,
+            },
+          },
+          // Outlined buttons
+          outlined: {
+            borderColor: colors.primary,
+            color: colors.primary,
+            "&:hover": {
+              backgroundColor: "transparent",
+              borderColor: colors.secondary,
+              color: colors.secondary,
+            },
+          },
+          // Text buttons
+          text: {
+            color: colors.primary,
+            "&:hover": {
+              backgroundColor: colorWithOpacity.primary[10],
+              color: colors.secondary,
+            },
+          },
+        },
+      },
+    },
     palette: {
       gradients: {
         primary: colors.gradients.primary,
