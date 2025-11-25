@@ -55,19 +55,13 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      console.log("🔐 Intentando iniciar sesión...");
       const response = await authService.login({
         username: formData.username,
         password: formData.password,
       });
 
       if (response.success && response.data) {
-        console.log("✅ Login exitoso");
-
-        // Store username in localStorage for the header
         localStorage.setItem("username", formData.username);
-
-        // Call login with the token and user data
         login(response.data.accessToken, {
           id: response.data.id,
           username: response.data.username,
@@ -75,14 +69,12 @@ const Login = () => {
           roles: response.data.roles || ["ROLE_USER"], // Default role if not provided
         });
 
-        // Redirect to dashboard
+        // Redirect to panel
         navigate("/panel");
       } else {
-        console.log("❌ Login fallido:", response.message);
         setError(response.message || "Error al iniciar sesión");
       }
     } catch (err: any) {
-      console.error("❌ Error en iniciar-sesion:", err);
       setError("Error de conexión. Verifica que el servidor esté activo.");
     } finally {
       setIsLoading(false);

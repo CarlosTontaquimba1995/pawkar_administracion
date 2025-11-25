@@ -23,12 +23,10 @@ const StorageCleaner = () => {
         
         // Si el token está expirado, mostrar diálogo
         if (expirationTime < now) {
-          console.log('⚠️ Token expirado detectado');
           setShowDialog(true);
         }
       } catch (error) {
         // Si hay error al decodificar, probablemente es un token inválido
-        console.log('⚠️ Token inválido detectado');
         setShowDialog(true);
       }
     }

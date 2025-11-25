@@ -182,8 +182,6 @@ const EventsEditForm: React.FC<EventsEditFormProps> = ({
         estado: formData.estado ?? true,
       };
 
-      console.log("Sending data to API:", updateData); // For debugging
-
       await subcategoriaService.updateSubcategoria(
         formData.subcategoriaId,
         updateData

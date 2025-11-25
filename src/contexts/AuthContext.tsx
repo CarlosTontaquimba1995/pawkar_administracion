@@ -41,19 +41,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const login = (newToken: string, userData: UserData) => {
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem("token", newToken);
+    localStorage.setItem("user", JSON.stringify(userData));
     setToken(newToken);
     setUser(userData);
-    console.log('✅ Usuario autenticado:', userData.username);
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setToken(null);
     setUser(null);
-    console.log('👋 Sesión cerrada');
   };
 
   const value = {

@@ -233,7 +233,6 @@ const Events = () => {
     if (!selectedEvent) return;
 
     try {
-      console.log("Deleting event:", selectedEvent);
       setIsDeleting(true);
       // Use 'id' instead of 'subcategoriaId' since that's what's in the event object
       const eventId = (selectedEvent as any).id || selectedEvent.subcategoriaId;

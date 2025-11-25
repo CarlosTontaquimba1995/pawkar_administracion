@@ -136,7 +136,6 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
           await verificationService.checkRequiredRegistrations();
         setHasRolesRequiredData(hasRolesData);
       } catch (error) {
-        console.log("Error verificando datos requeridos para Roles:", error);
         setHasRolesRequiredData(false);
       }
 
@@ -145,7 +144,6 @@ const Sidebar = ({ drawerWidth, mobileOpen, onDrawerToggle }: SidebarProps) => {
         await categoriaService.getCategoriaByNemonico("EVENTOS");
         setHasEventsCategory(true);
       } catch (error) {
-        console.log("Categoría EVENTOS no encontrada");
         setHasEventsCategory(false);
       }
     } catch (error) {

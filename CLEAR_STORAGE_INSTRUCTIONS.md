@@ -20,7 +20,6 @@ La aplicación va directamente a `/panel` en lugar de mostrar el iniciar-sesion 
    ```javascript
    localStorage.removeItem("token");
    localStorage.removeItem("user");
-   console.log("✅ Storage limpiado");
    location.reload();
    ```
 
@@ -86,8 +85,6 @@ Si después de limpiar el storage sigues siendo redirigido al panel:
 1. **Verifica en la consola del navegador:**
 
    ```javascript
-   console.log("Token:", localStorage.getItem("token"));
-   console.log("User:", localStorage.getItem("user"));
    ```
 
    Ambos deberían mostrar `null`

@@ -94,11 +94,9 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
   const fetchEncuentro = async () => {
     try {
       setLoading(true);
-      console.log("Fetching encuentro with ID:", encuentroId);
       const response = await encuentroService.getEncuentroById(encuentroId);
       if (response.data) {
         const encuentro = response.data;
-        console.log("API Response:", encuentro);
 
         // Parse the date string directly to handle timezone correctly
         const [datePart, timePart] = encuentro.fechaHora.split("T");
@@ -115,8 +113,6 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
           estadioId: encuentro.estadioId, // Asegúrate de que la API devuelva estadioId
           subcategoriaId: encuentro.subcategoriaId,
         });
-
-        console.log("Setting form data:", formData);
 
         setFecha(localDate);
         setHora(localTime);
@@ -157,8 +153,6 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
         estado: formData.estado,
       };
 
-      console.log("Sending data:", data);
-
       const response = await encuentroService.updateEncuentro(
         encuentroId,
         data
@@ -176,7 +170,7 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
         setTimeout(() => {
           onSuccess();
           onClose();
-        }, 1000);  
+        }, 1000);
       } else {
         throw new Error(response.message || "Error al guardar el encuentro");
       }
@@ -207,8 +201,6 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
     const name = e.target.name as keyof typeof formData;
     const value = e.target.value;
 
-    console.log("handleChange - name:", name, "value:", value);
-
     if (name) {
       setFormData((prev) => {
         // Convert value to the appropriate type based on the field name
@@ -234,7 +226,6 @@ const EncuentrosEditForm: React.FC<EncuentrosEditFormProps> = ({
           ...prev,
           [name]: newValue,
         };
-        console.log("Updating form data:", newData);
         return newData as typeof prev;
       });
     }

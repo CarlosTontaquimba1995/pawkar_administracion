@@ -93,7 +93,6 @@ const RolesPage = () => {
       const categoriaResponse = await categoriaService.getCategoriaByNemonico(
         "DEPORTES"
       );
-      console.log("Categoria response:", categoriaResponse);
       if (categoriaResponse.success && categoriaResponse.data) {
         const response = await subcategoriaService.getSubcategoriasByCategoria(
           categoriaResponse.data.categoriaId

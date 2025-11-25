@@ -360,11 +360,6 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
         estadioId: encuentro.estadioId,
       }));
 
-      console.log(
-        "Datos a enviar:",
-        JSON.stringify(encuentrosParaEnviar, null, 2)
-      );
-
       // Llamar al servicio
       const response =
         await generacionEncuentroService.generarEncuentrosManuales(

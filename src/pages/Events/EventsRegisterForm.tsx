@@ -229,22 +229,9 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
           sub.descripcion.trim() !== "" &&
           sub.fechaHora &&
           sub.ubicacion.trim() !== "";
-
-        if (!isFilled) {
-          console.log("Missing fields in subcategoria:", {
-            id: sub.subcategoriaId,
-            nombre: sub.nombre,
-            descripcion: sub.descripcion,
-            fechaHora: sub.fechaHora,
-            ubicacion: sub.ubicacion,
-            isFilled,
-          });
-        }
-
         return isFilled;
       });
 
-      console.log("All fields filled:", allFilled);
       return allFilled;
     };
 
@@ -456,13 +443,6 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                   disabled={(() => {
                     const disabled =
                       loading || !categoriaId || !areAllFieldsFilled();
-                    console.log("Button disabled state:", {
-                      disabled,
-                      loading,
-                      hasCategoriaId: !!categoriaId,
-                      allFieldsFilled: areAllFieldsFilled(),
-                      subcategoriasCount: subcategorias.length,
-                    });
                     return disabled;
                   })()}
                   startIcon={

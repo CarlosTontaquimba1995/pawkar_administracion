@@ -9,7 +9,6 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const { isAuthenticated } = useAuth();
 
   if (!isAuthenticated) {
-    console.log('🚫 Acceso denegado - Redirigiendo a login');
     return <Navigate to="/iniciar-sesion" replace />;
   }
 
