@@ -521,7 +521,7 @@ const Dashboard = () => {
                       <TableCell align="center">DG</TableCell>
                     </TableRow>
                   </TableHead>
-                  <TableBody>
+                  <TableBody key="teams-table-body">
                     {loading.teams ? (
                       <TableRow>
                         <TableCell colSpan={9} align="center" sx={{ py: 3 }}>
