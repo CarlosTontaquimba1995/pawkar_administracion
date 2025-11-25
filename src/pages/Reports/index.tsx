@@ -645,7 +645,7 @@ const Reports: React.FC = () => {
 
         <StyledCard sx={{ p: { xs: 2, sm: 3 }, mb: 4 }}>
           <Typography variant="h6" gutterBottom>
-            Filtros de Búsqueda
+            Reporte de plantillas
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <Box
@@ -796,7 +796,7 @@ const Reports: React.FC = () => {
         {/* Team Report Section */}
         <StyledCard sx={{ p: { xs: 2, sm: 3 }, mb: 4, mt: 4 }}>
           <Typography variant="h6" gutterBottom>
-            Reporte de Equipos por Subcategoría
+            Reporte de equipos
           </Typography>
           <Box
             display="flex"
@@ -959,13 +959,13 @@ const Reports: React.FC = () => {
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
-        onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
         <Alert
-          onClose={() => setSnackbar(prev => ({ ...prev, open: false }))}
+          onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
           severity={snackbar.severity}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>
