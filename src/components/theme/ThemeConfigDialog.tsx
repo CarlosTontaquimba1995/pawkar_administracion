@@ -28,12 +28,14 @@ import {
   RestartAlt as ResetIcon,
   Palette as PaletteIcon,
   TextFields as TextFieldsIcon,
+  Save as SaveIcon,
   ContentCopy as ContentCopyIcon,
   CheckCircle as CheckCircleIcon,
   ColorLens as ColorLensIcon,
 } from "@mui/icons-material";
 import { useThemeConfig } from "@/contexts/ThemeContext";
 import { generateThemePdf } from "@/utils/generateThemePdf";
+import { CircularProgress } from "@mui/material";
 
 interface ColorField {
   id: string;
@@ -49,6 +51,7 @@ interface ThemeConfigDialogProps {
 const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
   const theme = useTheme();
   const { colors, updateColors, resetColors } = useThemeConfig();
+  const [isSaving, setIsSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -75,22 +78,48 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
     }
   };
 
-  const handleSave = () => {
-    setSnackbar({
-      open: true,
-      message: "Tema guardado exitosamente",
-      severity: "success",
-    });
-    onClose();
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      // The updateColors function already handles saving to the backend
+      await updateColors(colors);
+      setSnackbar({
+        open: true,
+        message: "Tema guardado exitosamente",
+        severity: "success",
+      });
+      onClose();
+    } catch (error) {
+      console.error("Error saving theme:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al guardar el tema. Por favor, intente nuevamente.",
+        severity: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleReset = () => {
-    resetColors();
-    setSnackbar({
-      open: true,
-      message: "Tema restablecido a los valores predeterminados",
-      severity: "success",
-    });
+  const handleReset = async () => {
+    try {
+      setIsSaving(true);
+      await resetColors();
+      setSnackbar({
+        open: true,
+        message: "Tema restablecido a los valores predeterminados",
+        severity: "success",
+      });
+    } catch (error) {
+      console.error("Error resetting theme:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al restablecer el tema. Por favor, intente nuevamente.",
+        severity: "error",
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const colorFields: ColorField[] = [
@@ -816,27 +845,36 @@ const ThemeConfigDialog = ({ open, onClose }: ThemeConfigDialogProps) => {
           }}
         >
           <Box display="flex" gap={1}>
-            <Tooltip title="Restablecer a los valores por defecto">
-              <Button
-                onClick={handleReset}
-                startIcon={<ResetIcon />}
-                color="inherit"
-                sx={{
-                  textTransform: "none",
-                  "&:hover": {
-                    bgcolor: "action.hover",
-                  },
-                }}
-              >
-                Restablecer
-              </Button>
-            </Tooltip>
+            <Button
+              onClick={handleSave}
+              variant="contained"
+              color="primary"
+              disabled={isSaving}
+              startIcon={
+                isSaving ? <CircularProgress size={20} /> : <SaveIcon />
+              }
+            >
+              {isSaving ? "Guardando..." : "Guardar"}
+            </Button>
+            <Button
+              onClick={handleReset}
+              color="inherit"
+              startIcon={
+                isSaving ? <CircularProgress size={20} /> : <ResetIcon />
+              }
+              disabled={isSaving}
+            >
+              Restablecer
+            </Button>
+          </Box>
+          <Box display="flex" gap={1}>
             <Tooltip title="Exportar colores a PDF">
               <Button
                 onClick={() => generateThemePdf(colors)}
                 startIcon={<ContentCopyIcon />}
                 color="primary"
                 variant="outlined"
+                disabled={isSaving}
                 sx={{
                   textTransform: "none",
                   "&:hover": {
