@@ -49,7 +49,7 @@ To use a specific environment file, you can specify the mode:
 # Use staging environment
 npm run build -- --mode staging
 ```
-
+node version  20.19.4
 ---
 
 # React + TypeScript + Vite
