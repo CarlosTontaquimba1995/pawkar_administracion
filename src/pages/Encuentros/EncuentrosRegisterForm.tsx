@@ -384,9 +384,18 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
       }, 100);
     } catch (error: any) {
       console.error("Error al guardar los encuentros:", error);
+      let errorMessage = "Error al guardar los encuentros";
+
+      // Check if the error has a response with data
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       setSnackbar({
         open: true,
-        message: error.message || "Error al guardar los encuentros",
+        message: errorMessage,
         severity: "error",
       });
     } finally {
