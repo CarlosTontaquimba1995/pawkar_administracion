@@ -782,7 +782,7 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
             },
             {
               id: "titulo",
-              label: "Partido",
+              label: "Encuentro",
               sortable: true,
               minWidth: 400,
               format: (_, row: any) => (
