@@ -10,6 +10,7 @@ export interface Subcategoria {
   estado?: boolean;
   deporte?: string;
   ubicacion?: string;
+  latitud?: number;
 }
 
 // Request interfaces
@@ -18,6 +19,7 @@ export interface CreateSubcategoriaRequest {
   descripcion: string;
   categoriaId: number;
   fechaHora?: string;
+  latitud?: number;
 }
 
 export interface CreateMultipleSubcategoriasRequest {
