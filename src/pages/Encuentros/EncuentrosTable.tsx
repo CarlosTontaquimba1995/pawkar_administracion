@@ -782,8 +782,40 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
             },
             {
               id: "titulo",
-              label: "Partido",
+              label: "Encuentro",
               sortable: true,
+              minWidth: 400,
+              format: (_, row: any) => (
+                <Box
+                  component="div"
+                  sx={{
+                    whiteSpace: "normal",
+                    wordBreak: "break-word",
+                    overflow: "hidden",
+                    lineHeight: "1.5",
+                    py: 1,
+                    px: 1,
+                    minWidth: "100%",
+                    maxWidth: "none",
+                    width: "100%",
+                    display: "block",
+                    textAlign: "left",
+                    wordWrap: "break-word",
+                    overflowWrap: "break-word",
+                    hyphens: "auto",
+                    boxSizing: "border-box",
+                    "&:hover": {
+                      transform: "none",
+                      transition: "none",
+                      backgroundColor: "transparent",
+                      whiteSpace: "pre-wrap",
+                    },
+                  }}
+                  title={row.titulo} // Tooltip with full text
+                >
+                  {row.titulo}
+                </Box>
+              ),
             },
             {
               id: "subcategoriaNombre",
@@ -818,22 +850,28 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
               label: "Acciones",
               align: "right",
               format: (_: any, row: any) => (
-                <>
+                <Box onClick={(e) => e.stopPropagation()}>
                   <IconButton
                     size="small"
-                    onClick={() => onEdit(row)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(row);
+                    }}
                     color="primary"
                   >
                     <EditIcon />
                   </IconButton>
                   <IconButton
                     size="small"
-                    onClick={() => handleDeleteClick(row)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteClick(row);
+                    }}
                     color="error"
                   >
                     <DeleteIcon />
                   </IconButton>
-                </>
+                </Box>
               ),
             },
             {
@@ -841,25 +879,32 @@ const EncuentrosTable: React.FC<EncuentrosTableProps> = ({
               label: "Sancionar Jugador",
               align: "center",
               format: (_: any, row: any) => (
-                <IconButton
-                  onClick={() => handleOpenSancionesDialog(row)}
-                  color="primary"
-                  title="Gestionar sanciones"
-                >
-                  <Badge
-                    badgeContent={sancionesByEncuentro[row.id!]?.length || 0}
-                    color="error"
+                <Box onClick={(e) => e.stopPropagation()}>
+                  <IconButton
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleOpenSancionesDialog(row);
+                    }}
+                    color="primary"
+                    title="Gestionar sanciones"
                   >
-                    <GavelIcon />
-                  </Badge>
-                </IconButton>
+                    <Badge
+                      badgeContent={sancionesByEncuentro[row.id!]?.length || 0}
+                      color="error"
+                    >
+                      <GavelIcon />
+                    </Badge>
+                  </IconButton>
+                </Box>
               ),
             },
           ]}
           data={encuentros}
           loading={loading}
           emptyMessage="No se encontraron encuentros"
-          onRowClick={onEdit}
+          onRowClick={(row) => {
+            onEdit(row);
+          }}
           page={searchParams.page}
           rowsPerPage={searchParams.size}
           totalRows={totalElements}

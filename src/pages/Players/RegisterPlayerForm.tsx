@@ -74,6 +74,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   const [teams, setTeams] = useState<
     Array<{ equipoId: number; nombre: string }>
   >([]);
+  const [selectedTeam, setSelectedTeam] = useState<{
+    id: number;
+    nombre: string;
+  } | null>(null);
   const [allRoles, setAllRoles] = useState<Role[]>([]); // Store all available roles
   const [selectedRoleIds, setSelectedRoleIds] = useState<number[]>([]); // Track selected role IDs
 
@@ -193,12 +197,21 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
             { serieId: selectedSerie }
           );
           if (response && response.data) {
-            setTeams(
-              response.data.map((team: any) => ({
-                equipoId: team.equipoId,
-                nombre: team.nombre,
-              }))
-            );
+            const teamsData = response.data.map((team: any) => ({
+              equipoId: team.equipoId,
+              nombre: team.nombre,
+            }));
+            setTeams(teamsData);
+
+            // If there's only one team, select it by default
+            if (teamsData.length === 1) {
+              setSelectedTeam({
+                id: teamsData[0].equipoId,
+                nombre: teamsData[0].nombre,
+              });
+            } else {
+              setSelectedTeam(null);
+            }
           }
         } catch (error) {
           console.error("Error fetching teams:", error);
@@ -245,7 +258,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
           id: role.rolId || role.id || 0,
           name: role.rolName || role.nombre || "",
           detail: role.rolDetail || "",
-          estado: true, // Set a default value or get it from the API if available
+          estado: true,
         }));
         setAllRoles(transformedRoles);
         setSelectedRoleIds([]); // Reset selected roles when subcategoria changes
@@ -263,11 +276,8 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   const handleSerieChange = (event: SelectChangeEvent<number>) => {
     const value = event.target.value as number;
     setSelectedSerie(value);
-  };
-
-  const handleAddPlayer = () => {
+    setSelectedTeam(null);
     setPlayers([
-      ...players,
       {
         nombre: "",
         apellido: "",
@@ -277,6 +287,32 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
         numeroCamiseta: 0,
         rolId: undefined,
         nombreEquipo: "",
+        nombreRol: "",
+      },
+    ]);
+  };
+
+  const handleAddPlayer = () => {
+    if (!selectedTeam) {
+      setSnackbar({
+        open: true,
+        message: "Por favor seleccione un equipo primero",
+        severity: "error",
+      });
+      return;
+    }
+
+    setPlayers((prev) => [
+      ...prev,
+      {
+        nombre: "",
+        apellido: "",
+        fechaNacimiento: "",
+        documentoIdentidad: "",
+        equipoId: selectedTeam.id,
+        nombreEquipo: selectedTeam.nombre,
+        numeroCamiseta: 0,
+        rolId: undefined,
         nombreRol: "",
       },
     ]);
@@ -372,7 +408,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate subcategoria and serie are selected
+    // Validate subcategoria, serie and team are selected
     if (!selectedSubcategoria || !selectedSerie) {
       setSnackbar({
         open: true,
@@ -382,16 +418,25 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
       return;
     }
 
-    // Validate team and role for each player
+    if (!selectedTeam) {
+      setSnackbar({
+        open: true,
+        message: "Por favor seleccione un equipo",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Validate required fields for each player
     const validPlayers = players.filter(
       (player) =>
         player.nombre.trim() !== "" &&
         player.apellido.trim() !== "" &&
         player.fechaNacimiento !== "" &&
         player.documentoIdentidad.trim() !== "" &&
-        player.equipoId &&
         player.rolId &&
-        player.numeroCamiseta
+        player.numeroCamiseta !== undefined &&
+        player.numeroCamiseta > 0
     );
 
     if (validPlayers.length === 0) {
@@ -409,13 +454,14 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
     try {
       // Prepare player data with all required fields
       const playersToRegister = validPlayers.map((player) => ({
-        nombre: player.nombre,
-        apellido: player.apellido,
+        nombre: player.nombre.trim(),
+        apellido: player.apellido.trim(),
         fechaNacimiento: player.fechaNacimiento,
-        documentoIdentidad: player.documentoIdentidad,
-        equipoId: player.equipoId,
-        numeroCamiseta: player.numeroCamiseta,
-        rolId: player.rolId,
+        documentoIdentidad: player.documentoIdentidad.trim(),
+        equipoId: selectedTeam.id,
+        nombreEquipo: selectedTeam.nombre,
+        numeroCamiseta: Number(player.numeroCamiseta),
+        rolId: Number(player.rolId),
       }));
 
       // Register the players with all required fields
@@ -438,15 +484,16 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
             apellido: "",
             fechaNacimiento: "",
             documentoIdentidad: "",
-            equipoId: undefined,
+            equipoId: selectedTeam.id,
+            nombreEquipo: selectedTeam.nombre,
             numeroCamiseta: 0,
             rolId: undefined,
-            nombreEquipo: "",
             nombreRol: "",
           },
         ]);
         setSelectedSubcategoria(undefined);
         setSelectedSerie(undefined);
+        setSelectedTeam(null);
         setTeams([]);
         setAllRoles([]);
 
@@ -617,6 +664,59 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                     )}
                   </Select>
                 </FormControl>
+
+                <FormControl fullWidth size="small" required>
+                  <InputLabel id="team-label">Equipo</InputLabel>
+                  <Select
+                    labelId="team-label"
+                    value={selectedTeam?.id || ""}
+                    onChange={(e) => {
+                      const team = teams.find(
+                        (team) => team.equipoId === e.target.value
+                      );
+                      setSelectedTeam(
+                        team ? { id: team.equipoId, nombre: team.nombre } : null
+                      );
+                    }}
+                    label="Equipo"
+                    disabled={
+                      !selectedSubcategoria ||
+                      !selectedSerie ||
+                      isSubmitting ||
+                      teams.length === 0
+                    }
+                    variant="outlined"
+                    sx={{
+                      "& .MuiSelect-select": {
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        py: 1.5,
+                      },
+                    }}
+                  >
+                    {teams.length > 0 ? (
+                      teams.map((team) => (
+                        <MenuItem
+                          key={team.equipoId}
+                          value={team.equipoId}
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <GroupIcon fontSize="small" />
+                          {team.nombre}
+                        </MenuItem>
+                      ))
+                    ) : (
+                      <MenuItem disabled>
+                        <Typography variant="body2" color="text.secondary">
+                          {selectedSubcategoria && selectedSerie
+                            ? "No hay equipos disponibles"
+                            : "Seleccione una subcategoría y serie"}
+                        </Typography>
+                      </MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
               </Box>
             </Box>
 
@@ -626,7 +726,10 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                 startIcon={<AddIcon />}
                 onClick={handleAddPlayer}
                 disabled={
-                  isSubmitting || !selectedSubcategoria || !selectedSerie
+                  isSubmitting ||
+                  !selectedSubcategoria ||
+                  !selectedSerie ||
+                  !selectedTeam
                 }
                 size="small"
                 sx={{
@@ -812,81 +915,12 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                   </Box>
 
                   <Box>
-                    <Typography
-                      variant="caption"
-                      color="text.secondary"
-                      display="block"
-                      mb={0.5}
-                    >
-                      Información Deportiva
-                    </Typography>
                     <Box
                       display="grid"
                       gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
                       gap={2}
                       mb={2}
                     >
-                      <FormControl fullWidth size="small" required>
-                        <InputLabel id={`equipo-label-${index}`}>
-                          Equipo
-                        </InputLabel>
-                        <Select
-                          labelId={`equipo-label-${index}`}
-                          value={player.equipoId || ""}
-                          onChange={(e) => {
-                            const value = e.target.value as string | number;
-                            handlePlayerChange(
-                              index,
-                              "equipoId",
-                              value === "" ? undefined : Number(value)
-                            );
-                          }}
-                          label="Equipo"
-                          disabled={
-                            !selectedSubcategoria ||
-                            !selectedSerie ||
-                            isSubmitting
-                          }
-                          variant="outlined"
-                          sx={{
-                            "& .MuiSelect-select": {
-                              py: 1.5,
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            },
-                          }}
-                        >
-                          {teams.length > 0 ? (
-                            teams.map((team) => (
-                              <MenuItem
-                                key={team.equipoId}
-                                value={team.equipoId}
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <GroupIcon fontSize="small" />
-                                {team.nombre}
-                              </MenuItem>
-                            ))
-                          ) : (
-                            <MenuItem disabled>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {selectedSubcategoria && selectedSerie
-                                  ? "No hay equipos disponibles"
-                                  : "Seleccione subcategoría y serie"}
-                              </Typography>
-                            </MenuItem>
-                          )}
-                        </Select>
-                      </FormControl>
-
                       <TextField
                         label="Número de Camiseta"
                         value={player.numeroCamiseta || ""}

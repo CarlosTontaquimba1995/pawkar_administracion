@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -17,18 +17,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Paper
-} from '@mui/material';
-import { 
-  Close as CloseIcon, 
+  Paper,
+} from "@mui/material";
+import {
+  Close as CloseIcon,
   CalendarToday as CalendarTodayIcon,
   Add as AddIcon,
-  EmojiEvents as EmojiEventsIcon,
   FilterList as FilterListIcon,
-  Group as GroupIcon
-} from '@mui/icons-material';
-import { useAuth } from '../../contexts/AuthContext';
-import teamService from '../../api/teamService';
+  Group as GroupIcon,
+} from "@mui/icons-material";
+import { useAuth } from "../../contexts/AuthContext";
+import teamService from "../../api/teamService";
 import { Serie } from "@/types/serie.types";
 import serieService from "@/api/serieService";
 import subcategoriaService from "@/api/subcategoriaService";
@@ -63,9 +62,13 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
     {}
   );
 
-  const [teams, setTeams] = useState([
-    { subcategoriaId: 0, serieId: 3, nombre: "", fundacion: "" },
-  ]);
+  // Estado para los filtros globales
+  const [filters, setFilters] = useState({
+    subcategoriaId: 0,
+    serieId: 0,
+  });
+
+  const [teams, setTeams] = useState([{ nombre: "", fundacion: "" }]);
   const [loading, setLoading] = useState(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
@@ -75,10 +78,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
   const { token } = useAuth();
 
   const handleAddTeam = () => {
-    setTeams([
-      ...teams,
-      { subcategoriaId: 5, serieId: 3, nombre: "", fundacion: "" },
-    ]);
+    setTeams([...teams, { nombre: "", fundacion: "" }]);
   };
 
   const handleRemoveTeam = (index: number) => {
@@ -93,17 +93,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
     value: string | number
   ) => {
     const newTeams = [...teams];
-    const previousValue = newTeams[index][field as keyof (typeof newTeams)[0]];
     newTeams[index] = { ...newTeams[index], [field]: value };
-
-    // If subcategory changed, fetch series for the new subcategory
-    if (field === "subcategoriaId" && previousValue !== value) {
-      fetchSeriesForSubcategoria(Number(value));
-
-      // Reset serieId when subcategory changes
-      newTeams[index].serieId = 0;
-    }
-
     setTeams(newTeams);
   };
 
@@ -118,7 +108,16 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
       return;
     }
 
-    // Validate all fields are filled
+    // Validar que se hayan seleccionado subcategoría y serie
+    if (!filters.subcategoriaId || !filters.serieId) {
+      setSnackbar({
+        open: true,
+        message: "Por favor seleccione una subcategoría y una serie",
+        severity: "error",
+      });
+      return;
+    }
+
     const hasEmptyFields = teams.some(
       (team) => !team.nombre || !team.fundacion
     );
@@ -132,9 +131,18 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
       return;
     }
 
+    // Preparar los datos con los filtros globales
+    const teamsWithFilters = teams.map((team) => ({
+      ...team,
+      subcategoriaId: filters.subcategoriaId,
+      serieId: filters.serieId,
+    }));
+
     try {
       setLoading(true);
-      const response = await teamService.createTeamsBulk({ equipos: teams });
+      const response = await teamService.createTeamsBulk({
+        equipos: teamsWithFilters,
+      });
 
       setSnackbar({
         open: true,
@@ -142,13 +150,10 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
         severity: "success",
       });
 
-      // Call onSuccess to notify parent component
       setTimeout(() => {
         onSuccess();
         onClose();
-        setTeams([
-          { subcategoriaId: 5, serieId: 3, nombre: "", fundacion: "" },
-        ]);
+        setTeams([{ nombre: "", fundacion: "" }]);
       }, 100);
     } catch (error: any) {
       setSnackbar({
@@ -186,14 +191,8 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
 
       // If this is the first series for this subcategoria, set it as default
       if (seriesData.data.length > 0) {
-        const newTeams = [...teams];
-        const teamIndex = newTeams.findIndex(
-          (t) => t.subcategoriaId === subcategoriaId
-        );
-        if (teamIndex !== -1 && !newTeams[teamIndex].serieId) {
-          newTeams[teamIndex].serieId = seriesData.data[0].serieId;
-          setTeams(newTeams);
-        }
+        const newFilters = { ...filters, serieId: seriesData.data[0].serieId };
+        setFilters(newFilters);
       }
     } catch (error) {
       console.error("Error fetching series:", error);
@@ -204,6 +203,22 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
       });
     } finally {
       setLoadingSeries((prev) => ({ ...prev, [subcategoriaId]: false }));
+    }
+  };
+
+  // Manejador para cambios en los filtros globales
+  const handleFilterChange = (field: string, value: any) => {
+    const newFilters = { ...filters, [field]: value };
+    setFilters(newFilters);
+
+    // Si se cambia la subcategoría, cargar las series correspondientes
+    if (field === "subcategoriaId" && value) {
+      const subcategoriaId = Number(value);
+      if (!series[subcategoriaId]) {
+        fetchSeriesForSubcategoria(subcategoriaId);
+      }
+      // Resetear la serie cuando cambia la subcategoría
+      setFilters((prev) => ({ ...prev, serieId: 0 }));
     }
   };
 
@@ -237,19 +252,18 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
           // Only update if we have subcategories
           if (response.data.length > 0) {
             // Check if current subcategoryId is valid
-            const currentSubcategoriaId = teams[0]?.subcategoriaId;
+            const currentSubcategoriaId = filters.subcategoriaId;
             const isValidSubcategoria = response.data.some(
               (sub) => sub.subcategoriaId === currentSubcategoriaId
             );
 
             // If no valid subcategory is selected, set the first one
             if (!isValidSubcategoria) {
-              const newTeams = [...teams];
-              newTeams[0] = {
-                ...newTeams[0],
+              const newFilters = {
+                ...filters,
                 subcategoriaId: response.data[0].subcategoriaId,
               };
-              setTeams(newTeams);
+              setFilters(newFilters);
               fetchSeriesForSubcategoria(response.data[0].subcategoriaId);
             } else if (currentSubcategoriaId) {
               // If we have a valid subcategory, make sure to fetch its series
@@ -278,6 +292,8 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
         maxWidth="md"
         fullWidth
         PaperProps={{
+          component: "form",
+          onSubmit: handleSubmit,
           sx: {
             borderRadius: 3,
           },
@@ -295,55 +311,40 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
             </IconButton>
           </Box>
         </DialogTitle>
-        <Divider />
         <DialogContent>
-          <form onSubmit={handleSubmit}>
-            {/* Team Information */}
-            <Box
+          <Box sx={{ mt: 2, mb: 3 }}>
+            {/* Filtros globales */}
+            <Paper
+              elevation={0}
               sx={{
+                p: 3,
                 mb: 3,
-                p: 2,
-                border: "1px solid #ddd",
+                border: "1px solid",
+                borderColor: "divider",
                 borderRadius: 2,
-                position: "relative",
               }}
             >
-              <Box display="flex" alignItems="center" mb={2}>
-                <EmojiEventsIcon sx={{ mr: 1 }} />
-                <Typography variant="subtitle1" fontWeight="medium">
-                  Información del Torneo
-                </Typography>
-              </Box>
-
+              <Typography variant="subtitle1" gutterBottom sx={{ mb: 2 }}>
+                Filtros para todos los equipos
+              </Typography>
               <Box
                 display="grid"
                 gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
                 gap={2}
-                mb={2}
               >
                 <FormControl fullWidth size="small" required>
-                  <InputLabel id="subcategoria-label">Subcategoría</InputLabel>
+                  <InputLabel>Subcategoría</InputLabel>
                   <Select
-                    labelId="subcategoria-label"
-                    value={teams[0]?.subcategoriaId || ""}
-                    onChange={(e) => {
-                      const subcategoriaId = Number(e.target.value);
-                      const newTeams = [...teams];
-                      newTeams[0] = { ...newTeams[0], subcategoriaId };
-                      setTeams(newTeams);
-                      fetchSeriesForSubcategoria(subcategoriaId);
-                    }}
+                    value={filters.subcategoriaId || ""}
+                    onChange={(e) =>
+                      handleFilterChange(
+                        "subcategoriaId",
+                        Number(e.target.value)
+                      )
+                    }
                     label="Subcategoría"
                     disabled={loadingSubcategorias}
                     variant="outlined"
-                    sx={{
-                      "& .MuiSelect-select": {
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        py: 1.5,
-                      },
-                    }}
                   >
                     {loadingSubcategorias ? (
                       <MenuItem value="">
@@ -354,7 +355,6 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                         <MenuItem
                           key={sub.subcategoriaId}
                           value={sub.subcategoriaId}
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
                           <FilterListIcon fontSize="small" />
                           {sub.nombre}
@@ -374,46 +374,33 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                 </FormControl>
 
                 <FormControl fullWidth size="small" required>
-                  <InputLabel id="serie-label">Serie</InputLabel>
+                  <InputLabel>Serie</InputLabel>
                   <Select
-                    labelId="serie-label"
-                    value={teams[0]?.serieId || ""}
+                    value={filters.serieId || ""}
                     onChange={(e) =>
-                      handleTeamChange(0, "serieId", Number(e.target.value))
+                      handleFilterChange("serieId", Number(e.target.value))
                     }
                     label="Serie"
                     disabled={
-                      loadingSeries[teams[0]?.subcategoriaId] ||
-                      !teams[0]?.subcategoriaId
+                      !filters.subcategoriaId ||
+                      loadingSeries[filters.subcategoriaId]
                     }
                     variant="outlined"
-                    sx={{
-                      "& .MuiSelect-select": {
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        py: 1.5,
-                      },
-                    }}
                   >
-                    {loadingSeries[teams[0]?.subcategoriaId] ? (
+                    {loadingSeries[filters.subcategoriaId] ? (
                       <MenuItem value="">
                         <CircularProgress size={24} />
                       </MenuItem>
-                    ) : series[teams[0]?.subcategoriaId]?.length > 0 ? (
-                      series[teams[0]?.subcategoriaId].map((serie) => (
-                        <MenuItem
-                          key={serie.serieId}
-                          value={serie.serieId}
-                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                        >
+                    ) : series[filters.subcategoriaId]?.length > 0 ? (
+                      series[filters.subcategoriaId].map((serie) => (
+                        <MenuItem key={serie.serieId} value={serie.serieId}>
                           <FilterListIcon fontSize="small" />
                           {serie.nombreSerie}
                         </MenuItem>
                       ))
                     ) : (
                       <MenuItem value="" disabled>
-                        {teams[0]?.subcategoriaId
+                        {filters.subcategoriaId
                           ? "No hay series disponibles"
                           : "Seleccione una subcategoría"}
                       </MenuItem>
@@ -421,44 +408,10 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                   </Select>
                 </FormControl>
               </Box>
-            </Box>
-
-            <Box sx={{ mt: 3, mb: 2 }}>
-              <Button
-                variant="outlined"
-                startIcon={<AddIcon />}
-                onClick={handleAddTeam}
-                disabled={
-                  loading || !teams[0]?.subcategoriaId || !teams[0]?.serieId
-                }
-                size="small"
-                sx={{
-                  textTransform: "none",
-                  borderRadius: 2,
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: 1,
-                  },
-                }}
-              >
-                Agregar Equipo
-              </Button>
-            </Box>
+            </Paper>
 
             {teams.map((team, index) => (
-              <Box
-                key={index}
-                sx={{
-                  position: "relative",
-                  mb: 3,
-                  "&:hover .delete-button": {
-                    opacity: 1,
-                    visibility: "visible",
-                    transform: "translate(4px, -4px)",
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
+              <React.Fragment key={`team-${index}`}>
                 <Paper
                   elevation={0}
                   sx={{
@@ -467,12 +420,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                     borderColor: "divider",
                     borderRadius: 2,
                     position: "relative",
-                    overflow: "visible",
-                    transition: "all 0.2s ease",
-                    "&:hover": {
-                      borderColor: "primary.main",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
-                    },
+                    mb: 3,
                   }}
                 >
                   {teams.length > 1 && (
@@ -486,25 +434,25 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                         top: -12,
                         color: "white",
                         backgroundColor: "error.main",
-                        opacity: 0,
-                        visibility: "hidden",
-                        transition: "all 0.2s ease",
-                        zIndex: 1,
                         "&:hover": {
                           backgroundColor: "error.dark",
-                          transform: "scale(1.1)",
                         },
                       }}
                     >
                       <CloseIcon fontSize="small" />
                     </IconButton>
                   )}
-
+                  <Typography
+                    variant="subtitle2"
+                    color="textSecondary"
+                    gutterBottom
+                  >
+                    Equipo {index + 1}
+                  </Typography>
                   <Box
                     display="grid"
                     gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
                     gap={2}
-                    mb={2}
                   >
                     <TextField
                       label="Nombre del Equipo"
@@ -516,14 +464,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                       required
                       size="small"
                       variant="outlined"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
-                          "&:hover fieldset": {
-                            borderColor: "primary.light",
-                          },
-                        },
-                      }}
+                      placeholder="Ej: Equipo A"
                     />
                     <TextField
                       label="Fecha de Fundación"
@@ -531,8 +472,7 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                       value={team.fundacion}
                       onChange={(e) => {
                         const dateValue = e.target.value;
-                        // Only update if the year has 4 digits or less
-                        if (!dateValue || dateValue.split('-')[0].length <= 4) {
+                        if (!dateValue || dateValue.split("-")[0].length <= 4) {
                           handleTeamChange(index, "fundacion", dateValue);
                         }
                       }}
@@ -544,67 +484,45 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                         shrink: true,
                       }}
                       inputProps={{
-                        max: new Date().toISOString().split('T')[0] // Prevent future dates
+                        max: new Date().toISOString().split("T")[0],
                       }}
                       InputProps={{
                         endAdornment: (
                           <CalendarTodayIcon fontSize="small" color="action" />
                         ),
                       }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
-                          "&:hover fieldset": {
-                            borderColor: "primary.light",
-                          },
-                        },
-                      }}
                     />
                   </Box>
                 </Paper>
-              </Box>
+              </React.Fragment>
             ))}
+          </Box>
 
-            <DialogActions sx={{ px: 0, py: 2, mt: 2 }}>
-              <Button
-                onClick={onClose}
-                disabled={loading}
-                variant="outlined"
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: 1,
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="contained"
-                color="primary"
-                type="submit"
-                disabled={loading || teams.length === 0}
-                startIcon={
-                  loading ? <CircularProgress size={20} /> : <GroupIcon />
-                }
-                sx={{
-                  borderRadius: 2,
-                  textTransform: "none",
-                  "&:hover": {
-                    transform: "translateY(-1px)",
-                    boxShadow: 2,
-                  },
-                  transition: "all 0.2s ease",
-                }}
-              >
-                {loading ? "Registrando..." : "Registrar Equipos"}
-              </Button>
-            </DialogActions>
-          </form>
+          <Button
+            variant="outlined"
+            startIcon={<AddIcon />}
+            onClick={handleAddTeam}
+            disabled={loading || !filters.subcategoriaId || !filters.serieId}
+            size="small"
+            sx={{ mb: 2 }}
+          >
+            Agregar Equipo
+          </Button>
         </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={onClose} disabled={loading} variant="outlined">
+            Cancelar
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            type="submit"
+            disabled={loading || teams.length === 0}
+            startIcon={loading ? <CircularProgress size={20} /> : <GroupIcon />}
+          >
+            {loading ? "Registrando..." : "Registrar Equipos"}
+          </Button>
+        </DialogActions>
       </Dialog>
       <Snackbar
         open={snackbar.open}
