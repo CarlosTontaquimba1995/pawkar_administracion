@@ -61,7 +61,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     ubicacion: "",
     fechaHora: new Date().toISOString().slice(0, 16),
     proximo: true,
-    categoriaId: 0,
+    categoriaId: 0, // This will be set when categoria is loaded
     categoriaNombre: "",
     latitud: undefined,
     longitud: undefined,
@@ -75,11 +75,13 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
   interface ArtistaFormData {
     nombre: string;
     descripcion: string;
+    fechaHora: string;
   }
 
   const [currentArtista, setCurrentArtista] = useState<ArtistaFormData>({
     nombre: "",
     descripcion: "",
+    fechaHora: new Date().toISOString().slice(0, 16),
   });
 
   const [loading, setLoading] = useState(false);
@@ -93,6 +95,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
   });
   const { token } = useAuth();
 
+  // Cargar ubicaciones
   const fetchUbicaciones = async () => {
     try {
       setLoadingUbicaciones(true);
@@ -112,22 +115,15 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     }
   };
 
+  // Buscar la categoría EVENTOS al cargar el componente
   useEffect(() => {
-    const fetchCategorias = async () => {
+    const fetchCategoriaEventos = async () => {
       try {
-        const eventosResponse = await categoriaService.getCategoriaByNemonico(
+        const response = await categoriaService.getCategoriaByNemonico(
           "EVENTOS"
         );
-        if (eventosResponse.data) {
-          setCategoriaId(eventosResponse.data.categoriaId);
-        }
-
-        const musicaResponse = await categoriaService.getCategoriaByNemonico(
-          "MUSICA"
-        );
-        if (!musicaResponse.data) {
-          console.error("No se encontró la categoría MUSICA");
-          throw new Error("No se encontró la categoría MUSICA");
+        if (response.data) {
+          setCategoriaId(response.data.categoriaId);
         }
       } catch (error) {
         let errorMessage = "Error al cargar la categoría de eventos";
@@ -149,7 +145,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     };
 
     if (open) {
-      fetchCategorias();
+      fetchCategoriaEventos();
       fetchUbicaciones();
     }
   }, [open]);
@@ -185,7 +181,6 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       categoriaId: parentEvent.categoriaId || 0,
       categoriaNombre: parentEvent.categoriaNombre || "",
       ubicacion: parentEvent.ubicacion || "",
-      fechaHora: parentEvent.fechaHora || new Date().toISOString(),
       latitud: parentEvent.latitud,
       longitud: parentEvent.longitud,
       proximo: true,
@@ -202,9 +197,11 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       )
     );
 
+    // Reset form with default values
     setCurrentArtista({
       nombre: "",
       descripcion: "",
+      fechaHora: parentEvent.fechaHora || new Date().toISOString().slice(0, 16),
     });
   };
 
@@ -254,6 +251,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     value: any,
     ubicacionData?: { latitud?: number; longitud?: number }
   ) => {
+    // Ensure value is never null for required fields
     if (field === "fechaHora" && value === null) {
       value = new Date().toISOString().slice(0, 16);
     }
@@ -302,6 +300,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       return;
     }
 
+    // Validar campos requeridos
     const hasEmptyFields = subcategorias.some(
       (sub) =>
         !sub.nombre?.trim() ||
@@ -320,53 +319,35 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       return;
     }
 
+    if (hasEmptyFields) {
+      setSnackbar({
+        open: true,
+        message: "Por favor complete todos los campos requeridos",
+        severity: "error",
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-      const musicaCategory = await categoriaService.getCategoriaByNemonico(
-        "MUSICA"
-      );
-      console.log("Musica Category:", musicaCategory);
 
-      if (!musicaCategory.data) {
-        throw new Error("No se encontró la categoría MUSICA");
-      }
-      const musicaCategoryId = musicaCategory.data.categoriaId;
-      const allSubcategoriasToCreate: CreateSubcategoriaRequest[] = [];
-
-      for (const parent of subcategorias) {
-        const parentData: CreateSubcategoriaRequest = {
-          nombre: parent.nombre.trim(),
-          descripcion: parent.descripcion.trim(),
-          ubicacion: parent.ubicacion?.trim() || "",
-          latitud: parent.latitud,
-          longitud: parent.longitud,
-          fechaHora: parent.fechaHora || new Date().toISOString().slice(0, 16),
-          categoriaId: categoriaId,
+      // Preparar datos para el envío
+      const subcategoriasToCreate = subcategorias.map((sub) => {
+        const subData: CreateSubcategoriaRequest = {
+          nombre: sub.nombre.trim(),
+          descripcion: sub.descripcion.trim(),
+          ubicacion: sub.ubicacion?.trim() || "",
+          latitud: sub.latitud,
+          longitud: sub.longitud,
+          fechaHora: sub.fechaHora || new Date().toISOString().slice(0, 16),
+          categoriaId: categoriaId || 0,
         };
-        allSubcategoriasToCreate.push(parentData);
+        return subData;
+      });
 
-        if (parent.artistas && parent.artistas.length > 0) {
-          const childEvents = parent.artistas.map((artista) => ({
-            nombre: artista.nombre.trim(),
-            descripcion: artista.descripcion?.trim() || "",
-            ubicacion: parent.ubicacion?.trim() || "",
-            latitud: parent.latitud,
-            longitud: parent.longitud,
-            fechaHora: parent.fechaHora || undefined,
-            categoriaId: musicaCategoryId || 1,
-          }));
-
-          allSubcategoriasToCreate.push(...childEvents);
-        }
-      }
-
-      console.log(
-        "Enviando datos al servidor:",
-        JSON.stringify(allSubcategoriasToCreate, null, 2)
-      );
-
+      // Crear todas las subcategorías en una sola solicitud
       const response = await subcategoriaService.createMultipleSubcategorias({
-        subcategorias: allSubcategoriasToCreate,
+        subcategorias: subcategoriasToCreate,
       });
 
       setSnackbar({
@@ -375,6 +356,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         severity: "success",
       });
 
+      // Resetear el formulario
       setSubcategorias([
         {
           subcategoriaId: Date.now(),
@@ -383,7 +365,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
           ubicacion: "",
           fechaHora: new Date().toISOString().slice(0, 16),
           proximo: true,
-          categoriaId: categoriaId,
+          categoriaId: categoriaId || 0,
           categoriaNombre: "",
           artistas: [],
           latitud: undefined,
@@ -391,12 +373,12 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         },
       ]);
 
+      // Cerrar el diálogo después de un breve retraso
       setTimeout(() => {
         onSuccess();
         onClose();
       }, 800);
     } catch (error: any) {
-      console.error("Error al registrar los eventos:", error);
       setSnackbar({
         open: true,
         message:
@@ -685,6 +667,26 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                             >
                               Agregar Artista
                             </Button>
+                          </Box>
+                          <Box
+                            sx={{
+                              width: { xs: "100%", sm: "calc(33.33% - 16px)" },
+                            }}
+                          >
+                            <TextField
+                              label="Fecha y hora"
+                              type="datetime-local"
+                              value={currentArtista.fechaHora}
+                              onChange={(e) =>
+                                handleArtistaChange("fechaHora", e.target.value)
+                              }
+                              fullWidth
+                              size="small"
+                              margin="none"
+                              InputLabelProps={{
+                                shrink: true,
+                              }}
+                            />
                           </Box>
                           <Box sx={{ width: "100%" }}>
                             <TextField
