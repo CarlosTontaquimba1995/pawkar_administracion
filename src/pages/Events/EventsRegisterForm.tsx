@@ -16,8 +16,17 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  Card,
+  CardContent,
+  CardHeader,
+  Chip,
 } from "@mui/material";
-import { Close as CloseIcon, Add as AddIcon } from "@mui/icons-material";
+import {
+  Close as CloseIcon,
+  Add as AddIcon,
+  Person as PersonIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
 import { useAuth } from "@/contexts/AuthContext";
 import subcategoriaService from "@/api/subcategoriaService";
 import { categoriaService } from "@/api/categoriaService";
@@ -27,7 +36,12 @@ import {
   Subcategoria,
   CreateSubcategoriaRequest,
 } from "@/types/subcategoria.types";
+
 import { useState, useEffect } from "react";
+
+type SubcategoriaConArtistas = Subcategoria & {
+  artistas?: Subcategoria[];
+};
 
 interface EventsRegisterFormProps {
   open: boolean;
@@ -40,18 +54,34 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([
-    {
-      subcategoriaId: Date.now(),
-      nombre: "",
-      descripcion: "",
-      ubicacion: "",
-      fechaHora: new Date().toISOString().slice(0, 16),
-      proximo: true,
-      categoriaId: 0, // This will be set when categoria is loaded
-      categoriaNombre: "",
-    },
-  ]);
+  const initialSubcategoria: SubcategoriaConArtistas = {
+    subcategoriaId: Date.now(),
+    nombre: "",
+    descripcion: "",
+    ubicacion: "",
+    fechaHora: new Date().toISOString().slice(0, 16),
+    proximo: true,
+    categoriaId: 0,
+    categoriaNombre: "",
+    latitud: undefined,
+    longitud: undefined,
+    artistas: [],
+  };
+
+  const [subcategorias, setSubcategorias] = useState<SubcategoriaConArtistas[]>(
+    [initialSubcategoria]
+  );
+
+  interface ArtistaFormData {
+    nombre: string;
+    descripcion: string;
+  }
+
+  const [currentArtista, setCurrentArtista] = useState<ArtistaFormData>({
+    nombre: "",
+    descripcion: "",
+  });
+
   const [loading, setLoading] = useState(false);
   const [categoriaId, setCategoriaId] = useState<number | null>(null);
   const [ubicaciones, setUbicaciones] = useState<Ubicacion[]>([]);
@@ -63,7 +93,6 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
   });
   const { token } = useAuth();
 
-  // Cargar ubicaciones
   const fetchUbicaciones = async () => {
     try {
       setLoadingUbicaciones(true);
@@ -83,15 +112,22 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     }
   };
 
-  // Buscar la categoría EVENTOS al cargar el componente
   useEffect(() => {
-    const fetchCategoriaEventos = async () => {
+    const fetchCategorias = async () => {
       try {
-        const response = await categoriaService.getCategoriaByNemonico(
+        const eventosResponse = await categoriaService.getCategoriaByNemonico(
           "EVENTOS"
         );
-        if (response.data) {
-          setCategoriaId(response.data.categoriaId);
+        if (eventosResponse.data) {
+          setCategoriaId(eventosResponse.data.categoriaId);
+        }
+
+        const musicaResponse = await categoriaService.getCategoriaByNemonico(
+          "MUSICA"
+        );
+        if (!musicaResponse.data) {
+          console.error("No se encontró la categoría MUSICA");
+          throw new Error("No se encontró la categoría MUSICA");
         }
       } catch (error) {
         let errorMessage = "Error al cargar la categoría de eventos";
@@ -113,7 +149,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     };
 
     if (open) {
-      fetchCategoriaEventos();
+      fetchCategorias();
       fetchUbicaciones();
     }
   }, [open]);
@@ -130,8 +166,71 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         proximo: true,
         categoriaId: categoriaId || 0,
         categoriaNombre: "",
+        latitud: undefined,
+        longitud: undefined,
       },
     ]);
+  };
+
+  const handleAddArtista = (subcategoriaId: number) => {
+    const parentEvent = subcategorias.find(
+      (sub) => sub.subcategoriaId === subcategoriaId
+    );
+
+    if (!parentEvent || !currentArtista.nombre?.trim()) return;
+
+    const newArtista: Subcategoria = {
+      ...currentArtista,
+      subcategoriaId: Date.now(),
+      categoriaId: parentEvent.categoriaId || 0,
+      categoriaNombre: parentEvent.categoriaNombre || "",
+      ubicacion: parentEvent.ubicacion || "",
+      fechaHora: parentEvent.fechaHora || new Date().toISOString(),
+      latitud: parentEvent.latitud,
+      longitud: parentEvent.longitud,
+      proximo: true,
+    };
+
+    setSubcategorias(
+      subcategorias.map((sub) =>
+        sub.subcategoriaId === subcategoriaId
+          ? {
+              ...sub,
+              artistas: [...(sub.artistas || []), newArtista],
+            }
+          : sub
+      )
+    );
+
+    setCurrentArtista({
+      nombre: "",
+      descripcion: "",
+    });
+  };
+
+  const handleRemoveArtista = (subcategoriaId: number, artistaId: number) => {
+    setSubcategorias(
+      subcategorias.map((sub) =>
+        sub.subcategoriaId === subcategoriaId
+          ? {
+              ...sub,
+              artistas: (sub.artistas || []).filter(
+                (artista) => artista.subcategoriaId !== artistaId
+              ),
+            }
+          : sub
+      )
+    );
+  };
+
+  const handleArtistaChange = (
+    field: keyof ArtistaFormData,
+    value: string | number
+  ) => {
+    setCurrentArtista((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
   };
 
   const handleRemoveSubcategoria = (id: number) => {
@@ -146,12 +245,15 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     id: number,
     field: keyof Omit<
       Subcategoria,
-      "subcategoriaId" | "categoriaId" | "categoriaNombre" | "proximo"
+      | "subcategoriaId"
+      | "categoriaId"
+      | "categoriaNombre"
+      | "proximo"
+      | "artistas"
     >,
     value: any,
     ubicacionData?: { latitud?: number; longitud?: number }
   ) => {
-    // Ensure value is never null for required fields
     if (field === "fechaHora" && value === null) {
       value = new Date().toISOString().slice(0, 16);
     }
@@ -200,7 +302,6 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       return;
     }
 
-    // Validar campos requeridos
     const hasEmptyFields = subcategorias.some(
       (sub) =>
         !sub.nombre?.trim() ||
@@ -219,35 +320,53 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
       return;
     }
 
-    if (hasEmptyFields) {
-      setSnackbar({
-        open: true,
-        message: "Por favor complete todos los campos requeridos",
-        severity: "error",
-      });
-      return;
-    }
-
     try {
       setLoading(true);
+      const musicaCategory = await categoriaService.getCategoriaByNemonico(
+        "MUSICA"
+      );
+      console.log("Musica Category:", musicaCategory);
 
-      // Preparar datos para el envío
-      const subcategoriasToCreate = subcategorias.map((sub) => {
-        const subData: CreateSubcategoriaRequest = {
-          nombre: sub.nombre.trim(),
-          descripcion: sub.descripcion.trim(),
-          ubicacion: sub.ubicacion?.trim() || "",
-          latitud: sub.latitud,
-          longitud: sub.longitud,
-          fechaHora: sub.fechaHora || new Date().toISOString().slice(0, 16),
-          categoriaId: categoriaId || 0,
+      if (!musicaCategory.data) {
+        throw new Error("No se encontró la categoría MUSICA");
+      }
+      const musicaCategoryId = musicaCategory.data.categoriaId;
+      const allSubcategoriasToCreate: CreateSubcategoriaRequest[] = [];
+
+      for (const parent of subcategorias) {
+        const parentData: CreateSubcategoriaRequest = {
+          nombre: parent.nombre.trim(),
+          descripcion: parent.descripcion.trim(),
+          ubicacion: parent.ubicacion?.trim() || "",
+          latitud: parent.latitud,
+          longitud: parent.longitud,
+          fechaHora: parent.fechaHora || new Date().toISOString().slice(0, 16),
+          categoriaId: categoriaId,
         };
-        return subData;
-      });
+        allSubcategoriasToCreate.push(parentData);
 
-      // Crear todas las subcategorías en una sola solicitud
+        if (parent.artistas && parent.artistas.length > 0) {
+          const childEvents = parent.artistas.map((artista) => ({
+            nombre: artista.nombre.trim(),
+            descripcion: artista.descripcion?.trim() || "",
+            ubicacion: parent.ubicacion?.trim() || "",
+            latitud: parent.latitud,
+            longitud: parent.longitud,
+            fechaHora: parent.fechaHora || undefined,
+            categoriaId: musicaCategoryId || 1,
+          }));
+
+          allSubcategoriasToCreate.push(...childEvents);
+        }
+      }
+
+      console.log(
+        "Enviando datos al servidor:",
+        JSON.stringify(allSubcategoriasToCreate, null, 2)
+      );
+
       const response = await subcategoriaService.createMultipleSubcategorias({
-        subcategorias: subcategoriasToCreate,
+        subcategorias: allSubcategoriasToCreate,
       });
 
       setSnackbar({
@@ -256,7 +375,6 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         severity: "success",
       });
 
-      // Resetear el formulario
       setSubcategorias([
         {
           subcategoriaId: Date.now(),
@@ -265,17 +383,20 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
           ubicacion: "",
           fechaHora: new Date().toISOString().slice(0, 16),
           proximo: true,
-          categoriaId: categoriaId || 0,
+          categoriaId: categoriaId,
           categoriaNombre: "",
+          artistas: [],
+          latitud: undefined,
+          longitud: undefined,
         },
       ]);
 
-      // Cerrar el diálogo después de un breve retraso
       setTimeout(() => {
         onSuccess();
         onClose();
       }, 800);
     } catch (error: any) {
+      console.error("Error al registrar los eventos:", error);
       setSnackbar({
         open: true,
         message:
@@ -517,6 +638,107 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                         shrink: true,
                       }}
                     />
+
+                    {/* Sección de Artistas */}
+                    <Card
+                      variant="outlined"
+                      sx={{ width: "100%", mt: 2, borderColor: "divider" }}
+                    >
+                      <CardHeader
+                        title="Artistas"
+                        titleTypographyProps={{
+                          variant: "subtitle2",
+                          color: "text.secondary",
+                        }}
+                      />
+                      <CardContent>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 2,
+                            alignItems: "center",
+                          }}
+                        >
+                          <Box sx={{ flex: 1, minWidth: 200 }}>
+                            <TextField
+                              label="Nombre del artista"
+                              value={currentArtista.nombre}
+                              onChange={(e) =>
+                                handleArtistaChange("nombre", e.target.value)
+                              }
+                              fullWidth
+                              size="small"
+                              margin="none"
+                            />
+                          </Box>
+                          <Box>
+                            <Button
+                              fullWidth
+                              variant="outlined"
+                              onClick={() =>
+                                handleAddArtista(subcategoria.subcategoriaId)
+                              }
+                              disabled={!currentArtista.nombre.trim()}
+                              startIcon={<PersonIcon />}
+                              sx={{ height: "40px" }}
+                            >
+                              Agregar Artista
+                            </Button>
+                          </Box>
+                          <Box sx={{ width: "100%" }}>
+                            <TextField
+                              label="Descripción"
+                              value={currentArtista.descripcion}
+                              onChange={(e) =>
+                                handleArtistaChange(
+                                  "descripcion",
+                                  e.target.value
+                                )
+                              }
+                              fullWidth
+                              multiline
+                              rows={2}
+                              size="small"
+                              margin="none"
+                            />
+                          </Box>
+                        </Box>
+
+                        {/* Lista de artistas agregados */}
+                        <Box
+                          sx={{
+                            mt: 2,
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: 1,
+                          }}
+                        >
+                          {subcategoria.artistas?.map((artista) => (
+                            <Chip
+                              key={artista.subcategoriaId}
+                              label={artista.nombre}
+                              onDelete={() =>
+                                handleRemoveArtista(
+                                  subcategoria.subcategoriaId,
+                                  artista.subcategoriaId
+                                )
+                              }
+                              deleteIcon={<DeleteIcon />}
+                              variant="outlined"
+                              sx={{
+                                "& .MuiChip-deleteIcon": {
+                                  color: "error.main",
+                                  "&:hover": {
+                                    color: "error.dark",
+                                  },
+                                },
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      </CardContent>
+                    </Card>
                   </Box>
                 </Box>
               ))}
