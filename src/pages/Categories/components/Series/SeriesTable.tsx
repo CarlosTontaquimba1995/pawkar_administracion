@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   IconButton,
   TextField,
@@ -29,6 +29,8 @@ import DataTable from "@/components/common/DataTable/DataTable";
 import { Serie } from "@/types/serie.types";
 import { Subcategoria } from "@/types/subcategoria.types";
 import serieService from "@/api/serieService";
+import categoriaService from "@/api/categoriaService";
+import subcategoriaService from "@/api/subcategoriaService";
 
 interface SeriesTableProps {
   series: Serie[];
@@ -53,8 +55,10 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
     number | null
   >(null);
   const [filteredSeries, setFilteredSeries] = useState<Serie[]>([]);
+  const [deportesSubcategorias, setDeportesSubcategorias] = useState<
+    Subcategoria[]
+  >([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [initialLoad, setInitialLoad] = useState(true);
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -128,13 +132,34 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
     }
   };
 
-  // Set first subcategory on initial load
-  useEffect(() => {
-    if (initialLoad && subcategorias.length > 0) {
-      setSelectedSubcategoria(subcategorias[0]?.subcategoriaId || null);
-      setInitialLoad(false);
+  const fetchDeportesSubcategorias = useCallback(async () => {
+    try {
+      const response = await categoriaService.getCategoriaByNemonico(
+        "DEPORTES"
+      );
+      if (response.data) {
+        // Get subcategories for DEPORTES category
+        const subcategoriasResponse =
+          await subcategoriaService.getSubcategoriasByCategoria(
+            response.data.categoriaId
+          );
+        if (subcategoriasResponse.data) {
+          setDeportesSubcategorias(subcategoriasResponse.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching DEPORTES subcategories:", error);
+      setSnackbar({
+        open: true,
+        message: "Error al cargar las subcategorías de DEPORTES",
+        severity: "error",
+      });
     }
-  }, [subcategorias, initialLoad]);
+  }, []);
+
+  useEffect(() => {
+    fetchDeportesSubcategorias();
+  }, [fetchDeportesSubcategorias]);
 
   // Fetch series when subcategory changes
   useEffect(() => {
@@ -157,10 +182,10 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
 
     if (selectedSubcategoria) {
       fetchSeries();
-    } else if (subcategorias.length > 0) {
-      setSelectedSubcategoria(subcategorias[0]?.subcategoriaId || null);
+    } else if (deportesSubcategorias.length > 0) {
+      setSelectedSubcategoria(deportesSubcategorias[0]?.subcategoriaId || null);
     }
-  }, [selectedSubcategoria, subcategorias]);
+  }, [selectedSubcategoria, deportesSubcategorias]);
 
   // Filter series based on search term
   const filteredAndSearchedSeries = React.useMemo(() => {
@@ -173,14 +198,15 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
         (serie) =>
           (serie.nombreSerie?.toLowerCase() || "").includes(searchLower) ||
           (
-            subcategorias.find((s) => s.subcategoriaId === serie.subcategoriaId)
-              ?.nombre || ""
+            deportesSubcategorias.find(
+              (s) => s.subcategoriaId === serie.subcategoriaId
+            )?.nombre || ""
           ).includes(searchLower)
       );
     }
 
     return result;
-  }, [filteredSeries, searchTerm, subcategorias]);
+  }, [filteredSeries, searchTerm, deportesSubcategorias]);
 
   // Get theme for responsive design
   const theme = useTheme();
@@ -195,14 +221,7 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
         flexWrap="wrap"
         flexDirection={isMobile ? "column" : "row"}
       >
-        <FormControl
-          fullWidth={isMobile}
-          size="small"
-          sx={{
-            minWidth: isMobile ? "100%" : 200,
-            mb: isMobile ? 1 : 0,
-          }}
-        >
+        <FormControl fullWidth margin="normal">
           <InputLabel>Filtrar por subcategoría</InputLabel>
           <Select
             value={selectedSubcategoria || ""}
@@ -216,11 +235,14 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
             fullWidth
           >
             <MenuItem value="">
-              <em>Todas las subcategorías</em>
+              <em>Todas las subcategorías de DEPORTES</em>
             </MenuItem>
-            {subcategorias.map((sub) => (
-              <MenuItem key={sub.subcategoriaId} value={sub.subcategoriaId}>
-                {sub.nombre}
+            {deportesSubcategorias.map((subcategoria) => (
+              <MenuItem
+                key={subcategoria.subcategoriaId}
+                value={subcategoria.subcategoriaId}
+              >
+                {subcategoria.nombre}
               </MenuItem>
             ))}
           </Select>

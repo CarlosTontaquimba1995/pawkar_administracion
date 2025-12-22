@@ -58,6 +58,9 @@ const CategoriesPage: React.FC = () => {
   const [tabValue, setTabValue] = useState(0);
   const [categories, setCategories] = useState<Categoria[]>([]);
   const [subcategories, setSubcategories] = useState<Subcategoria[]>([]);
+  const [deportesSubcategories, setDeportesSubcategories] = useState<
+    Subcategoria[]
+  >([]);
   const [series, setSeries] = useState<Serie[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -83,12 +86,29 @@ const CategoriesPage: React.FC = () => {
       ]);
 
       setCategories(catRes.data);
-      const deportesSubcategories = subRes.data.filter((sub: Subcategoria) =>
+
+      // Filter subcategories to only include those with a valid category
+      const validSubcategories = subRes.data.filter((sub: Subcategoria) =>
         catRes.data.some(
           (cat: Categoria) => cat.categoriaId === sub.categoriaId
         )
       );
-      setSubcategories(deportesSubcategories);
+      setSubcategories(validSubcategories);
+
+      // Find the DEPORTES category
+      const deportesCategory = catRes.data.find(
+        (cat: Categoria) => cat.nemonico === "DEPORTES"
+      );
+
+      // Filter subcategories for DEPORTES only
+      if (deportesCategory) {
+        const deportesSubs = validSubcategories.filter(
+          (sub: Subcategoria) =>
+            sub.categoriaId === deportesCategory.categoriaId
+        );
+        setDeportesSubcategories(deportesSubs);
+      }
+
       setSeries(serRes.data);
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -332,7 +352,7 @@ const CategoriesPage: React.FC = () => {
         open={showAddSerieForm}
         onClose={() => setShowAddSerieForm(false)}
         onSuccess={handleSuccess}
-        subcategorias={subcategories}
+        subcategorias={deportesSubcategories}
       />
       <SerieEditForm
         open={!!editingSerieId}
