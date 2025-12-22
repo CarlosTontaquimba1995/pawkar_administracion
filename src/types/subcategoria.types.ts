@@ -1,3 +1,9 @@
+// Artist interface
+export interface Artista {
+  nombre: string;
+  genero: string;
+}
+
 // Subcategory interface
 export interface Subcategoria {
   subcategoriaId: number;
@@ -9,9 +15,10 @@ export interface Subcategoria {
   categoriaNombre: string;
   estado?: boolean;
   deporte?: string;
-  ubicacion?: string;
-  latitud?: number;
-  longitud?: number;
+  ubicacion: string;
+  latitud: number;
+  longitud: number;
+  artistas: Artista[];
 }
 
 // Request interfaces
@@ -19,17 +26,27 @@ export interface CreateSubcategoriaRequest {
   nombre: string;
   descripcion: string;
   categoriaId: number;
+  fechaHora: string;
+  latitud: number;
+  longitud: number;
+  ubicacion: string;
+  artistas: Artista[];
+}
+
+export interface CreateMultipleSubcategoriasRequest {
+  subcategorias: Array<Omit<Subcategoria, 'subcategoriaId' | 'categoriaNombre' | 'estado' | 'deporte'>>;
+}
+
+export interface UpdateSubcategoriaRequest {
+  nombre?: string;
+  descripcion?: string;
+  categoriaId?: number;
   fechaHora?: string;
   latitud?: number;
   longitud?: number;
   ubicacion?: string;
+  artistas?: Artista[];
 }
-
-export interface CreateMultipleSubcategoriasRequest {
-  subcategorias: Array<CreateSubcategoriaRequest>;
-}
-
-export interface UpdateSubcategoriaRequest extends Partial<CreateSubcategoriaRequest> {}
 
 // Response interfaces
 export interface SubcategoriaResponse {

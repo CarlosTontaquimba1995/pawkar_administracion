@@ -27,20 +27,19 @@ import {
   Person as PersonIcon,
   Delete as DeleteIcon,
 } from "@mui/icons-material";
-import { useAuth } from "@/contexts/AuthContext";
 import subcategoriaService from "@/api/subcategoriaService";
 import { categoriaService } from "@/api/categoriaService";
 import { ubicacionService } from "@/api/ubicacionService";
 import { Ubicacion } from "@/types/ubicacion.types";
 import {
   Subcategoria,
-  CreateSubcategoriaRequest,
+  Artista,
 } from "@/types/subcategoria.types";
 
 import { useState, useEffect } from "react";
 
 type SubcategoriaConArtistas = Subcategoria & {
-  artistas?: Subcategoria[];
+  artistas: Artista[];
 };
 
 interface EventsRegisterFormProps {
@@ -63,8 +62,8 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     proximo: true,
     categoriaId: 0, // This will be set when categoria is loaded
     categoriaNombre: "",
-    latitud: undefined,
-    longitud: undefined,
+    latitud: 0,
+    longitud: 0,
     artistas: [],
   };
 
@@ -74,14 +73,12 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
 
   interface ArtistaFormData {
     nombre: string;
-    descripcion: string;
-    fechaHora: string;
+    genero: string;
   }
 
   const [currentArtista, setCurrentArtista] = useState<ArtistaFormData>({
     nombre: "",
-    descripcion: "",
-    fechaHora: new Date().toISOString().slice(0, 16),
+    genero: "",
   });
 
   const [loading, setLoading] = useState(false);
@@ -93,7 +90,6 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     message: "",
     severity: "success" as "success" | "error",
   });
-  const { token } = useAuth();
 
   // Cargar ubicaciones
   const fetchUbicaciones = async () => {
@@ -162,72 +158,11 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         proximo: true,
         categoriaId: categoriaId || 0,
         categoriaNombre: "",
-        latitud: undefined,
-        longitud: undefined,
+        latitud: 0,
+        longitud: 0,
+        artistas: []
       },
     ]);
-  };
-
-  const handleAddArtista = (subcategoriaId: number) => {
-    const parentEvent = subcategorias.find(
-      (sub) => sub.subcategoriaId === subcategoriaId
-    );
-
-    if (!parentEvent || !currentArtista.nombre?.trim()) return;
-
-    const newArtista: Subcategoria = {
-      ...currentArtista,
-      subcategoriaId: Date.now(),
-      categoriaId: parentEvent.categoriaId || 0,
-      categoriaNombre: parentEvent.categoriaNombre || "",
-      ubicacion: parentEvent.ubicacion || "",
-      latitud: parentEvent.latitud,
-      longitud: parentEvent.longitud,
-      proximo: true,
-    };
-
-    setSubcategorias(
-      subcategorias.map((sub) =>
-        sub.subcategoriaId === subcategoriaId
-          ? {
-              ...sub,
-              artistas: [...(sub.artistas || []), newArtista],
-            }
-          : sub
-      )
-    );
-
-    // Reset form with default values
-    setCurrentArtista({
-      nombre: "",
-      descripcion: "",
-      fechaHora: parentEvent.fechaHora || new Date().toISOString().slice(0, 16),
-    });
-  };
-
-  const handleRemoveArtista = (subcategoriaId: number, artistaId: number) => {
-    setSubcategorias(
-      subcategorias.map((sub) =>
-        sub.subcategoriaId === subcategoriaId
-          ? {
-              ...sub,
-              artistas: (sub.artistas || []).filter(
-                (artista) => artista.subcategoriaId !== artistaId
-              ),
-            }
-          : sub
-      )
-    );
-  };
-
-  const handleArtistaChange = (
-    field: keyof ArtistaFormData,
-    value: string | number
-  ) => {
-    setCurrentArtista((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
   };
 
   const handleRemoveSubcategoria = (id: number) => {
@@ -279,115 +214,112 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     });
   };
 
+  // Update the handleSubmit function to include artistas in the request
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!token) {
-      setSnackbar({
-        open: true,
-        message: "No se encontró el token de autenticación",
-        severity: "error",
-      });
-      return;
-    }
-
-    if (!categoriaId) {
-      setSnackbar({
-        open: true,
-        message: "No se pudo determinar la categoría de eventos",
-        severity: "error",
-      });
-      return;
-    }
-
-    // Validar campos requeridos
-    const hasEmptyFields = subcategorias.some(
-      (sub) =>
-        !sub.nombre?.trim() ||
-        !sub.descripcion?.trim() ||
-        !sub.fechaHora ||
-        !sub.ubicacion?.trim()
-    );
-
-    if (hasEmptyFields) {
-      setSnackbar({
-        open: true,
-        message:
-          "Por favor complete todos los campos requeridos, incluyendo la ubicación",
-        severity: "error",
-      });
-      return;
-    }
-
-    if (hasEmptyFields) {
-      setSnackbar({
-        open: true,
-        message: "Por favor complete todos los campos requeridos",
-        severity: "error",
-      });
-      return;
-    }
+    setLoading(true);
 
     try {
-      setLoading(true);
+      if (!categoriaId) {
+        throw new Error("Por favor seleccione una categoría");
+      }
 
-      // Preparar datos para el envío
-      const subcategoriasToCreate = subcategorias.map((sub) => {
-        const subData: CreateSubcategoriaRequest = {
-          nombre: sub.nombre.trim(),
-          descripcion: sub.descripcion.trim(),
-          ubicacion: sub.ubicacion?.trim() || "",
-          latitud: sub.latitud,
-          longitud: sub.longitud,
-          fechaHora: sub.fechaHora || new Date().toISOString().slice(0, 16),
-          categoriaId: categoriaId || 0,
-        };
-        return subData;
-      });
+      // Prepare subcategorias data with required fields
+      const subcategoriasData = subcategorias.map((sub) => ({
+        nombre: sub.nombre,
+        descripcion: sub.descripcion,
+        ubicacion: sub.ubicacion,
+        latitud: sub.latitud,
+        longitud: sub.longitud,
+        fechaHora: sub.fechaHora || new Date().toISOString(),
+        categoriaId: categoriaId,
+        proximo: true, // or get this from form
+        artistas: sub.artistas || [], // Include artistas in the request
+      }));
 
-      // Crear todas las subcategorías en una sola solicitud
-      const response = await subcategoriaService.createMultipleSubcategorias({
-        subcategorias: subcategoriasToCreate,
-      });
+      if (subcategoriasData.length === 1) {
+        // Single subcategory creation
+        await subcategoriaService.createSubcategoria(subcategoriasData[0]);
+      } else {
+        // Multiple subcategories creation
+        await subcategoriaService.createMultipleSubcategorias({
+          subcategorias: subcategoriasData,
+        });
+      }
 
       setSnackbar({
         open: true,
-        message: response.message || "Eventos registrados exitosamente",
+        message: "Evento(s) registrado(s) exitosamente",
         severity: "success",
       });
+      onSuccess();
+      onClose();
+    } catch (error: unknown) {
+      console.error("Error al registrar el evento:", error);
+      let errorMessage = "Error al registrar el evento";
 
-      // Resetear el formulario
-      setSubcategorias([
-        {
-          subcategoriaId: Date.now(),
-          nombre: "",
-          descripcion: "",
-          ubicacion: "",
-          fechaHora: new Date().toISOString().slice(0, 16),
-          proximo: true,
-          categoriaId: categoriaId || 0,
-          categoriaNombre: "",
-          artistas: [],
-          latitud: undefined,
-          longitud: undefined,
-        },
-      ]);
+      if (error && typeof error === "object" && "response" in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        errorMessage = axiosError.response?.data?.message || errorMessage;
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
 
-      // Cerrar el diálogo después de un breve retraso
-      setTimeout(() => {
-        onSuccess();
-        onClose();
-      }, 800);
-    } catch (error: any) {
       setSnackbar({
         open: true,
-        message:
-          error.response?.data?.message || "Error al registrar los eventos",
+        message: errorMessage,
         severity: "error",
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAddArtista = (subcategoriaIndex: number) => {
+    if (!currentArtista.nombre || !currentArtista.genero) {
+      setSnackbar({
+        open: true,
+        message: "Por favor complete todos los campos del artista",
+        severity: "error",
+      });
+      return;
+    }
+
+    setSubcategorias((prev) => {
+      const updated = [...prev];
+      updated[subcategoriaIndex] = {
+        ...updated[subcategoriaIndex],
+        artistas: [
+          ...(updated[subcategoriaIndex].artistas || []),
+          currentArtista,
+        ],
+      };
+      return updated;
+    });
+
+    // Reset current artist form
+    setCurrentArtista({
+      nombre: "",
+      genero: "",
+    });
+  };
+
+  const handleRemoveArtista = (
+    subcategoriaIndex: number,
+    artistaIndex: number
+  ) => {
+    setSubcategorias((prev) => {
+      const updated = [...prev];
+      updated[subcategoriaIndex] = {
+        ...updated[subcategoriaIndex],
+        artistas: updated[subcategoriaIndex].artistas.filter(
+          (_, i) => i !== artistaIndex
+        ),
+      };
+      return updated;
+    });
   };
 
   const areAllFieldsFilled = () => {
@@ -620,133 +552,103 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                         shrink: true,
                       }}
                     />
-
-                    {/* Sección de Artistas */}
-                    <Card
-                      variant="outlined"
-                      sx={{ width: "100%", mt: 2, borderColor: "divider" }}
-                    >
-                      <CardHeader
-                        title="Artistas"
-                        titleTypographyProps={{
-                          variant: "subtitle2",
-                          color: "text.secondary",
+                  </Box>
+                  <Box sx={{ mt: 3, mb: 2 }}>
+                    <Typography variant="h6" gutterBottom>
+                      Artistas
+                    </Typography>
+                    <Box sx={{ mt: 2 }}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", sm: "row" },
+                          gap: 2,
+                          alignItems: "flex-end",
                         }}
-                      />
-                      <CardContent>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 2,
-                            alignItems: "center",
-                          }}
-                        >
-                          <Box sx={{ flex: 1, minWidth: 200 }}>
-                            <TextField
-                              label="Nombre del artista"
-                              value={currentArtista.nombre}
-                              onChange={(e) =>
-                                handleArtistaChange("nombre", e.target.value)
-                              }
-                              fullWidth
-                              size="small"
-                              margin="none"
-                            />
-                          </Box>
-                          <Box>
-                            <Button
-                              fullWidth
-                              variant="outlined"
-                              onClick={() =>
-                                handleAddArtista(subcategoria.subcategoriaId)
-                              }
-                              disabled={!currentArtista.nombre.trim()}
-                              startIcon={<PersonIcon />}
-                              sx={{ height: "40px" }}
-                            >
-                              Agregar Artista
-                            </Button>
-                          </Box>
-                          <Box
-                            sx={{
-                              width: { xs: "100%", sm: "calc(33.33% - 16px)" },
-                            }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <TextField
+                            fullWidth
+                            label="Nombre del Artista"
+                            value={currentArtista.nombre}
+                            onChange={(e) =>
+                              setCurrentArtista({
+                                ...currentArtista,
+                                nombre: e.target.value,
+                              })
+                            }
+                            size="small"
+                            margin="normal"
+                          />
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <TextField
+                            fullWidth
+                            label="Género Musical"
+                            value={currentArtista.genero}
+                            onChange={(e) =>
+                              setCurrentArtista({
+                                ...currentArtista,
+                                genero: e.target.value,
+                              })
+                            }
+                            size="small"
+                            margin="normal"
+                          />
+                        </Box>
+                        <Box>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={() => handleAddArtista(index)}
+                            startIcon={<AddIcon />}
+                            disabled={
+                              !currentArtista.nombre.trim() ||
+                              !currentArtista.genero.trim()
+                            }
+                            sx={{ mb: 1 }}
                           >
-                            <TextField
-                              label="Fecha y hora"
-                              type="datetime-local"
-                              value={currentArtista.fechaHora}
-                              onChange={(e) =>
-                                handleArtistaChange("fechaHora", e.target.value)
-                              }
-                              fullWidth
-                              size="small"
-                              margin="none"
-                              InputLabelProps={{
-                                shrink: true,
-                              }}
-                            />
-                          </Box>
-                          <Box sx={{ width: "100%" }}>
-                            <TextField
-                              label="Descripción"
-                              value={currentArtista.descripcion}
-                              onChange={(e) =>
-                                handleArtistaChange(
-                                  "descripcion",
-                                  e.target.value
-                                )
-                              }
-                              fullWidth
-                              multiline
-                              rows={2}
-                              size="small"
-                              margin="none"
-                            />
-                          </Box>
+                            Agregar
+                          </Button>
                         </Box>
+                      </Box>
 
-                        {/* Lista de artistas agregados */}
-                        <Box
-                          sx={{
-                            mt: 2,
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 1,
-                          }}
-                        >
-                          {subcategoria.artistas?.map((artista) => (
-                            <Chip
-                              key={artista.subcategoriaId}
-                              label={artista.nombre}
-                              onDelete={() =>
-                                handleRemoveArtista(
-                                  subcategoria.subcategoriaId,
-                                  artista.subcategoriaId
-                                )
-                              }
-                              deleteIcon={<DeleteIcon />}
-                              variant="outlined"
-                              sx={{
-                                "& .MuiChip-deleteIcon": {
-                                  color: "error.main",
-                                  "&:hover": {
-                                    color: "error.dark",
-                                  },
+                      {/* Lista de Artistas Agregados */}
+                      <Box
+                        sx={{
+                          mt: 2,
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: 1,
+                        }}
+                      >
+                        {subcategoria.artistas?.map((artista, artistaIndex) => (
+                          <Chip
+                            key={artistaIndex}
+                            label={`${artista.nombre} (${artista.genero})`}
+                            onDelete={() =>
+                              handleRemoveArtista(index, artistaIndex)
+                            }
+                            color="primary"
+                            variant="outlined"
+                            icon={<PersonIcon />}
+                            sx={{
+                              "& .MuiChip-deleteIcon": {
+                                color: "error.main",
+                                "&:hover": {
+                                  color: "error.dark",
                                 },
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      </CardContent>
-                    </Card>
+                              },
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    </Box>
                   </Box>
                 </Box>
               ))}
             </Box>
-
-            <DialogActions sx={{ px: 0, justifyContent: "space-between" }}>
+            <DialogActions>
               <Button
                 onClick={onClose}
                 variant="outlined"
@@ -759,11 +661,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                 type="submit"
                 variant="contained"
                 color="primary"
-                disabled={(() => {
-                  const disabled =
-                    loading || !categoriaId || !areAllFieldsFilled();
-                  return disabled;
-                })()}
+                disabled={loading || !categoriaId || !areAllFieldsFilled()}
                 startIcon={
                   loading ? <CircularProgress size={20} /> : <AddIcon />
                 }
