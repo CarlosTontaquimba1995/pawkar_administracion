@@ -16,27 +16,21 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Card,
-  CardContent,
-  CardHeader,
   Chip,
 } from "@mui/material";
 import {
   Close as CloseIcon,
   Add as AddIcon,
   Person as PersonIcon,
-  Delete as DeleteIcon,
 } from "@mui/icons-material";
 import subcategoriaService from "@/api/subcategoriaService";
 import { categoriaService } from "@/api/categoriaService";
 import { ubicacionService } from "@/api/ubicacionService";
 import { Ubicacion } from "@/types/ubicacion.types";
-import {
-  Subcategoria,
-  Artista,
-} from "@/types/subcategoria.types";
+import { Subcategoria } from "@/types/subcategoria.types";
 
 import { useState, useEffect } from "react";
+import { Artista } from "@/types/artista.types";
 
 type SubcategoriaConArtistas = Subcategoria & {
   artistas: Artista[];

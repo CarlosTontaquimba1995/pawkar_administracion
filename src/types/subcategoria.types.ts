@@ -1,8 +1,4 @@
-// Artist interface
-export interface Artista {
-  nombre: string;
-  genero: string;
-}
+import { Artista } from './artista.types';
 
 // Subcategory interface
 export interface Subcategoria {
