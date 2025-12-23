@@ -304,14 +304,7 @@ const Dashboard = () => {
           fontWeight={600}
           sx={{ fontSize: { xs: "1.5rem", sm: "2rem" } }}
         >
-          Panel de Control
-        </Typography>
-        <Typography
-          variant="body1"
-          color="text.secondary"
-          sx={{ fontSize: { xs: "0.875rem", sm: "1rem" } }}
-        >
-          Bienvenido de nuevo, Admin. Aquí tienes un resumen de tu plataforma.
+          Pawkar Raymi Peguche 2026
         </Typography>
       </Box>
 

@@ -24,10 +24,18 @@ const NotFoundPage = lazy(() => import("@/pages/NotFound"));
 
 const LoadingSpinner = () => (
   <Box
-    display="flex"
-    justifyContent="center"
-    alignItems="center"
-    minHeight="100vh"
+    sx={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "center",
+      backgroundColor: "background.default",
+      zIndex: 9999,
+    }}
   >
     <CircularProgress />
   </Box>
