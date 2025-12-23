@@ -289,7 +289,11 @@ const Events = () => {
         mb={4}
       >
         <Box>
-          <Typography variant="body1" color="text.secondary">
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{ display: { xs: "none", sm: "block" } }}
+          >
             Gestiona los eventos programados
           </Typography>
         </Box>
