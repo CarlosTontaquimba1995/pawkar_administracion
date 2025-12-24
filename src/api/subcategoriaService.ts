@@ -81,7 +81,7 @@ const subcategoriaService = {
    */
   async createSubcategoria(subcategoriaData: CreateSubcategoriaRequest): Promise<SubcategoriaResponse> {
     try {
-      const response = await api.post<SubcategoriaResponse>('/', subcategoriaData);
+      const response = await api.post<SubcategoriaResponse>('', subcategoriaData);
       return response.data;
     } catch (error) {
       console.error('Error creating subcategory:', error);
