@@ -46,6 +46,9 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
       proximo: false,
       estado: true,
       ubicacion: "",
+      latitud: 0,
+      longitud: 0,
+      artistas: [],
     },
   ]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -74,6 +77,9 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
           proximo: false,
           estado: true,
           ubicacion: "",
+          latitud: 0,
+          longitud: 0,
+          artistas: [],
         },
       ]);
     }
@@ -112,6 +118,9 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
         proximo: false,
         estado: true,
         ubicacion: "",
+        latitud: 0,
+        longitud: 0,
+        artistas: [],
       },
     ]);
   };
@@ -182,9 +191,15 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
 
       // Prepare subcategories data for bulk creation
       const subcategoriasToCreate = subcategorias.map((sub) => ({
-        nombre: sub.nombre.trim(),
+        nombre: sub.nombre,
         categoriaId: sub.categoriaId,
-        descripcion: sub.descripcion.trim(),
+        descripcion: sub.descripcion,
+        fechaHora: sub.fechaHora,
+        ubicacion: sub.ubicacion,
+        latitud: sub.latitud || 0,
+        longitud: sub.longitud || 0,
+        artistas: sub.artistas || [],
+        proximo: sub.proximo || false,
       }));
 
       // Create all subcategories in a single request
@@ -210,6 +225,9 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
           proximo: false,
           estado: true,
           ubicacion: "",
+          latitud: 0,
+          longitud: 0,
+          artistas: [],
         },
       ]);
 
