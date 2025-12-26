@@ -174,17 +174,18 @@ const TeamRosterDialog: React.FC<TeamRosterDialogProps> = ({
                     <TableCell>
                       <Box display="flex" alignItems="center">
                         <Avatar
-                          src={`/player-avatars/${player.jugadorNombreCompleto}.jpg`}
-                          alt={`${player.jugadorNombreCompleto}`}
+                          alt={player.jugadorNombreCompleto}
                           sx={{
                             width: 32,
                             height: 32,
                             mr: 2,
                             bgcolor: "primary.main",
+                            color: "white",
                           }}
                         >
-                          {player.jugadorNombreCompleto?.charAt(0)}
-                          {player.jugadorNombreCompleto?.charAt(0)}
+                          {player.jugadorNombreCompleto
+                            ?.charAt(0)
+                            .toUpperCase()}
                         </Avatar>
                         <Typography variant="body2">
                           {player.jugadorNombreCompleto}
@@ -369,8 +370,8 @@ const TeamRosterDialog: React.FC<TeamRosterDialogProps> = ({
         <DialogTitle>Confirmar eliminación</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            ¿Estás seguro de que deseas eliminar la sanción del jugador "{sancionToDelete?.jugadorNombre}"? 
-            Esta acción no se puede deshacer.
+            ¿Estás seguro de que deseas eliminar la sanción del jugador "
+            {sancionToDelete?.jugadorNombre}"? Esta acción no se puede deshacer.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -381,7 +382,9 @@ const TeamRosterDialog: React.FC<TeamRosterDialogProps> = ({
             onClick={handleDeleteConfirm}
             color="error"
             disabled={isDeleting !== null}
-            startIcon={isDeleting ? <CircularProgress size={20} /> : <DeleteIcon />}
+            startIcon={
+              isDeleting ? <CircularProgress size={20} /> : <DeleteIcon />
+            }
           >
             {isDeleting ? "Eliminando..." : "Eliminar"}
           </Button>

@@ -548,9 +548,6 @@ const Dashboard = () => {
                           <TableCell>
                             <Box display="flex" alignItems="center">
                               <Avatar
-                                src={`/team-logos/${team.nombre
-                                  .toLowerCase()
-                                  .replace(/\s+/g, "-")}.png`}
                                 alt={team.nombre}
                                 sx={{
                                   width: 30,
@@ -569,6 +566,7 @@ const Dashboard = () => {
                               >
                                 {team.nombre.charAt(0).toUpperCase()}
                               </Avatar>
+
                               <Box
                                 component="span"
                                 sx={{

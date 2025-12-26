@@ -355,13 +355,15 @@ const TeamTable: React.FC<TeamTableProps> = ({
         format: (value: string, row: TeamWithDetails) => (
           <Box display="flex" alignItems="center" gap={1}>
             <Avatar
-              src={`/team-logos/${row.nombre
-                ?.toLowerCase()
-                .replace(/\s+/g, "-")}.png`}
               alt={row.nombre}
-              sx={{ width: 32, height: 32, bgcolor: "primary.main" }}
+              sx={{
+                width: 32,
+                height: 32,
+                bgcolor: "primary.main",
+                color: "white",
+              }}
             >
-              {row.nombre?.charAt(0) || "T"}
+              {row.nombre?.charAt(0).toUpperCase() || "T"}
             </Avatar>
             <Typography variant="body2" fontWeight={500}>
               {value}

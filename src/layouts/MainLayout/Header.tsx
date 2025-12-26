@@ -72,9 +72,10 @@ const Header = ({ onDrawerToggle }: { onDrawerToggle: () => void }) => {
           >
             <Avatar
               alt="User"
-              src="/static/images/avatar/1.jpg"
-              sx={{ width: 36, height: 36 }}
-            />
+              sx={{ width: 36, height: 36, bgcolor: "primary.main" }}
+            >
+              U
+            </Avatar>
             <Box sx={{ ml: 1, display: { xs: "none", md: "block" } }}>
               <Typography variant="body2" color="text.primary">
                 {userData?.username || "Usuario"}

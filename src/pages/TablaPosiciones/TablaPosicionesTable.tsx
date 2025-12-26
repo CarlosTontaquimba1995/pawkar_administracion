@@ -281,13 +281,16 @@ const TablaPosicionesTable: React.FC<TablaPosicionesTableProps> = ({
       format: (_, row) => (
         <Box display="flex" alignItems="center" gap={1}>
           <Avatar
-            src={`/team-logos/${row.equipoNombre
-              ?.toLowerCase()
-              .replace(/\s+/g, "-")}.png`}
             alt={row.equipoNombre}
-            sx={{ width: 32, height: 32, fontSize: "0.875rem" }}
+            sx={{
+              width: 32,
+              height: 32,
+              fontSize: "0.875rem",
+              bgcolor: "primary.main",
+              color: "white",
+            }}
           >
-            {row.equipoNombre?.charAt(0) || "T"}
+            {row.equipoNombre?.charAt(0).toUpperCase() || "T"}
           </Avatar>
           <Typography variant="body2" fontWeight={500}>
             {row.equipoNombre}
