@@ -5,19 +5,25 @@
  * Cambiar un color aquí afectará automáticamente toda la aplicación.
  */
 
+// Default color constants
+export const defaultPrimary = '#1f0d4a';
+export const defaultSecondary = '#482E76';
+export const defaultAccent1 = '#E00099';
+export const defaultAccent2 = '#F5C000';
+
 export const appColors = {
   // Colores principales del sistema
-  primary: '#473587',      // Púrpura oscuro - Color principal
-  secondary: '#A81B7C',    // Rosa/Magenta - Color secundario
-  white: '#FFFFFF',        // Blanco - Fondos y textos
-  accent1: '#DA8764',      // Coral/Salmón - Acentos y alertas
-  accent2: '#86BEBD',      // Turquesa suave - Éxitos y estados positivos
+  primary: defaultPrimary,      // Color principal
+  secondary: defaultSecondary,  // Color secundario
+  white: '#FFFFFF',            // Blanco - Fondos y textos
+  accent1: defaultAccent1,     // Acentos y alertas
+  accent2: defaultAccent2,     // Éxitos y estados positivos
   
   // Variaciones para diferentes usos
-  primaryLight: '#5e4aa3',
-  primaryDark: '#2f2460',
-  secondaryLight: '#c92a93',
-  secondaryDark: '#7a1459',
+  primaryLight: '#3a1f8a',
+  primaryDark: '#140835',
+  secondaryLight: '#6a42b3',
+  secondaryDark: '#2e1f4d',
   
   // Colores de estado
   success: '#86BEBD',      // Turquesa - Operaciones exitosas
