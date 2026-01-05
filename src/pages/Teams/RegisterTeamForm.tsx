@@ -18,9 +18,13 @@ import {
   MenuItem,
   Paper,
 } from "@mui/material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import {
   Close as CloseIcon,
-  CalendarToday as CalendarTodayIcon,
   Add as AddIcon,
   FilterList as FilterListIcon,
   Group as GroupIcon,
@@ -465,32 +469,42 @@ const RegisterTeam: React.FC<RegisterTeamProps> = ({
                       variant="outlined"
                       placeholder="Ej: Equipo A"
                     />
-                    <TextField
-                      label="Fecha de Fundación"
-                      type="date"
-                      value={team.fundacion}
-                      onChange={(e) => {
-                        const dateValue = e.target.value;
-                        if (!dateValue || dateValue.split("-")[0].length <= 4) {
-                          handleTeamChange(index, "fundacion", dateValue);
-                        }
-                      }}
-                      fullWidth
-                      required
-                      size="small"
-                      variant="outlined"
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                      inputProps={{
-                        max: new Date().toISOString().split("T")[0],
-                      }}
-                      InputProps={{
-                        endAdornment: (
-                          <CalendarTodayIcon fontSize="small" color="action" />
-                        ),
-                      }}
-                    />
+                    <LocalizationProvider
+                      dateAdapter={AdapterDateFns}
+                      adapterLocale={es}
+                    >
+                      <DatePicker
+                        label="Fecha de Fundación"
+                        value={team.fundacion ? parseISO(team.fundacion) : null}
+                        onChange={(newValue) => {
+                          handleTeamChange(
+                            index,
+                            "fundacion",
+                            newValue ? format(newValue, "yyyy-MM-dd") : ""
+                          );
+                        }}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            required: true,
+                            size: "small",
+                            variant: "outlined",
+                            InputLabelProps: { shrink: true },
+                            inputProps: {
+                              max: new Date().toISOString().split("T")[0],
+                            },
+                            sx: {
+                              "& .MuiOutlinedInput-root": {
+                                borderRadius: 2,
+                                "&:hover fieldset": {
+                                  borderColor: "primary.light",
+                                },
+                              },
+                            },
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
                   </Box>
                 </Paper>
               </React.Fragment>

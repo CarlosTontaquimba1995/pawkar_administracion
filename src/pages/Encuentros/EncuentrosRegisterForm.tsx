@@ -22,6 +22,7 @@ import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { TimePicker } from "@mui/x-date-pickers/TimePicker";
 import { format, parse } from "date-fns";
+import { es } from "date-fns/locale";
 
 // Services
 import { useAuth } from "@/contexts/AuthContext";
@@ -642,7 +643,10 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
                         sx={{ width: { xs: "100%", sm: "calc(50% - 8px)" } }}
                       >
                         <FormControl fullWidth required>
-                          <LocalizationProvider dateAdapter={AdapterDateFns}>
+                          <LocalizationProvider
+                            dateAdapter={AdapterDateFns}
+                            adapterLocale={es}
+                          >
                             <DatePicker
                               label="Fecha"
                               value={
@@ -661,6 +665,20 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
                                   date ? format(date, "yyyy-MM-dd") : ""
                                 )
                               }
+                              slotProps={{
+                                textField: {
+                                  fullWidth: true,
+                                  size: "small",
+                                  sx: {
+                                    "& .MuiOutlinedInput-root": {
+                                      borderRadius: 2,
+                                      "&:hover fieldset": {
+                                        borderColor: "primary.light",
+                                      },
+                                    },
+                                  },
+                                },
+                              }}
                             />
                           </LocalizationProvider>
                         </FormControl>
