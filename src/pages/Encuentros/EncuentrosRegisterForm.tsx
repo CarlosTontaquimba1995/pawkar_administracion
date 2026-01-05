@@ -674,6 +674,7 @@ const EncuentrosRegisterForm: React.FC<EncuentrosRegisterFormProps> = ({
                           <LocalizationProvider dateAdapter={AdapterDateFns}>
                             <TimePicker
                               label="Hora"
+                              ampm={false}
                               value={
                                 encuentro.hora
                                   ? parse(encuentro.hora, "HH:mm", new Date())

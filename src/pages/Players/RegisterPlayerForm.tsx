@@ -24,7 +24,6 @@ import serieService from "../../api/serieService";
 import {
   Add as AddIcon,
   Close as CloseIcon,
-  CalendarToday as CalendarTodayIcon,
   Group as GroupIcon,
   FilterList as FilterListIcon,
   EmojiEvents as EmojiEventsIcon,
@@ -39,6 +38,11 @@ import { Subcategoria } from "@/types/subcategoria.types";
 import { Serie } from "@/types/serie.types";
 import { Role } from "@/types/role.types";
 import categoriaService from "@/api/categoriaService";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 interface RegisterPlayerFormProps {
   open: boolean;
@@ -850,77 +854,77 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                     display="grid"
                     gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
                     gap={2}
+                    rowGap={3}
                     mb={2}
                   >
-                    <TextField
-                      label="Documento de Identidad"
-                      value={player.documentoIdentidad}
-                      onChange={(e) =>
-                        handlePlayerChange(
-                          index,
-                          "documentoIdentidad",
-                          e.target.value
-                        )
-                      }
-                      fullWidth
-                      required
-                      size="small"
-                      variant="outlined"
-                      inputProps={{
-                        inputMode: "numeric",
-                        pattern: "[0-9]*",
-                        title: "Solo se permiten números",
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
-                          "&:hover fieldset": {
-                            borderColor: "primary.light",
+                    <Box>
+                      <TextField
+                        label="Documento de Identidad"
+                        value={player.documentoIdentidad}
+                        onChange={(e) =>
+                          handlePlayerChange(
+                            index,
+                            "documentoIdentidad",
+                            e.target.value
+                          )
+                        }
+                        fullWidth
+                        required
+                        size="small"
+                        variant="outlined"
+                        inputProps={{
+                          inputMode: "numeric",
+                          pattern: "[0-9]*",
+                          title: "Solo se permiten números",
+                        }}
+                        sx={{
+                          "& .MuiOutlinedInput-root": {
+                            borderRadius: 2,
+                            "&:hover fieldset": {
+                              borderColor: "primary.light",
+                            },
                           },
-                        },
-                      }}
-                    />
-                    <TextField
-                      label="Fecha de Nacimiento"
-                      type="date"
-                      value={player.fechaNacimiento}
-                      onChange={(e) =>
-                        handlePlayerChange(
-                          index,
-                          "fechaNacimiento",
-                          e.target.value
-                        )
-                      }
-                      fullWidth
-                      required
-                      size="small"
-                      variant="outlined"
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                      InputProps={{
-                        endAdornment: (
-                          <CalendarTodayIcon fontSize="small" color="action" />
-                        ),
-                      }}
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          borderRadius: 2,
-                          "&:hover fieldset": {
-                            borderColor: "primary.light",
-                          },
-                        },
-                      }}
-                    />
-                  </Box>
-
-                  <Box>
-                    <Box
-                      display="grid"
-                      gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr" }}
-                      gap={2}
-                      mb={2}
-                    >
+                        }}
+                      />
+                    </Box>
+                    <Box>
+                      <LocalizationProvider
+                        dateAdapter={AdapterDateFns}
+                        adapterLocale={es}
+                      >
+                        <DatePicker
+                          label="Fecha de Nacimiento"
+                          value={
+                            player.fechaNacimiento
+                              ? parseISO(player.fechaNacimiento)
+                              : null
+                          }
+                          onChange={(newValue) => {
+                            handlePlayerChange(
+                              index,
+                              "fechaNacimiento",
+                              newValue ? format(newValue, "yyyy-MM-dd") : ""
+                            );
+                          }}
+                          slotProps={{
+                            textField: {
+                              fullWidth: true,
+                              required: true,
+                              size: "small",
+                              sx: {
+                                "& .MuiOutlinedInput-root": {
+                                  borderRadius: 2,
+                                  "&:hover fieldset": {
+                                    borderColor: "primary.light",
+                                  },
+                                },
+                              },
+                            },
+                          }}
+                        />
+                      </LocalizationProvider>
+                    </Box>
+                    <Box>
                       <TextField
                         label="Número de Camiseta"
                         value={player.numeroCamiseta || ""}
@@ -956,8 +960,14 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                         }}
                       />
                     </Box>
-                    <Box>
-                      <FormControl fullWidth margin="normal">
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "flex-end",
+                        height: "100%",
+                      }}
+                    >
+                      <FormControl fullWidth size="small" sx={{ mb: 0.5 }}>
                         <InputLabel id={`rol-label-${index}`}>Rol</InputLabel>
                         <Select
                           labelId={`rol-label-${index}`}
@@ -968,7 +978,7 @@ const RegisterPlayerForm: React.FC<RegisterPlayerFormProps> = ({
                           disabled={!selectedSubcategoria || isSubmitting}
                           sx={{
                             "& .MuiSelect-select": {
-                              py: 1.5,
+                              py: "8.5px",
                               whiteSpace: "normal",
                             },
                           }}

@@ -21,8 +21,13 @@ import {
 import {
   Close as CloseIcon,
   Add as AddIcon,
-  Person as PersonIcon,
+  Person as PersonIcon
 } from "@mui/icons-material";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { AdapterDateFns } from "@mui/x-date-pickers/AdapterDateFns";
+import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
+import { format, parseISO } from "date-fns";
+import { es } from "date-fns/locale";
 import subcategoriaService from "@/api/subcategoriaService";
 import { categoriaService } from "@/api/categoriaService";
 import { ubicacionService } from "@/api/ubicacionService";
@@ -154,7 +159,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         categoriaNombre: "",
         latitud: 0,
         longitud: 0,
-        artistas: []
+        artistas: [],
       },
     ]);
   };
@@ -526,26 +531,37 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                       )}
                     </FormControl>
 
-                    <TextField
-                      label="Fecha y hora"
-                      type="datetime-local"
-                      value={subcategoria.fechaHora}
-                      onChange={(e) =>
-                        handleSubcategoriaChange(
-                          subcategoria.subcategoriaId,
-                          "fechaHora",
-                          e.target.value
-                        )
-                      }
-                      required
-                      fullWidth
-                      size="small"
-                      margin="normal"
-                      disabled={loading}
-                      InputLabelProps={{
-                        shrink: true,
-                      }}
-                    />
+                    <LocalizationProvider
+                      dateAdapter={AdapterDateFns}
+                      adapterLocale={es}
+                    >
+                      <DateTimePicker
+                        label="Fecha y hora"
+                        value={
+                          subcategoria.fechaHora
+                            ? parseISO(subcategoria.fechaHora)
+                            : null
+                        }
+                        onChange={(newValue) => {
+                          handleSubcategoriaChange(
+                            subcategoria.subcategoriaId,
+                            "fechaHora",
+                            newValue
+                              ? format(newValue, "yyyy-MM-dd'T'HH:mm")
+                              : ""
+                          );
+                        }}
+                        slotProps={{
+                          textField: {
+                            fullWidth: true,
+                            size: "small",
+                            margin: "normal",
+                            required: true,
+                            disabled: loading,
+                          },
+                        }}
+                      />
+                    </LocalizationProvider>
                   </Box>
                   <Box sx={{ mt: 3, mb: 2 }}>
                     <Typography variant="h6" gutterBottom>
