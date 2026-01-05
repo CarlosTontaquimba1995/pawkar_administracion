@@ -234,9 +234,7 @@ const SeriesTable: React.FC<SeriesTableProps> = ({
             displayEmpty
             fullWidth
           >
-            <MenuItem value="">
-              <em>Todas las subcategorías de DEPORTES</em>
-            </MenuItem>
+            <MenuItem value=""></MenuItem>
             {deportesSubcategorias.map((subcategoria) => (
               <MenuItem
                 key={subcategoria.subcategoriaId}

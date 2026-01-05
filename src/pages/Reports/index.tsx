@@ -130,7 +130,42 @@ const Reports: React.FC = () => {
       id: "numeroCamiseta",
       label: "Camiseta",
       align: "center" as const,
+      minWidth: 80,
+    },
+    {
+      id: "tieneSancion",
+      label: "Estado",
+      align: "center" as const,
       minWidth: 100,
+      format: (value: boolean, row: any) => (
+        <Tooltip
+          title={
+            value && row.sanciones?.length > 0
+              ? `Sanciones: ${row.sanciones
+                  .map((s: any) => s.tipoSancion)
+                  .join(", ")}`
+              : "Sin sanciones"
+          }
+          arrow
+        >
+          <Box
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "4px 8px",
+              borderRadius: "12px",
+              backgroundColor: value ? "error.light" : "success.light",
+              color: "white",
+              fontWeight: 500,
+              fontSize: "0.75rem",
+              width: "fit-content",
+            }}
+          >
+            {value ? "Sancionado" : "Habilitado"}
+          </Box>
+        </Tooltip>
+      ),
     },
   ];
 
@@ -571,30 +606,76 @@ const Reports: React.FC = () => {
         equipo: plantilla?.equipoNombre || "Sin equipo",
         rol: plantilla?.rolNombre || "Sin rol",
         camiseta: plantilla?.numeroCamiseta?.toString() || "N/A",
+        sancion:
+          plantilla?.tieneSancion && plantilla.sanciones?.length > 0
+            ? new Date(
+                plantilla.sanciones[0].fechaSancion || new Date()
+              ).toLocaleDateString()
+            : "No",
+        detalleSancion:
+          plantilla?.tieneSancion && plantilla.sanciones?.length > 0
+            ? plantilla.sanciones.map((s: any) => s.tipoSancion).join(", ")
+            : "",
       }));
 
       // Add table
       if (tableData.length > 0) {
         // Use the imported autoTable function directly
         autoTable(doc, {
-          head: [["Jugador", "Equipo", "Rol", "Camiseta"]],
+          head: [
+            [
+              "Jugador",
+              "Equipo",
+              "Rol",
+              "Camiseta",
+              "Sancionado",
+              "Detalle Sancion",
+            ],
+          ],
           body: tableData.map((item) => [
             item.jugador,
             item.equipo,
             item.rol,
             item.camiseta,
+            item.sancion,
+            item.detalleSancion,
           ]),
           startY: 60,
           headStyles: {
             fillColor: [41, 128, 185],
             textColor: 255,
             fontStyle: "bold",
+            fontSize: 8,
+          },
+          columnStyles: {
+            0: { cellWidth: "auto", minCellWidth: 50, fontStyle: "bold" }, // Jugador
+            1: { cellWidth: "auto", minCellWidth: 40 }, // Equipo
+            2: { cellWidth: "auto", minCellWidth: 30 }, // Rol
+            3: { cellWidth: "auto", minCellWidth: 15, halign: "center" }, // Camiseta
+            4: { cellWidth: "auto", minCellWidth: 15, halign: "center" }, // Sancionado
+            5: { cellWidth: "auto", minCellWidth: 60 }, // Detalle Sanciones
           },
           styles: {
-            fontSize: 10,
-            cellPadding: 3,
+            fontSize: 8,
+            cellPadding: 2,
+            overflow: "linebreak",
+            cellWidth: "wrap",
+            minCellHeight: 5,
+            valign: "middle",
+            halign: "left",
+            lineWidth: 0.1,
+            lineColor: 200,
           },
-          margin: { top: 10 },
+          margin: {
+            top: 10,
+            left: 10,
+            right: 10,
+            bottom: 10,
+          },
+          tableWidth: "auto",
+          tableLineWidth: 0.1,
+          tableLineColor: [0, 0, 0],
+          horizontalPageBreak: true,
         });
       } else {
         doc.text("No hay datos para mostrar en la tabla", 14, 60);
