@@ -63,6 +63,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
     categoriaNombre: "",
     latitud: 0,
     longitud: 0,
+    precio: 0,
     artistas: [],
   };
 
@@ -159,6 +160,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         categoriaNombre: "",
         latitud: 0,
         longitud: 0,
+        precio: 0,
         artistas: [],
       },
     ]);
@@ -233,6 +235,7 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         fechaHora: sub.fechaHora || new Date().toISOString(),
         categoriaId: categoriaId,
         proximo: true, // or get this from form
+        precio: sub.precio || 0,
         artistas: sub.artistas || [], // Include artistas in the request
       }));
 

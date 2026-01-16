@@ -14,6 +14,7 @@ export interface Subcategoria {
   ubicacion: string;
   latitud: number;
   longitud: number;
+  precio: number;
   artistas: Artista[];
 }
 
@@ -26,6 +27,7 @@ export interface CreateSubcategoriaRequest {
   latitud: number;
   longitud: number;
   ubicacion: string;
+  precio: number;
   artistas: Artista[];
 }
 
@@ -41,6 +43,7 @@ export interface UpdateSubcategoriaRequest {
   latitud?: number;
   longitud?: number;
   ubicacion?: string;
+  precio?: number;
   artistas?: Artista[];
 }
 
