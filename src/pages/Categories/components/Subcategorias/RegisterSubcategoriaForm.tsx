@@ -48,6 +48,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
       ubicacion: "",
       latitud: 0,
       longitud: 0,
+      precio: 0,
       artistas: [],
     },
   ]);
@@ -80,6 +81,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
           latitud: 0,
           longitud: 0,
           artistas: [],
+          precio: 0,
         },
       ]);
     }
@@ -121,6 +123,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
         latitud: 0,
         longitud: 0,
         artistas: [],
+        precio: 0,
       },
     ]);
   };
@@ -200,6 +203,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
         longitud: sub.longitud || 0,
         artistas: sub.artistas || [],
         proximo: sub.proximo || false,
+        precio: sub.precio || 0,
       }));
 
       // Create all subcategories in a single request
@@ -228,6 +232,7 @@ const RegisterSubcategoriaForm: React.FC<RegisterSubcategoriaFormProps> = ({
           latitud: 0,
           longitud: 0,
           artistas: [],
+          precio: 0,
         },
       ]);
 
