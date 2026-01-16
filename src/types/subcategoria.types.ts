@@ -14,7 +14,7 @@ export interface Subcategoria {
   ubicacion: string;
   latitud: number;
   longitud: number;
-  precio: number;
+  precio?: number;
   artistas: Artista[];
 }
 
