@@ -239,15 +239,12 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
         artistas: sub.artistas || [], // Include artistas in the request
       }));
 
-      if (subcategoriasData.length === 1) {
-        // Single subcategory creation
-        await subcategoriaService.createSubcategoria(subcategoriasData[0]);
-      } else {
-        // Multiple subcategories creation
-        await subcategoriaService.createMultipleSubcategorias({
-          subcategorias: subcategoriasData,
-        });
-      }
+      console.log("subcategoriasData", subcategoriasData);
+
+      // Multiple subcategories creation
+      await subcategoriaService.createMultipleSubcategorias({
+        subcategorias: subcategoriasData,
+      });
 
       setSnackbar({
         open: true,
@@ -481,6 +478,58 @@ const EventsRegisterForm: React.FC<EventsRegisterFormProps> = ({
                       }
                       required
                       disabled={loading}
+                    />
+
+                    <TextField
+                      fullWidth
+                      label="Precio"
+                      type="number"
+                      variant="outlined"
+                      margin="normal"
+                      value={
+                        subcategoria.precio === 0 ? "" : subcategoria.precio
+                      }
+                      onChange={(e) => {
+                        const value =
+                          e.target.value === "" ? 0 : Number(e.target.value);
+                        handleSubcategoriaChange(
+                          subcategoria.subcategoriaId,
+                          "precio",
+                          isNaN(value) ? 0 : value
+                        );
+                      }}
+                      onFocus={() => {
+                        if (subcategoria.precio === 0) {
+                          handleSubcategoriaChange(
+                            subcategoria.subcategoriaId,
+                            "precio",
+                            ""
+                          );
+                        }
+                      }}
+                      onBlur={(e) => {
+                        if (e.target.value === "") {
+                          handleSubcategoriaChange(
+                            subcategoria.subcategoriaId,
+                            "precio",
+                            0
+                          );
+                        }
+                      }}
+                      required
+                      disabled={loading}
+                      InputProps={{
+                        startAdornment: (
+                          <Typography color="text.secondary" mr={1}>
+                            $
+                          </Typography>
+                        ),
+                        inputProps: {
+                          min: 0,
+                          step: 0.01,
+                          inputMode: "decimal",
+                        },
+                      }}
                     />
 
                     <FormControl fullWidth margin="normal" required>
