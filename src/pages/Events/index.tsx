@@ -34,6 +34,7 @@ import {
   Delete as DeleteIcon,
   Event as EventIcon,
   LocationOn as LocationOnIcon,
+  AttachMoney,
 } from "@mui/icons-material";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
@@ -131,6 +132,10 @@ const Events = () => {
             categoriaNombre: event.categoriaNombre || "Sin categoría",
             estado: event.estado || true,
             ubicacion: event.ubicacion || "Sin ubicación",
+            precio: event.precio || 0,
+            latitud: event.latitud || 0,
+            longitud: event.longitud || 0,
+            artistas: event.artistas || [],
           } as Subcategoria;
         });
 
@@ -541,8 +546,47 @@ const Events = () => {
                         display: "flex",
                         flexDirection: "column",
                         backgroundColor: theme.palette.background.paper,
+                        position: "relative",
                       }}
                     >
+                      {event.precio && event.precio > 0 && (
+                        <Box
+                          sx={{
+                            position: "absolute",
+                            top: 16,
+                            right: 16,
+                            display: "flex",
+                            alignItems: "center",
+                            color: "text.primary",
+                            zIndex: 1,
+                            "&:hover": {
+                              transform: "scale(1.03)",
+                              transition: "transform 0.2s ease",
+                              color: "primary.main",
+                            },
+                          }}
+                        >
+                          <AttachMoney
+                            fontSize="small"
+                            sx={{
+                              mr: 0.5,
+                              fontSize: "1.5rem",
+                              color: "inherit",
+                            }}
+                          />
+                          <Typography
+                            variant="h6"
+                            component="span"
+                            sx={{
+                              fontWeight: 700,
+                              whiteSpace: "nowrap",
+                              color: "inherit",
+                            }}
+                          >
+                            {event.precio.toFixed(2)} $
+                          </Typography>
+                        </Box>
+                      )}
                       <CardContent
                         sx={{
                           flex: 1,
